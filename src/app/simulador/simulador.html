@@ -1,0 +1,230 @@
+<div class="page-shell">
+  @if (toastMsg()) {
+    <div class="toast" [class.positive]="toastPositive()" [class.negative]="!toastPositive()">
+      {{ toastMsg() }}
+    </div>
+  }
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/home" class="back-btn">← Inicio</a>
+    <div class="header-center">
+      <h1>Simulador de Vida</h1>
+      <p class="header-sub">Mercado + Empleo + Emergencias</p>
+    </div>
+    <div class="header-coins">
+      <span>🪙</span>
+      <span>{{ game.coins() | number }}</span>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="activeTab.set('mercado')">📈 Mercado</button>
+    <button class="tab" [class.active]="activeTab() === 'empleos'" (click)="activeTab.set('empleos')">💼 Empleos</button>
+    <button class="tab" [class.active]="activeTab() === 'emergencias'" (click)="activeTab.set('emergencias')">🆘 Emergencias</button>
+  </div>
+
+  <!-- MERCADO TAB -->
+  @if (activeTab() === 'mercado') {
+    <section class="tab-content">
+      <div class="market-header">
+        <div>
+          <h2 class="section-title">Mercado en Vivo</h2>
+          <p class="section-sub">Precios actualizándose cada 4 segundos</p>
+        </div>
+        <div class="portfolio-val">
+          <span class="pv-label">Portafolio</span>
+          <span class="pv-val">${{ game.totalPortfolioValue() | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <div class="stocks-list">
+        @for (stock of game.stocks(); track stock.symbol) {
+          <div class="stock-card">
+            <div class="stock-top">
+              <div class="stock-sym" [style.background]="stock.change >= 0 ? 'rgba(0,212,170,.15)' : 'rgba(244,63,94,.12)'">
+                {{ stock.symbol }}
+              </div>
+              <div class="stock-info">
+                <div class="stock-name">{{ stock.name }}</div>
+                <div class="stock-owned">{{ stock.owned > 0 ? stock.owned + ' acciones en cartera' : 'Sin acciones' }}</div>
+              </div>
+              <div class="stock-price-block">
+                <div class="stock-price">${{ stock.price | number:'1.2-2' }}</div>
+                <div class="stock-change" [style.color]="stock.change >= 0 ? '#00d4aa' : '#f43f5e'">
+                  {{ stock.change >= 0 ? '+' : '' }}{{ stock.changePercent | number:'1.2-2' }}%
+                </div>
+              </div>
+            </div>
+
+            <!-- Mini chart (history bars) -->
+            <div class="mini-chart">
+              @for (price of stock.history; track $index) {
+                <div
+                  class="chart-bar"
+                  [style.height.%]="getPriceBarWidth(price, maxStockPrice)"
+                  [style.background]="stock.change >= 0 ? '#00d4aa' : '#f43f5e'"
+                ></div>
+              }
+            </div>
+
+            <!-- Trade controls -->
+            <div class="trade-row">
+              <div class="trade-group">
+                <button class="qty-btn" (click)="setBuyQty(stock.symbol, getBuyQty(stock.symbol) - 1)">−</button>
+                <span class="qty-val">{{ getBuyQty(stock.symbol) }}</span>
+                <button class="qty-btn" (click)="setBuyQty(stock.symbol, getBuyQty(stock.symbol) + 1)">+</button>
+                <button class="trade-btn buy" (click)="buy(stock.symbol)">
+                  Comprar · ${{ (stock.price * getBuyQty(stock.symbol)) | number:'1.0-0' }}
+                </button>
+              </div>
+
+              @if (stock.owned > 0) {
+                <div class="trade-group">
+                  <button class="qty-btn" (click)="setSellQty(stock.symbol, getSellQty(stock.symbol) - 1)">−</button>
+                  <span class="qty-val">{{ getSellQty(stock.symbol) }}</span>
+                  <button class="qty-btn" (click)="setSellQty(stock.symbol, getSellQty(stock.symbol) + 1)">+</button>
+                  <button class="trade-btn sell" (click)="sell(stock.symbol)">
+                    Vender · ${{ (stock.price * getSellQty(stock.symbol)) | number:'1.0-0' }}
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- EMPLEOS TAB -->
+  @if (activeTab() === 'empleos') {
+    <section class="tab-content">
+      <div class="jobs-header">
+        <h2 class="section-title">Mercado Laboral</h2>
+        @if (game.activeJob()) {
+          <button class="salary-btn" (click)="collectSalary()">
+            💵 Cobrar Salario · ${{ game.activeJob()!.salary }}
+          </button>
+        }
+      </div>
+
+      <div class="jobs-list">
+        @for (job of game.jobs(); track job.id) {
+          <div class="job-card" [class.active]="job.active" [class.locked]="game.level() < job.minLevel">
+            <div class="job-icon">{{ job.icon }}</div>
+            <div class="job-info">
+              <div class="job-title">{{ job.title }}</div>
+              <div class="job-company">{{ job.company }}</div>
+              <div class="job-req">{{ job.requirements }}</div>
+            </div>
+            <div class="job-right">
+              <div class="job-salary">${{ job.salary | number }}</div>
+              <div class="job-salary-label">por mes</div>
+              @if (job.active) {
+                <div class="job-badge active">✓ Activo</div>
+              } @else if (game.level() >= job.minLevel) {
+                <button class="job-apply" (click)="applyJob(job.id)">Aplicar</button>
+              } @else {
+                <div class="job-badge locked">🔒 Lv.{{ job.minLevel }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="job-tip">
+        <span>💡</span>
+        <p>Sube de nivel en la Academia para desbloquear empleos mejor pagados. ¡El conocimiento es poder!</p>
+      </div>
+    </section>
+  }
+
+  <!-- EMERGENCIAS TAB -->
+  @if (activeTab() === 'emergencias') {
+    <section class="tab-content">
+      <h2 class="section-title">Centro de Emergencias</h2>
+      <p class="section-sub">Las emergencias son parte de la vida. ¿Estás preparado para enfrentarlas?</p>
+
+      <!-- Fund status -->
+      <div class="fund-status">
+        <div class="fund-icon">🛡️</div>
+        <div class="fund-info">
+          <div class="fund-label">Tu fondo de emergencia</div>
+          <div class="fund-amount" [style.color]="game.coins() >= 3000 ? '#00d4aa' : '#f5a623'">
+            ${{ game.coins() | number }} disponibles
+          </div>
+          <div class="fund-sub">
+            @if (game.coins() >= 5000) { ✅ Bien preparado (más de $5,000) }
+            @else if (game.coins() >= 2000) { ⚠️ Mínimo aceptable ($2,000-$5,000) }
+            @else { ❌ Vulnerable (menos de $2,000) }
+          </div>
+        </div>
+        <button class="trigger-btn" (click)="triggerRandomEmergency()">
+          🎲 Simular emergencia
+        </button>
+      </div>
+
+      <!-- Emergency scenarios -->
+      <div class="emergencies-grid">
+        @for (em of emergencies; track em.id) {
+          <div class="em-card">
+            <div class="em-emoji">{{ em.emoji }}</div>
+            <div class="em-info">
+              <div class="em-title">{{ em.title }}</div>
+              <div class="em-desc">{{ em.description }}</div>
+            </div>
+            <div class="em-cost" [style.color]="game.coins() >= em.cost ? '#00d4aa' : '#f43f5e'">
+              ${{ em.cost | number }}
+              <div class="em-can-pay">{{ game.coins() >= em.cost ? '✓ Puedes pagar' : '✗ Insuficiente' }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Debt indicator -->
+      @if (game.debt() > 0) {
+        <div class="debt-alert">
+          <span>⚠️</span>
+          <div>
+            <strong>Tienes deuda activa: ${{ game.debt() | number }}</strong>
+            <p>Prioriza pagarla para mejorar tu salud financiera.</p>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+  <div style="height: 100px"></div>
+  <app-nav />
+</div>
+
+<!-- EMERGENCY MODAL -->
+@if (activeEmergency()) {
+  <div class="modal-overlay">
+    <div class="emergency-modal">
+      <div class="em-modal-icon">{{ activeEmergency()!.emoji }}</div>
+      <h3 class="em-modal-title">{{ activeEmergency()!.title }}</h3>
+      <p class="em-modal-desc">{{ activeEmergency()!.description }}</p>
+
+      <div class="em-modal-cost">
+        Costo: <strong>${{ activeEmergency()!.cost | number }}</strong>
+      </div>
+
+      @if (activeEmergency()!.canInsure) {
+        <div class="em-modal-tip">
+          💡 Un seguro habría cubierto esto. ¡Considera contratar uno!
+        </div>
+      }
+
+      <div class="em-modal-actions">
+        <button class="em-pay-btn" (click)="payEmergency()">
+          💸 Pagar ${{ activeEmergency()!.cost | number }}
+        </button>
+        <button class="em-ignore-btn" (click)="ignoreEmergency()">
+          😬 Ignorar (+30% en deuda)
+        </button>
+      </div>
+    </div>
+  </div>
+}

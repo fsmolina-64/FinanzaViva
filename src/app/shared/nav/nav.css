@@ -1,0 +1,132 @@
+:host {
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.bottom-nav {
+  background: rgba(8, 12, 28, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 16px 14px;
+}
+
+.nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-coins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+.coin-icon {
+  font-size: 0.9rem;
+}
+
+.coin-value {
+  color: #f5a623;
+  font-weight: 800;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: all 200ms ease;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(148, 163, 184, 1);
+}
+
+.nav-item.active {
+  background: rgba(0, 212, 170, 0.15);
+  color: #00d4aa;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.nav-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nav-level {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.lvl-badge {
+  color: #6366f1;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.mini-xp {
+  width: 48px;
+  height: 4px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mini-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 999px;
+  transition: width 600ms ease;
+}
+
+@media (max-width: 600px) {
+  .nav-coins .coin-value,
+  .nav-label {
+    display: none;
+  }
+
+  .nav-coins {
+    padding: 8px;
+  }
+
+  .nav-item {
+    padding: 6px 8px;
+  }
+}

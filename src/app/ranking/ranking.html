@@ -1,0 +1,137 @@
+<div class="page-shell">
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/home" class="back-btn">← Inicio</a>
+    <div class="header-center">
+      <h1>Ranking Global</h1>
+      <p class="header-sub">{{ sortedPlayers().length }} jugadores</p>
+    </div>
+    <div class="header-rank">
+      <span>🏆</span>
+      <span>#{{ myRank() }}</span>
+    </div>
+  </header>
+
+  <!-- PODIUM (top 3) -->
+  <section class="podium-section">
+    @let top3 = sortedPlayers().slice(0, 3);
+    @if (top3.length >= 3) {
+      <div class="podium">
+        <!-- 2nd place -->
+        <div class="podium-slot second" [class.me]="isMe(top3[1])">
+          <div class="pod-avatar">{{ top3[1].avatar }}</div>
+          <div class="pod-medal">🥈</div>
+          <div class="pod-name">{{ top3[1].name }}</div>
+          <div class="pod-val">${{ top3[1].coins | number }}</div>
+          <div class="pod-bar h2"></div>
+        </div>
+
+        <!-- 1st place -->
+        <div class="podium-slot first" [class.me]="isMe(top3[0])">
+          <div class="pod-crown">👑</div>
+          <div class="pod-avatar lg">{{ top3[0].avatar }}</div>
+          <div class="pod-medal">🥇</div>
+          <div class="pod-name">{{ top3[0].name }}</div>
+          <div class="pod-val">${{ top3[0].coins | number }}</div>
+          <div class="pod-bar h1"></div>
+        </div>
+
+        <!-- 3rd place -->
+        <div class="podium-slot third" [class.me]="isMe(top3[2])">
+          <div class="pod-avatar">{{ top3[2].avatar }}</div>
+          <div class="pod-medal">🥉</div>
+          <div class="pod-name">{{ top3[2].name }}</div>
+          <div class="pod-val">${{ top3[2].coins | number }}</div>
+          <div class="pod-bar h3"></div>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- MY STATS -->
+  <section class="my-stats-section">
+    <div class="my-stats-card">
+      <div class="ms-header">
+        <div class="ms-avatar">{{ game.playerAvatar() }}</div>
+        <div>
+          <div class="ms-name">{{ game.playerName() }} · Tú</div>
+          <div class="ms-profile">{{ profileLabel(game.financialProfile() ?? 'equilibrado') }}</div>
+        </div>
+        <div class="ms-rank">#{{ myRank() }}</div>
+      </div>
+      <div class="ms-stats">
+        <div class="ms-stat">
+          <div class="ms-val">${{ game.coins() | number }}</div>
+          <div class="ms-label">Monedas</div>
+        </div>
+        <div class="ms-stat">
+          <div class="ms-val">Nv.{{ game.level() }}</div>
+          <div class="ms-label">Nivel</div>
+        </div>
+        <div class="ms-stat">
+          <div class="ms-val">{{ game.xp() }}</div>
+          <div class="ms-label">XP Total</div>
+        </div>
+        <div class="ms-stat">
+          <div class="ms-val">{{ game.unlockedAchievements() }}/{{ game.achievements().length }}</div>
+          <div class="ms-label">Logros</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTER -->
+  <div class="filters">
+    <button class="filter-btn" [class.active]="activeFilter() === 'monedas'" (click)="activeFilter.set('monedas')">🪙 Monedas</button>
+    <button class="filter-btn" [class.active]="activeFilter() === 'nivel'" (click)="activeFilter.set('nivel')">⭐ Nivel</button>
+    <button class="filter-btn" [class.active]="activeFilter() === 'xp'" (click)="activeFilter.set('xp')">⚡ XP</button>
+  </div>
+
+  <!-- FULL LEADERBOARD -->
+  <section class="leaderboard-section">
+    <div class="leaderboard">
+      @for (player of sortedPlayers(); track player.name) {
+        <div class="lb-row" [class.me-row]="isMe(player)" [class.top3]="player.rank <= 3">
+          <div class="lb-rank" [class.gold]="player.rank === 1" [class.silver]="player.rank === 2" [class.bronze]="player.rank === 3">
+            {{ getMedalEmoji(player.rank) }}
+          </div>
+          <div class="lb-avatar">{{ player.avatar }}</div>
+          <div class="lb-info">
+            <div class="lb-name">{{ player.name }}</div>
+            <div class="lb-profile">{{ profileLabel(player.profile) }}</div>
+            <div class="lb-bar-wrap">
+              <div class="lb-bar-fill" [style.width.%]="getBarWidth(player)"></div>
+            </div>
+          </div>
+          <div class="lb-val">{{ getFilterValue(player) }}</div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- TIPS TO CLIMB -->
+  <section class="tips-section">
+    <h3 class="tips-title">🚀 Cómo subir en el ranking</h3>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <span>🎲</span>
+        <p>Juega en el tablero regularmente para acumular monedas con cada vuelta.</p>
+      </div>
+      <div class="tip-card">
+        <span>🎓</span>
+        <p>Completa todas las lecciones de la academia para ganar XP y monedas.</p>
+      </div>
+      <div class="tip-card">
+        <span>📈</span>
+        <p>Invierte en acciones rentables y mantén tu portafolio en crecimiento.</p>
+      </div>
+      <div class="tip-card">
+        <span>💼</span>
+        <p>Consigue empleos mejor pagados subiendo de nivel para cobrar más salario.</p>
+      </div>
+    </div>
+  </section>
+
+  <div style="height: 100px"></div>
+  <app-nav />
+</div>

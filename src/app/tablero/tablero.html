@@ -1,0 +1,184 @@
+<div class="page-shell">
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <a routerLink="/home" class="back-btn">← Inicio</a>
+    <div class="header-center">
+      <h1>El Tablero</h1>
+      <p class="header-sub">Turno {{ turnCount() }}</p>
+    </div>
+    <div class="header-coins">
+      <span>🪙</span>
+      <span>{{ game.coins() | number }}</span>
+    </div>
+  </header>
+
+  <!-- BOARD WRAPPER -->
+  <div class="board-wrapper">
+    <div class="board-grid">
+      <!-- TOP ROW -->
+      <div class="board-row top-row">
+        @for (id of topRow; track id) {
+          <div
+            class="board-square"
+            [class.player-here]="isCurrentPosition(id)"
+            [style.--sq-color]="getSquare(id).color"
+          >
+            <div class="sq-accent"></div>
+            <div class="sq-type">{{ getSquareTypeLabel(getSquare(id).type) }}</div>
+            <div class="sq-icon">{{ getSquare(id).icon }}</div>
+            <div class="sq-title">{{ getSquare(id).title }}</div>
+            @if (isCurrentPosition(id)) {
+              <div class="player-token">{{ game.playerAvatar() }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- MIDDLE SECTION -->
+      <div class="board-middle">
+        <!-- LEFT COL -->
+        <div class="board-col left-col">
+          @for (id of leftCol; track id) {
+            <div
+              class="board-square side-square"
+              [class.player-here]="isCurrentPosition(id)"
+              [style.--sq-color]="getSquare(id).color"
+            >
+              <div class="sq-accent"></div>
+              <div class="sq-icon">{{ getSquare(id).icon }}</div>
+              <div class="sq-title sm">{{ getSquare(id).title }}</div>
+              @if (isCurrentPosition(id)) {
+                <div class="player-token">{{ game.playerAvatar() }}</div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- CENTER PANEL -->
+        <div class="board-center">
+          <div class="center-brand">
+            <span class="center-logo">💰</span>
+            <h2 class="center-title">FinanzaPro</h2>
+            <p class="center-sub">El juego financiero</p>
+          </div>
+
+          <!-- DICE SECTION -->
+          <div class="dice-zone">
+            <div class="dice-pair">
+              <div class="die" [class.rolling]="game.isRolling()">
+                <span>{{ diceOne }}</span>
+              </div>
+              <div class="die" [class.rolling]="game.isRolling()">
+                <span>{{ diceTwo }}</span>
+              </div>
+            </div>
+            <div class="dice-total">Total: {{ diceTotal }}</div>
+            <button
+              class="roll-btn"
+              (click)="roll()"
+              [disabled]="isAnimating() || game.isRolling()"
+            >
+              {{ game.isRolling() ? '🎲 Rodando...' : '🎲 Tirar Dados' }}
+            </button>
+          </div>
+
+          <!-- POWER CARDS -->
+          @if (availableCards.length > 0) {
+            <div class="power-zone">
+              <p class="power-label">🃏 Cartas activas</p>
+              <div class="power-chips">
+                @for (card of availableCards; track card.id) {
+                  <button
+                    class="power-chip"
+                    [style.--cc]="card.color"
+                    (click)="usePower(card.id)"
+                    [title]="card.description"
+                  >
+                    {{ card.name }} (×{{ card.uses }})
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- CURRENT SQUARE INFO -->
+          <div class="current-sq">
+            @let sq = getSquare(game.boardPosition());
+            <div class="csq-icon" [style.background]="sq.color + '22'">{{ sq.icon }}</div>
+            <div>
+              <div class="csq-title">{{ sq.title }}</div>
+              <div class="csq-desc">{{ sq.description }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div class="board-col right-col">
+          @for (id of rightCol; track id) {
+            <div
+              class="board-square side-square"
+              [class.player-here]="isCurrentPosition(id)"
+              [style.--sq-color]="getSquare(id).color"
+            >
+              <div class="sq-accent"></div>
+              <div class="sq-icon">{{ getSquare(id).icon }}</div>
+              <div class="sq-title sm">{{ getSquare(id).title }}</div>
+              @if (isCurrentPosition(id)) {
+                <div class="player-token">{{ game.playerAvatar() }}</div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW -->
+      <div class="board-row bottom-row">
+        @for (id of bottomRow; track id) {
+          <div
+            class="board-square"
+            [class.player-here]="isCurrentPosition(id)"
+            [style.--sq-color]="getSquare(id).color"
+          >
+            <div class="sq-accent"></div>
+            <div class="sq-icon">{{ getSquare(id).icon }}</div>
+            <div class="sq-title">{{ getSquare(id).title }}</div>
+            <div class="sq-type">{{ getSquareTypeLabel(getSquare(id).type) }}</div>
+            @if (isCurrentPosition(id)) {
+              <div class="player-token">{{ game.playerAvatar() }}</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENT HISTORY -->
+  @if (eventHistory().length > 0) {
+    <section class="history-section">
+      <h3 class="history-title">📜 Historial de Eventos</h3>
+      <div class="history-list">
+        @for (evt of eventHistory(); track $index) {
+          <div class="hist-item" [class.positive]="evt.positive" [class.negative]="!evt.positive">
+            <span class="hist-turn">T{{ evt.turn }}</span>
+            <span>{{ evt.message }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <div style="height: 100px"></div>
+  <app-nav />
+</div>
+
+<!-- EVENT MODAL -->
+@if (showEventModal() && lastEvent()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="event-modal" [class.positive]="lastEvent()!.positive" [class.negative]="!lastEvent()!.positive" (click)="$event.stopPropagation()">
+      <div class="em-icon">{{ lastEvent()!.positive ? '🎉' : '😬' }}</div>
+      <h3 class="em-title">{{ lastEvent()!.positive ? '¡Buena jugada!' : '¡Mala suerte!' }}</h3>
+      <p class="em-message">{{ lastEvent()!.message }}</p>
+      <button class="em-btn" (click)="closeModal()">Continuar →</button>
+    </div>
+  </div>
+}

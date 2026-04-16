@@ -1,0 +1,170 @@
+<div class="page-shell">
+  @if (toastMsg()) {
+    <div class="toast">{{ toastMsg() }}</div>
+  }
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <a routerLink="/home" class="back-btn">← Inicio</a>
+    <div class="header-center">
+      <h1>La Academia</h1>
+      <p class="header-sub">{{ completedCount }}/{{ lessons().length }} lecciones</p>
+    </div>
+    <div class="header-xp">
+      <span>⭐</span>
+      <span>Lv.{{ game.level() }}</span>
+    </div>
+  </header>
+
+  <!-- PROGRESS BANNER -->
+  <section class="progress-banner">
+    <div class="pb-inner">
+      <div class="pb-text">
+        <p class="pb-label">Tu progreso de aprendizaje</p>
+        <p class="pb-sub">Cada lección completada = +200 monedas por respuesta correcta</p>
+      </div>
+      <div class="pb-bar-wrap">
+        <div class="pb-bar-fill" [style.width.%]="(completedCount / lessons().length) * 100"></div>
+      </div>
+      <span class="pb-pct">{{ ((completedCount / lessons().length) * 100) | number:'1.0-0' }}%</span>
+    </div>
+  </section>
+
+  <!-- LESSONS GRID -->
+  <section class="lessons-section">
+    <div class="lessons-grid">
+      @for (lesson of lessons(); track lesson.id) {
+        <div class="lesson-card" [class.completed]="lesson.completed" (click)="openLesson(lesson)">
+          <div class="lc-header">
+            <span class="lc-emoji">{{ lesson.emoji }}</span>
+            <span class="lc-cat">{{ lesson.category }}</span>
+            @if (lesson.completed) {
+              <span class="lc-done">✓</span>
+            }
+          </div>
+          <h3 class="lc-title">{{ lesson.title }}</h3>
+          <p class="lc-preview">{{ lesson.content | slice:0:80 }}...</p>
+          <div class="lc-footer">
+            <span class="lc-reward">🪙 +200 por respuesta</span>
+            <span class="lc-arrow">→</span>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="aca-stats">
+    <div class="astat">
+      <span class="astat-icon">✅</span>
+      <div class="astat-val">{{ game.correctAnswers() }}</div>
+      <div class="astat-label">Respuestas correctas</div>
+    </div>
+    <div class="astat">
+      <span class="astat-icon">🪙</span>
+      <div class="astat-val">{{ game.correctAnswers() * 200 | number }}</div>
+      <div class="astat-label">Ganado en academia</div>
+    </div>
+    <div class="astat">
+      <span class="astat-icon">📚</span>
+      <div class="astat-val">{{ completedCount }}</div>
+      <div class="astat-label">Lecciones completas</div>
+    </div>
+  </section>
+
+  <div style="height: 100px"></div>
+  <app-nav />
+</div>
+
+<!-- LESSON MODAL -->
+@if (activeLesson()) {
+  <div class="modal-overlay" (click)="closeLesson()">
+    <div class="lesson-modal" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="closeLesson()">✕</button>
+
+      @if (!showQuiz()) {
+        <!-- LESSON CONTENT -->
+        <div class="lm-content">
+          <div class="lm-emoji">{{ activeLesson()!.emoji }}</div>
+          <p class="lm-cat">{{ activeLesson()!.category }}</p>
+          <h2 class="lm-title">{{ activeLesson()!.title }}</h2>
+          <p class="lm-body">{{ activeLesson()!.content }}</p>
+
+          <div class="lm-tip">
+            <span class="tip-icon">💡</span>
+            <div>
+              <strong>Consejo clave</strong>
+              <p>{{ activeLesson()!.tip }}</p>
+            </div>
+          </div>
+
+          <button class="quiz-start-btn" (click)="startQuiz()">
+            🎯 Hacer el quiz y ganar monedas
+          </button>
+        </div>
+      } @else if (!quizFinished()) {
+        <!-- QUIZ IN PROGRESS -->
+        <div class="quiz-content">
+          <div class="qz-progress">
+            <div class="qz-dots">
+              @for (q of currentQuestions; track $index) {
+                <div class="qz-dot" [class.active]="$index <= currentQuestion()"></div>
+              }
+            </div>
+            <span>{{ currentQuestion() + 1 }}/{{ currentQuestions.length }}</span>
+          </div>
+
+          <h3 class="qz-question">{{ currentQ.question }}</h3>
+
+          <div class="qz-options">
+            @for (opt of currentQ.options; track $index) {
+              <button
+                class="qz-opt"
+                [class.correct]="isCorrect($index)"
+                [class.wrong]="isWrong($index)"
+                [class.disabled]="answered()"
+                (click)="selectAnswer($index)"
+              >
+                <span class="opt-letter">{{ ['A', 'B', 'C', 'D'][$index] }}</span>
+                {{ opt }}
+              </button>
+            }
+          </div>
+
+          @if (answered()) {
+            <div class="qz-explanation" [class.correct-bg]="selectedAnswer() === currentQ.correct">
+              <strong>{{ selectedAnswer() === currentQ.correct ? '✅ ¡Correcto!' : '❌ Incorrecto' }}</strong>
+              <p>{{ currentQ.explanation }}</p>
+            </div>
+
+            <button class="next-btn" (click)="nextQuestion()">
+              {{ currentQuestion() + 1 < currentQuestions.length ? 'Siguiente →' : 'Ver resultado →' }}
+            </button>
+          }
+        </div>
+      } @else {
+        <!-- QUIZ RESULT -->
+        <div class="result-content">
+          <div class="result-big">
+            {{ quizScore() === currentQuestions.length ? '🏆' : quizScore() >= currentQuestions.length / 2 ? '🌟' : '📚' }}
+          </div>
+          <h3 class="result-h">{{ quizScore() }}/{{ currentQuestions.length }} correctas</h3>
+          <p class="result-sub">Ganaste <strong>{{ quizScore() * 200 }}</strong> monedas</p>
+
+          <div class="result-breakdown">
+            @for (q of currentQuestions; track $index) {
+              <div class="rb-item">
+                <span>{{ q.question | slice:0:50 }}...</span>
+                <span>{{ $index < quizScore() ? '✅' : '❌' }}</span>
+              </div>
+            }
+          </div>
+
+          <button class="quiz-start-btn" (click)="closeLesson()">
+            ¡Volver a la Academia!
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

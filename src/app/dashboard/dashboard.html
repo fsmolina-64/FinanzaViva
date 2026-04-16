@@ -1,0 +1,227 @@
+<div class="page-shell">
+  @if (toastMsg()) {
+    <div class="toast">{{ toastMsg() }}</div>
+  }
+
+  <!-- HEADER -->
+  <header class="dash-header">
+    <div class="header-inner">
+      <div>
+        <p class="header-eyebrow">Tu Bóveda</p>
+        <h1 class="header-title">Patrimonio neto</h1>
+      </div>
+      <a routerLink="/home" class="back-btn">← Inicio</a>
+    </div>
+
+    <!-- Net Worth Hero Card -->
+    <div class="networth-card">
+      <div class="nw-orb"></div>
+      <p class="nw-label">Valor total estimado</p>
+      <h2 class="nw-value">{{ netWorthFormatted }}</h2>
+      <div class="nw-breakdown">
+        <div class="nw-item">
+          <span class="nw-icon">🪙</span>
+          <div>
+            <div class="nw-sub-val">${{ game.coins() | number }}</div>
+            <div class="nw-sub-label">Efectivo</div>
+          </div>
+        </div>
+        <div class="nw-divider"></div>
+        <div class="nw-item">
+          <span class="nw-icon">📈</span>
+          <div>
+            <div class="nw-sub-val">${{ game.totalPortfolioValue() | number:'1.0-0' }}</div>
+            <div class="nw-sub-label">Portafolio</div>
+          </div>
+        </div>
+        <div class="nw-divider"></div>
+        <div class="nw-item">
+          <span class="nw-icon">⚠️</span>
+          <div>
+            <div class="nw-sub-val" style="color: #f43f5e">-${{ game.debt() | number }}</div>
+            <div class="nw-sub-label">Deuda</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- XP / LEVEL PROGRESS -->
+  <section class="xp-section">
+    <div class="xp-card">
+      <div class="xp-left">
+        <div class="level-badge">{{ game.playerAvatar() }}</div>
+        <div>
+          <p class="xp-name">{{ game.playerName() }}</p>
+          <p class="xp-level">Nivel {{ game.level() }} · {{ game.financialProfile() ?? 'Sin perfil' }}</p>
+        </div>
+      </div>
+      <div class="xp-right">
+        <div class="xp-bar-wrap">
+          <div class="xp-bar-fill" [style.width.%]="game.xpProgress()"></div>
+        </div>
+        <p class="xp-label">{{ game.xp() }} / {{ game.level() * 200 + game.xp() - (game.xp() % 200) }} XP</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab() === 'overview'" (click)="activeTab.set('overview')">📊 Resumen</button>
+    <button class="tab" [class.active]="activeTab() === 'transactions'" (click)="activeTab.set('transactions')">🔄 Movimientos</button>
+    <button class="tab" [class.active]="activeTab() === 'achievements'" (click)="activeTab.set('achievements')">🏆 Logros</button>
+    <button class="tab" [class.active]="activeTab() === 'cards'" (click)="activeTab.set('cards')">🃏 Cartas</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  @if (activeTab() === 'overview') {
+    <section class="tab-content">
+      <!-- Quick Stats -->
+      <div class="stats-row">
+        <div class="stat-chip">
+          <span class="sc-icon">🎲</span>
+          <div>
+            <div class="sc-val">Posición {{ game.boardPosition() + 1 }}</div>
+            <div class="sc-label">En el tablero</div>
+          </div>
+        </div>
+        <div class="stat-chip">
+          <span class="sc-icon">🎯</span>
+          <div>
+            <div class="sc-val">{{ game.correctAnswers() }} respuestas</div>
+            <div class="sc-label">En academia</div>
+          </div>
+        </div>
+        <div class="stat-chip">
+          <span class="sc-icon">#{{ game.playerRank() }}</span>
+          <div>
+            <div class="sc-val">Ranking global</div>
+            <div class="sc-label">Tu posición</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portfolio stocks -->
+      <div class="section-card">
+        <div class="card-header">
+          <h3 class="card-title">📈 Mi Portafolio</h3>
+          <a routerLink="/simulador" class="card-link">Ver mercado →</a>
+        </div>
+        @if (game.stocks().some(s => s.owned > 0)) {
+          <div class="portfolio-list">
+            @for (stock of game.stocks(); track stock.symbol) {
+              @if (stock.owned > 0) {
+                <div class="port-item">
+                  <div class="port-sym">{{ stock.symbol }}</div>
+                  <div class="port-info">
+                    <div class="port-name">{{ stock.name }}</div>
+                    <div class="port-qty">{{ stock.owned }} acciones</div>
+                  </div>
+                  <div class="port-value" [style.color]="stock.change >= 0 ? '#00d4aa' : '#f43f5e'">
+                    <div>${{ (stock.price * stock.owned) | number:'1.0-0' }}</div>
+                    <div class="port-change">{{ stock.change >= 0 ? '+' : '' }}{{ stock.changePercent }}%</div>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span>📊</span>
+            <p>Aún no tienes acciones. <a routerLink="/simulador">¡Invierte ahora!</a></p>
+          </div>
+        }
+      </div>
+
+      <!-- Spending donut -->
+      <div class="section-card">
+        <h3 class="card-title">🎯 Distribución Ideal 50/30/20</h3>
+        <div class="spending-grid">
+          @for (cat of spendingCategories; track cat.label) {
+            <div class="spend-item">
+              <div class="spend-bar-bg">
+                <div class="spend-bar-fill" [style.width.%]="cat.percent" [style.background]="cat.color"></div>
+              </div>
+              <div class="spend-meta">
+                <span>{{ cat.icon }} {{ cat.label }}</span>
+                <span class="spend-pct" [style.color]="cat.color">{{ cat.percent }}%</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- TRANSACTIONS TAB -->
+  @if (activeTab() === 'transactions') {
+    <section class="tab-content">
+      <div class="section-card">
+        <h3 class="card-title">🔄 Últimos Movimientos</h3>
+        <div class="tx-list">
+          @for (tx of game.transactions(); track tx.id) {
+            <div class="tx-item">
+              <div class="tx-icon">{{ tx.icon }}</div>
+              <div class="tx-info">
+                <div class="tx-desc">{{ tx.description }}</div>
+                <div class="tx-date">{{ formatDate(tx.date) }}</div>
+              </div>
+              <div class="tx-amount" [style.color]="getTransactionColor(tx.type)">
+                {{ getTransactionSign(tx.amount) }}${{ tx.amount | number:'1.0-0' }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- ACHIEVEMENTS TAB -->
+  @if (activeTab() === 'achievements') {
+    <section class="tab-content">
+      <div class="ach-grid">
+        @for (ach of game.achievements(); track ach.id) {
+          <div class="ach-card" [class.unlocked]="ach.unlocked">
+            <div class="ach-icon">{{ ach.icon }}</div>
+            <div class="ach-info">
+              <div class="ach-title">{{ ach.title }}</div>
+              <div class="ach-desc">{{ ach.description }}</div>
+              <div class="ach-xp">+{{ ach.xpReward }} XP</div>
+            </div>
+            @if (ach.unlocked) {
+              <div class="ach-check">✓</div>
+            } @else {
+              <div class="ach-lock">🔒</div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- POWER CARDS TAB -->
+  @if (activeTab() === 'cards') {
+    <section class="tab-content">
+      <p class="tab-intro">Las Cartas de Poder te dan ventajas en el tablero. ¡Úsalas con estrategia!</p>
+      <div class="cards-grid">
+        @for (card of game.powerCards(); track card.id) {
+          <div class="power-card" [style.--card-color]="card.color" [class.depleted]="card.uses === 0">
+            <div class="pc-glow"></div>
+            <div class="pc-type">{{ card.type | uppercase }}</div>
+            <div class="pc-name">{{ card.name }}</div>
+            <div class="pc-desc">{{ card.description }}</div>
+            <div class="pc-footer">
+              <span class="pc-uses">{{ card.uses }} uso{{ card.uses !== 1 ? 's' : '' }}</span>
+              <button class="pc-btn" (click)="usePower(card.id)" [disabled]="card.uses === 0">
+                {{ card.uses > 0 ? 'Activar' : 'Agotada' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <div style="height: 100px"></div>
+  <app-nav />
+</div>
