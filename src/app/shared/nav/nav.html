@@ -1,29 +1,44 @@
-<nav class="bottom-nav">
+<nav class="topnav">
   <div class="nav-inner">
-    <div class="nav-coins">
-      <span class="coin-icon">🪙</span>
-      <span class="coin-value">{{ game.coins() | number }}</span>
-    </div>
+    <!-- Brand -->
+    <a class="brand" routerLink="/home">
+      <span class="brand-icon">🌱</span>
+      <span class="brand-name">FinanzaViva</span>
+    </a>
 
+    <!-- Desktop links -->
     <div class="nav-links">
-      @for (item of navItems; track item.path) {
+      @for (link of navLinks; track link.path) {
         <a
-          [routerLink]="item.path"
+          [routerLink]="link.path"
           routerLinkActive="active"
-          class="nav-item"
-          [title]="item.label"
+          class="nav-link"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nl-icon">{{ link.icon }}</span>
+          <span>{{ link.label }}</span>
         </a>
       }
     </div>
 
-    <div class="nav-level">
-      <span class="lvl-badge">Lv.{{ game.level() }}</span>
-      <div class="mini-xp">
-        <div class="mini-xp-fill" [style.width.%]="game.xpProgress()"></div>
-      </div>
+    <!-- Right side -->
+    <div class="nav-right">
+      <!-- Coins badge -->
+      @if (profile.profile()) {
+        <div class="coin-badge">
+          <span>🪙</span>
+          <span>{{ profile.profile()!.coins | number }}</span>
+        </div>
+      }
+
+      <!-- Profile avatar link -->
+      <a routerLink="/perfil" class="avatar-btn" title="Mi Perfil">
+        <span>{{ profile.profile()?.avatar ?? '👤' }}</span>
+      </a>
+
+      <!-- Logout -->
+      <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
+        <span>↩</span>
+      </button>
     </div>
   </div>
 </nav>

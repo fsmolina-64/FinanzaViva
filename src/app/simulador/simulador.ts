@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnDestroy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { GameService } from '../services/game.service';
+import { GameService, Job, Stock } from '../services/game.service';
 import { Nav } from '../shared/nav/nav';
 
 type SimTab = 'mercado' | 'empleos' | 'emergencias';
@@ -68,7 +68,7 @@ export class Simulador implements OnDestroy {
 
   buy(symbol: string) {
     const qty = this.getBuyQty(symbol);
-    const stock = this.game.stocks().find(s => s.symbol === symbol);
+    const stock = this.game.stocks().find((s: Stock) => s.symbol === symbol);
     if (!stock) return;
     const cost = Math.round(stock.price * qty);
     if (this.game.buyStock(symbol, qty)) {
@@ -80,7 +80,7 @@ export class Simulador implements OnDestroy {
 
   sell(symbol: string) {
     const qty = this.getSellQty(symbol);
-    const stock = this.game.stocks().find(s => s.symbol === symbol);
+    const stock = this.game.stocks().find((s: Stock) => s.symbol === symbol);
     if (!stock) return;
     if (this.game.sellStock(symbol, qty)) {
       this.showToast(`💹 Vendiste ${qty}x ${symbol} por $${Math.round(stock.price * qty)}`, true);
@@ -92,7 +92,7 @@ export class Simulador implements OnDestroy {
   applyJob(jobId: string) {
     const applied = this.game.setJob(jobId);
     if (applied) {
-      const job = this.game.jobs().find(j => j.id === jobId);
+      const job = this.game.jobs().find((j: Job) => j.id === jobId);
       this.showToast(`🎉 ¡Conseguiste el trabajo de ${job?.title}! Salario: $${job?.salary}/mes`, true);
     } else {
       this.showToast(`🔒 Necesitas más nivel para este empleo`, false);
@@ -119,9 +119,10 @@ export class Simulador implements OnDestroy {
     if (this.game.removeCoins(em.cost)) {
       this.showToast(`😰 Pagaste $${em.cost} por ${em.title}`, false);
     } else {
-      const diff = em.cost - this.game.coins();
-      this.game.debt.update(d => d + diff);
-      this.game.coins.set(0);
+      const available = this.game.coins();
+      if (available > 0) this.game.removeCoins(available);
+      const diff = em.cost - available;
+      this.game.addDebt(diff);
       this.showToast(`⚠️ Dinero insuficiente. Deuda aumentada en $${diff}`, false);
     }
     this.activeEmergency.set(null);
@@ -131,7 +132,7 @@ export class Simulador implements OnDestroy {
     const em = this.activeEmergency();
     if (!em) return;
     const penalty = Math.round(em.cost * 0.3);
-    this.game.debt.update(d => d + penalty);
+    this.game.addDebt(penalty);
     this.showToast(`😬 Ignorar tiene consecuencias: +$${penalty} en deudas`, false);
     this.activeEmergency.set(null);
   }
@@ -147,6 +148,6 @@ export class Simulador implements OnDestroy {
   }
 
   get maxStockPrice(): number {
-    return Math.max(...this.game.stocks().map(s => s.price));
+    return Math.max(...this.game.stocks().map((s: Stock) => s.price));
   }
 }

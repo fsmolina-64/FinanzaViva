@@ -1,184 +1,288 @@
-<div class="page-shell">
-  <!-- PAGE HEADER -->
-  <header class="page-header">
-    <a routerLink="/home" class="back-btn">← Inicio</a>
-    <div class="header-center">
-      <h1>El Tablero</h1>
-      <p class="header-sub">Turno {{ turnCount() }}</p>
-    </div>
-    <div class="header-coins">
-      <span>🪙</span>
-      <span>{{ game.coins() | number }}</span>
-    </div>
-  </header>
+<app-nav />
 
-  <!-- BOARD WRAPPER -->
-  <div class="board-wrapper">
-    <div class="board-grid">
-      <!-- TOP ROW -->
-      <div class="board-row top-row">
-        @for (id of topRow; track id) {
-          <div
-            class="board-square"
-            [class.player-here]="isCurrentPosition(id)"
-            [style.--sq-color]="getSquare(id).color"
-          >
-            <div class="sq-accent"></div>
-            <div class="sq-type">{{ getSquareTypeLabel(getSquare(id).type) }}</div>
-            <div class="sq-icon">{{ getSquare(id).icon }}</div>
-            <div class="sq-title">{{ getSquare(id).title }}</div>
-            @if (isCurrentPosition(id)) {
-              <div class="player-token">{{ game.playerAvatar() }}</div>
-            }
+<div class="page">
+  <div class="page-inner tablero-inner">
+
+    <!-- SETUP SCREEN -->
+    @if (setupMode()) {
+      <div class="setup-screen">
+        <div class="setup-card card">
+          <div class="setup-head">
+            <span class="setup-icon">🎲</span>
+            <h2>El Tablero Financiero</h2>
+            <p>Compra propiedades, cobra rentas y domina la economía. ¡Hasta 3 jugadores!</p>
           </div>
-        }
-      </div>
 
-      <!-- MIDDLE SECTION -->
-      <div class="board-middle">
-        <!-- LEFT COL -->
-        <div class="board-col left-col">
-          @for (id of leftCol; track id) {
-            <div
-              class="board-square side-square"
-              [class.player-here]="isCurrentPosition(id)"
-              [style.--sq-color]="getSquare(id).color"
-            >
-              <div class="sq-accent"></div>
-              <div class="sq-icon">{{ getSquare(id).icon }}</div>
-              <div class="sq-title sm">{{ getSquare(id).title }}</div>
-              @if (isCurrentPosition(id)) {
-                <div class="player-token">{{ game.playerAvatar() }}</div>
+          <!-- Num players -->
+          <div class="player-count">
+            <label class="input-label">¿Cuántos jugadores?</label>
+            <div class="count-btns">
+              @for (n of [2, 3]; track n) {
+                <button
+                  class="cnt-btn"
+                  [class.active]="numPlayers() === n"
+                  (click)="numPlayers.set(n)"
+                >
+                  {{ n }} jugadores
+                </button>
               }
             </div>
-          }
+          </div>
+
+          <!-- Player name inputs -->
+          <div class="player-inputs">
+            @for (i of [0,1,2]; track i) {
+              @if (i < numPlayers()) {
+                <div class="player-row" [style.--pc]="['#10B981','#8B5CF6','#F59E0B'][i]">
+                  <div class="pr-left">
+                    <div class="pr-num" [style.background]="['#10B981','#8B5CF6','#F59E0B'][i]">{{ i + 1 }}</div>
+                    <input
+                      class="input-field pr-input"
+                      [placeholder]="'Jugador ' + (i+1)"
+                      [ngModel]="playerNames()[i]"
+                      (ngModelChange)="updatePlayerName(i, $event)"
+                    />
+                  </div>
+                  <div class="avatar-picks">
+                    @for (av of avatarChoices; track av) {
+                      <button
+                        class="av-pick"
+                        [class.selected]="playerAvatars()[i] === av"
+                        (click)="updatePlayerAvatar(i, av)"
+                      >{{ av }}</button>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <button class="btn-primary start-btn" (click)="startGame()">
+            🎲 ¡Comenzar partida!
+          </button>
         </div>
+      </div>
+    }
 
-        <!-- CENTER PANEL -->
-        <div class="board-center">
-          <div class="center-brand">
-            <span class="center-logo">💰</span>
-            <h2 class="center-title">FinanzaPro</h2>
-            <p class="center-sub">El juego financiero</p>
-          </div>
+    <!-- GAME SCREEN -->
+    @if (!setupMode() && game.gameStarted()) {
+      <div class="game-layout">
 
-          <!-- DICE SECTION -->
-          <div class="dice-zone">
-            <div class="dice-pair">
-              <div class="die" [class.rolling]="game.isRolling()">
-                <span>{{ diceOne }}</span>
-              </div>
-              <div class="die" [class.rolling]="game.isRolling()">
-                <span>{{ diceTwo }}</span>
-              </div>
+        <!-- BOARD -->
+        <div class="board-wrap">
+          <div class="board-grid">
+
+            <!-- TOP ROW -->
+            <div class="board-edge top-edge">
+              @for (id of topIds; track id) {
+                <div class="sq" [class.sq-corner]="id === 0"
+                  [style.--sqc]="typeColor(getSquare(id).type)"
+                  [class.moving-here]="isMovingHere(id)">
+                  <div class="sq-bar"></div>
+                  <div class="sq-type-lbl">{{ typeLabel(getSquare(id).type) }}</div>
+                  <div class="sq-ico">{{ getSquare(id).icon }}</div>
+                  <div class="sq-name">{{ getSquare(id).name }}</div>
+                  @if (getOwnerColor(id)) {
+                    <div class="sq-owned" [style.background]="getOwnerColor(id)!"></div>
+                  }
+                  @if (getSquare(id).price) {
+                    <div class="sq-price">${{ getSquare(id).price }}</div>
+                  }
+                  <div class="sq-tokens">
+                    @for (p of getPlayersAt(id); track p.id) {
+                      <span class="token" [style.background]="p.color" [title]="p.name">{{ p.avatar }}</span>
+                    }
+                  </div>
+                </div>
+              }
             </div>
-            <div class="dice-total">Total: {{ diceTotal }}</div>
-            <button
-              class="roll-btn"
-              (click)="roll()"
-              [disabled]="isAnimating() || game.isRolling()"
-            >
-              {{ game.isRolling() ? '🎲 Rodando...' : '🎲 Tirar Dados' }}
-            </button>
-          </div>
 
-          <!-- POWER CARDS -->
-          @if (availableCards.length > 0) {
-            <div class="power-zone">
-              <p class="power-label">🃏 Cartas activas</p>
-              <div class="power-chips">
-                @for (card of availableCards; track card.id) {
-                  <button
-                    class="power-chip"
-                    [style.--cc]="card.color"
-                    (click)="usePower(card.id)"
-                    [title]="card.description"
-                  >
-                    {{ card.name }} (×{{ card.uses }})
-                  </button>
+            <!-- MIDDLE -->
+            <div class="board-middle">
+              <!-- LEFT COL -->
+              <div class="board-side left-side">
+                @for (id of leftIds; track id) {
+                  <div class="sq side-sq" [style.--sqc]="typeColor(getSquare(id).type)" [class.moving-here]="isMovingHere(id)">
+                    <div class="sq-bar side-bar"></div>
+                    <div class="sq-ico">{{ getSquare(id).icon }}</div>
+                    <div class="sq-name sm">{{ getSquare(id).name }}</div>
+                    @if (getOwnerColor(id)) {
+                      <div class="sq-owned" [style.background]="getOwnerColor(id)!"></div>
+                    }
+                    <div class="sq-tokens">
+                      @for (p of getPlayersAt(id); track p.id) {
+                        <span class="token sm" [style.background]="p.color">{{ p.avatar }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- CENTER PANEL -->
+              <div class="board-center">
+                <!-- Brand -->
+                <div class="center-brand">
+                  <span>🌱</span>
+                  <strong>FinanzaViva</strong>
+                </div>
+
+                <!-- Dice -->
+                <div class="dice-zone">
+                  <div class="dice-pair">
+                    <div class="die" [class.rolling]="game.isRolling()">{{ d1 }}</div>
+                    <div class="die" [class.rolling]="game.isRolling()">{{ d2 }}</div>
+                  </div>
+                  <div class="dice-sum">{{ d1 + d2 }}</div>
+                </div>
+
+                <!-- Active player -->
+                <div class="active-player" [style.--apc]="game.activePlayer?.color ?? '#10B981'">
+                  <span class="ap-token">{{ game.activePlayer?.avatar }}</span>
+                  <div>
+                    <div class="ap-name">{{ game.activePlayer?.name }}</div>
+                    <div class="ap-coins">🪙 ${{ game.activePlayer?.coins | number }}</div>
+                  </div>
+                </div>
+
+                <!-- Roll button -->
+                <button class="roll-btn" (click)="roll()" [disabled]="!canRoll">
+                  @if (game.isRolling()) { 🎲 Rodando... }
+                  @else if (game.isMoving()) { 🚶 Moviendo... }
+                  @else { 🎲 Tirar dados }
+                </button>
+
+                <!-- Turn counter -->
+                <div class="turn-info">Turno {{ game.turnCount() }}</div>
+
+                <!-- Reset -->
+                <button class="reset-link" (click)="resetGame()">↩ Nueva partida</button>
+              </div>
+
+              <!-- RIGHT COL -->
+              <div class="board-side right-side">
+                @for (id of rightIds; track id) {
+                  <div class="sq side-sq" [style.--sqc]="typeColor(getSquare(id).type)" [class.moving-here]="isMovingHere(id)">
+                    <div class="sq-bar side-bar right-bar"></div>
+                    <div class="sq-ico">{{ getSquare(id).icon }}</div>
+                    <div class="sq-name sm">{{ getSquare(id).name }}</div>
+                    @if (getOwnerColor(id)) {
+                      <div class="sq-owned" [style.background]="getOwnerColor(id)!"></div>
+                    }
+                    <div class="sq-tokens">
+                      @for (p of getPlayersAt(id); track p.id) {
+                        <span class="token sm" [style.background]="p.color">{{ p.avatar }}</span>
+                      }
+                    </div>
+                  </div>
                 }
               </div>
             </div>
-          }
 
-          <!-- CURRENT SQUARE INFO -->
-          <div class="current-sq">
-            @let sq = getSquare(game.boardPosition());
-            <div class="csq-icon" [style.background]="sq.color + '22'">{{ sq.icon }}</div>
-            <div>
-              <div class="csq-title">{{ sq.title }}</div>
-              <div class="csq-desc">{{ sq.description }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- RIGHT COL -->
-        <div class="board-col right-col">
-          @for (id of rightCol; track id) {
-            <div
-              class="board-square side-square"
-              [class.player-here]="isCurrentPosition(id)"
-              [style.--sq-color]="getSquare(id).color"
-            >
-              <div class="sq-accent"></div>
-              <div class="sq-icon">{{ getSquare(id).icon }}</div>
-              <div class="sq-title sm">{{ getSquare(id).title }}</div>
-              @if (isCurrentPosition(id)) {
-                <div class="player-token">{{ game.playerAvatar() }}</div>
+            <!-- BOTTOM ROW -->
+            <div class="board-edge bottom-edge">
+              @for (id of bottomIds; track id) {
+                <div class="sq" [class.sq-corner]="id === 12 || id === 19"
+                  [style.--sqc]="typeColor(getSquare(id).type)"
+                  [class.moving-here]="isMovingHere(id)">
+                  <div class="sq-ico">{{ getSquare(id).icon }}</div>
+                  <div class="sq-name">{{ getSquare(id).name }}</div>
+                  <div class="sq-bar bottom-bar"></div>
+                  @if (getOwnerColor(id)) {
+                    <div class="sq-owned" [style.background]="getOwnerColor(id)!"></div>
+                  }
+                  @if (getSquare(id).price) {
+                    <div class="sq-price">${{ getSquare(id).price }}</div>
+                  }
+                  <div class="sq-tokens">
+                    @for (p of getPlayersAt(id); track p.id) {
+                      <span class="token" [style.background]="p.color">{{ p.avatar }}</span>
+                    }
+                  </div>
+                </div>
               }
             </div>
-          }
-        </div>
-      </div>
 
-      <!-- BOTTOM ROW -->
-      <div class="board-row bottom-row">
-        @for (id of bottomRow; track id) {
-          <div
-            class="board-square"
-            [class.player-here]="isCurrentPosition(id)"
-            [style.--sq-color]="getSquare(id).color"
-          >
-            <div class="sq-accent"></div>
-            <div class="sq-icon">{{ getSquare(id).icon }}</div>
-            <div class="sq-title">{{ getSquare(id).title }}</div>
-            <div class="sq-type">{{ getSquareTypeLabel(getSquare(id).type) }}</div>
-            @if (isCurrentPosition(id)) {
-              <div class="player-token">{{ game.playerAvatar() }}</div>
+          </div>
+        </div>
+
+        <!-- SIDE PANEL: Players + Properties -->
+        <aside class="side-panel">
+          <!-- Players scoreboard -->
+          <div class="card players-card">
+            <h3 class="panel-title">👥 Jugadores</h3>
+            @for (player of game.players(); track player.id) {
+              <div class="player-score" [class.active-turn]="player.isActive" [style.--pc]="player.color">
+                <span class="ps-av">{{ player.avatar }}</span>
+                <div class="ps-info">
+                  <div class="ps-name">{{ player.name }} @if(player.inJail){<span class="jail-tag">🔒</span>}</div>
+                  <div class="ps-props">{{ player.ownedSquares.length }} prop.</div>
+                </div>
+                <div class="ps-coins">${{ player.coins | number }}</div>
+              </div>
             }
           </div>
-        }
-      </div>
-    </div>
-  </div>
 
-  <!-- EVENT HISTORY -->
-  @if (eventHistory().length > 0) {
-    <section class="history-section">
-      <h3 class="history-title">📜 Historial de Eventos</h3>
-      <div class="history-list">
-        @for (evt of eventHistory(); track $index) {
-          <div class="hist-item" [class.positive]="evt.positive" [class.negative]="!evt.positive">
-            <span class="hist-turn">T{{ evt.turn }}</span>
-            <span>{{ evt.message }}</span>
+          <!-- Properties legend -->
+          <div class="card legend-card">
+            <h3 class="panel-title">🏠 Propiedades</h3>
+            <div class="legend-list">
+              @for (sq of game.squares; track sq.id) {
+                @if (sq.type === 'property') {
+                  @let owner = game.getPropertyOwner(sq.id);
+                  <div class="legend-item" [class.owned]="owner !== null">
+                    <span class="li-icon">{{ sq.icon }}</span>
+                    <span class="li-name">{{ sq.name }}</span>
+                    @if (owner !== null) {
+                      <span class="li-owner" [style.background]="['#10B981','#8B5CF6','#F59E0B'][owner]">
+                        {{ game.players()[owner]?.avatar }}
+                      </span>
+                    } @else {
+                      <span class="li-price">${{ sq.price }}</span>
+                    }
+                  </div>
+                }
+              }
+            </div>
           </div>
-        }
-      </div>
-    </section>
-  }
+        </aside>
 
-  <div style="height: 100px"></div>
-  <app-nav />
+      </div>
+    }
+
+  </div>
 </div>
 
 <!-- EVENT MODAL -->
-@if (showEventModal() && lastEvent()) {
-  <div class="modal-overlay" (click)="closeModal()">
-    <div class="event-modal" [class.positive]="lastEvent()!.positive" [class.negative]="!lastEvent()!.positive" (click)="$event.stopPropagation()">
-      <div class="em-icon">{{ lastEvent()!.positive ? '🎉' : '😬' }}</div>
-      <h3 class="em-title">{{ lastEvent()!.positive ? '¡Buena jugada!' : '¡Mala suerte!' }}</h3>
-      <p class="em-message">{{ lastEvent()!.message }}</p>
-      <button class="em-btn" (click)="closeModal()">Continuar →</button>
+@if (game.pendingEvent()) {
+  <div class="modal-overlay">
+    <div class="modal-box event-modal" [class.ev-pos]="game.pendingEvent()!.positive" [class.ev-neg]="!game.pendingEvent()!.positive">
+      <div class="ev-emoji">{{ game.pendingEvent()!.positive ? '🎉' : '😬' }}</div>
+      <h3>{{ game.pendingEvent()!.positive ? '¡Buena jugada!' : '¡Mala suerte!' }}</h3>
+      <p class="ev-msg">{{ game.pendingEvent()!.message }}</p>
+      <button class="btn-primary" (click)="clearEvent()">Continuar →</button>
+    </div>
+  </div>
+}
+
+<!-- BUY MODAL -->
+@if (game.pendingBuy()) {
+  <div class="modal-overlay">
+    <div class="modal-box buy-modal">
+      <div class="buy-icon">🏠</div>
+      <h3>¡Propiedad disponible!</h3>
+      <p class="buy-name">{{ game.pendingBuy()!.name }}</p>
+      <div class="buy-price">
+        <span>Precio de compra</span>
+        <strong>${{ game.pendingBuy()!.price | number }}</strong>
+      </div>
+      <div class="buy-rent">
+        <span>Renta al caer</span>
+        <strong>${{ game.squares[game.pendingBuy()!.squareId]?.rent }}</strong>
+      </div>
+      <div class="buy-actions">
+        <button class="btn-primary" (click)="confirmBuy()">✅ Comprar</button>
+        <button class="btn-ghost" (click)="skipBuy()">Pasar →</button>
+      </div>
     </div>
   </div>
 }

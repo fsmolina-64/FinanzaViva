@@ -1,167 +1,123 @@
-<div class="page-shell">
-  <!-- TOAST NOTIFICATION -->
-  @if (toastMessage()) {
-    <div class="toast">
-      <span>{{ toastMessage() }}</span>
-    </div>
-  }
+<app-nav />
 
-  <!-- HERO SECTION -->
-  <section class="hero">
-    <div class="hero-bg-orb orb-1"></div>
-    <div class="hero-bg-orb orb-2"></div>
-    <div class="hero-bg-orb orb-3"></div>
+<div class="page">
+  <div class="page-inner">
 
-    <div class="hero-inner">
-      <div class="hero-badge">
-        <span>🎮</span>
-        <span>Educación financiera gamificada</span>
+    <!-- WELCOME HEADER -->
+    <section class="welcome">
+      <div class="welcome-text">
+        <p class="eyebrow">Panel principal</p>
+        <h1 class="section-title">
+          {{ greeting }}, {{ firstName }}! 👋
+        </h1>
+        <p class="welcome-sub">Sigue construyendo tu futuro financiero hoy.</p>
       </div>
-
-      <h1 class="hero-title">
-        Aprende finanzas<br />
-        <span class="gradient-text">jugando en serio</span>
-      </h1>
-
-      <p class="hero-sub">
-        Invierte, ahorra, supera retos y sube de nivel. FinanzaPro convierte el dinero en el juego más importante de tu vida.
-      </p>
-
-      <div class="hero-actions">
-        @if (!game.financialProfile()) {
-          <button class="btn-primary" (click)="openQuiz()">
-            <span>🎯</span> Descubre tu perfil
-          </button>
-        } @else {
-          <div class="profile-badge">
-            <span>Tu perfil: <strong>{{ game.financialProfile() }}</strong> ✅</span>
-          </div>
-        }
-        <a class="btn-secondary" routerLink="/dashboard">
-          <span>💎</span> Ir a la Bóveda
-        </a>
+      <div class="welcome-avatar">
+        <div class="avatar-ring">{{ profile.profile()?.avatar ?? '🦊' }}</div>
+        <div class="lvl-pill">Lv.{{ profile.profile()?.level ?? 1 }}</div>
       </div>
+    </section>
 
-      <!-- Player stats bar -->
-      <div class="hero-stats">
-        <div class="hstat">
-          <span class="hstat-icon">🪙</span>
-          <div>
-            <div class="hstat-value">{{ game.coins() | number }}</div>
-            <div class="hstat-label">Monedas</div>
-          </div>
-        </div>
-        <div class="hstat-divider"></div>
-        <div class="hstat">
-          <span class="hstat-icon">⭐</span>
-          <div>
-            <div class="hstat-value">Nv. {{ game.level() }}</div>
-            <div class="hstat-label">Nivel</div>
-          </div>
-        </div>
-        <div class="hstat-divider"></div>
-        <div class="hstat">
-          <span class="hstat-icon">🏆</span>
-          <div>
-            <div class="hstat-value">{{ game.unlockedAchievements() }}/{{ game.achievements().length }}</div>
-            <div class="hstat-label">Logros</div>
-          </div>
-        </div>
-        <div class="hstat-divider"></div>
-        <div class="hstat">
-          <span class="hstat-icon">🌐</span>
-          <div>
-            <div class="hstat-value">#{{ game.playerRank() }}</div>
-            <div class="hstat-label">Ranking</div>
-          </div>
-        </div>
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card accent-green">
+        <div class="sc-icon">🪙</div>
+        <div class="sc-val">{{ profile.profile()?.coins | number }}</div>
+        <div class="sc-label">Monedas</div>
+      </div>
+      <div class="stat-card accent-purple">
+        <div class="sc-icon">⚡</div>
+        <div class="sc-val">{{ profile.profile()?.xp ?? 0 }}</div>
+        <div class="sc-label">XP Total</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="sc-icon">🎓</div>
+        <div class="sc-val">{{ profile.profile()?.quizzesCompleted ?? 0 }}</div>
+        <div class="sc-label">Quizzes</div>
+      </div>
+      <div class="stat-card accent-teal">
+        <div class="sc-icon">💰</div>
+        <div class="sc-val">{{ finanzas.formatMoney(finanzas.balance()) }}</div>
+        <div class="sc-label">Balance</div>
       </div>
     </div>
-  </section>
 
-  <!-- FEATURES GRID -->
-  <section class="features-section">
-    <div class="section-header">
-      <p class="eyebrow">¿Qué puedes hacer?</p>
-      <h2 class="section-title">Todo un ecosistema financiero en un solo lugar</h2>
-    </div>
-
-    <div class="features-grid">
-      @for (feat of features; track feat.title) {
-        <a class="feature-card" [routerLink]="feat.route">
-          <span class="feat-icon">{{ feat.icon }}</span>
-          <h3 class="feat-title">{{ feat.title }}</h3>
-          <p class="feat-text">{{ feat.text }}</p>
-          <span class="feat-arrow">→</span>
-        </a>
-      }
-    </div>
-  </section>
-
-  <!-- CTA SECTION -->
-  <section class="cta-section">
-    <div class="cta-card">
-      <div class="cta-orb"></div>
-      <p class="eyebrow">¿Listo para empezar?</p>
-      <h2>Tu primer movimiento en el tablero te espera</h2>
-      <div class="cta-actions">
-        <a class="btn-primary" routerLink="/tablero">
-          <span>🎲</span> Jugar ahora
-        </a>
-        <a class="btn-ghost" routerLink="/academia">
-          <span>🎓</span> Aprender primero
-        </a>
+    <!-- XP Progress -->
+    <div class="xp-section card">
+      <div class="xp-top">
+        <span class="xp-label-txt">Progreso nivel {{ profile.profile()?.level ?? 1 }}</span>
+        <span class="xp-numbers">{{ profile.profile()?.xp ?? 0 }} / {{ ((profile.profile()?.level ?? 1)) * 300 }} XP</span>
       </div>
+      <div class="xp-bar">
+        <div class="xp-fill" [style.width.%]="profile.xpProgress"></div>
+      </div>
+      <p class="xp-hint">Completa quizzes y juega en el tablero para ganar XP</p>
     </div>
-  </section>
 
-  <!-- BOTTOM PADDING for nav -->
-  <div style="height: 90px"></div>
-  <app-nav />
-</div>
-
-<!-- QUIZ MODAL -->
-@if (showQuiz()) {
-  <div class="modal-overlay" (click)="closeQuiz()">
-    <div class="quiz-modal" (click)="$event.stopPropagation()">
-      <button class="modal-close" (click)="closeQuiz()">✕</button>
-
-      @if (!profileResult()) {
-        <div class="quiz-inner">
-          <div class="quiz-progress">
-            <div class="qp-dots">
-              @for (q of quizQuestions; track $index) {
-                <div class="qp-dot" [class.active]="$index <= quizStep()"></div>
-              }
+    <!-- QUICK ACTIONS -->
+    <section class="quick-section">
+      <p class="eyebrow">Acceso rápido</p>
+      <div class="quick-grid">
+        @for (action of quickActions; track action.route) {
+          <a class="quick-card" [routerLink]="action.route" [style.--cc]="action.color">
+            <div class="qc-icon">{{ action.icon }}</div>
+            <div class="qc-info">
+              <div class="qc-label">{{ action.label }}</div>
+              <div class="qc-sub">{{ action.sub }}</div>
             </div>
-            <span class="qp-label">{{ quizStep() + 1 }} / {{ quizQuestions.length }}</span>
+            <span class="qc-arrow">→</span>
+          </a>
+        }
+      </div>
+    </section>
+
+    <!-- BOTTOM GRID -->
+    <div class="bottom-grid">
+      <!-- Recent transactions -->
+      <section class="card recent-section">
+        <div class="rs-header">
+          <h3 class="rs-title">🔄 Movimientos recientes</h3>
+          <a routerLink="/finanzas" class="rs-link">Ver todos →</a>
+        </div>
+        @if (recentMovs.length === 0) {
+          <div class="empty">
+            <span>💳</span>
+            <p>Aún no hay movimientos. <a routerLink="/finanzas">¡Registra uno!</a></p>
           </div>
-
-          <p class="quiz-emoji">🧠</p>
-          <h3 class="quiz-q">{{ currentQuestion.question }}</h3>
-
-          <div class="quiz-options">
-            @for (opt of currentQuestion.options; track opt.value) {
-              <button class="quiz-opt" (click)="selectAnswer(opt.value)">
-                {{ opt.label }}
-              </button>
+        } @else {
+          <div class="mov-list">
+            @for (mov of recentMovs; track mov.id) {
+              <div class="mov-item">
+                <div class="mov-tipo" [class.ingreso]="mov.tipo === 'ingreso'" [class.egreso]="mov.tipo === 'egreso'">
+                  {{ mov.tipo === 'ingreso' ? '↑' : '↓' }}
+                </div>
+                <div class="mov-info">
+                  <div class="mov-concepto">{{ mov.concepto }}</div>
+                  <div class="mov-fecha">{{ mov.categoria }} · {{ mov.fecha }}</div>
+                </div>
+                <div class="mov-monto" [class.pos]="mov.tipo === 'ingreso'" [class.neg]="mov.tipo === 'egreso'">
+                  {{ mov.tipo === 'ingreso' ? '+' : '-' }}{{ finanzas.formatMoney(mov.monto) }}
+                </div>
+              </div>
             }
           </div>
+        }
+      </section>
+
+      <!-- Achievements -->
+      <section class="card ach-section">
+        <h3 class="rs-title">🏆 Logros</h3>
+        <div class="ach-grid">
+          @for (ach of achievements; track ach.id) {
+            <div class="ach-item" [class.unlocked]="isUnlocked(ach.id)" [title]="ach.desc">
+              <div class="ach-icon">{{ ach.icon }}</div>
+              <div class="ach-label">{{ ach.label }}</div>
+            </div>
+          }
         </div>
-      } @else {
-        <div class="result-inner">
-          <p class="result-emoji">{{ profileInfo!.emoji }}</p>
-          <h3 class="result-title">{{ profileInfo!.title }}</h3>
-          <p class="result-text">{{ profileInfo!.text }}</p>
-          <div class="result-bonus">
-            <span>🎁</span>
-            <span>Bono de inicio: <strong>${{ profileInfo!.bonus }}</strong></span>
-          </div>
-          <button class="btn-primary full" (click)="confirmProfile()">
-            ¡Empezar mi aventura! 🚀
-          </button>
-        </div>
-      }
+        <p class="ach-count">{{ profile.profile()?.achievementsUnlocked?.length ?? 0 }}/{{ achievements.length }} desbloqueados</p>
+      </section>
     </div>
+
   </div>
-}
+</div>

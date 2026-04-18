@@ -1,168 +1,134 @@
-<div class="page-shell">
-  @if (toastMsg()) {
-    <div class="toast">{{ toastMsg() }}</div>
-  }
+<app-nav />
 
-  <!-- HEADER -->
-  <header class="page-header">
-    <a routerLink="/home" class="back-btn">← Inicio</a>
-    <div class="header-center">
-      <h1>La Academia</h1>
-      <p class="header-sub">{{ completedCount }}/{{ lessons().length }} lecciones</p>
-    </div>
-    <div class="header-xp">
-      <span>⭐</span>
-      <span>Lv.{{ game.level() }}</span>
-    </div>
-  </header>
+<div class="page">
+  <div class="page-inner">
 
-  <!-- PROGRESS BANNER -->
-  <section class="progress-banner">
-    <div class="pb-inner">
-      <div class="pb-text">
-        <p class="pb-label">Tu progreso de aprendizaje</p>
-        <p class="pb-sub">Cada lección completada = +200 monedas por respuesta correcta</p>
+    <!-- HEADER -->
+    <div class="ac-header">
+      <div>
+        <p class="eyebrow">Educación financiera</p>
+        <h1 class="section-title">La Academia 🎓</h1>
+        <p class="ac-sub">Elige un tema, responde preguntas aleatorias y gana monedas y XP.</p>
       </div>
-      <div class="pb-bar-wrap">
-        <div class="pb-bar-fill" [style.width.%]="(completedCount / lessons().length) * 100"></div>
-      </div>
-      <span class="pb-pct">{{ ((completedCount / lessons().length) * 100) | number:'1.0-0' }}%</span>
-    </div>
-  </section>
-
-  <!-- LESSONS GRID -->
-  <section class="lessons-section">
-    <div class="lessons-grid">
-      @for (lesson of lessons(); track lesson.id) {
-        <div class="lesson-card" [class.completed]="lesson.completed" (click)="openLesson(lesson)">
-          <div class="lc-header">
-            <span class="lc-emoji">{{ lesson.emoji }}</span>
-            <span class="lc-cat">{{ lesson.category }}</span>
-            @if (lesson.completed) {
-              <span class="lc-done">✓</span>
-            }
-          </div>
-          <h3 class="lc-title">{{ lesson.title }}</h3>
-          <p class="lc-preview">{{ lesson.content | slice:0:80 }}...</p>
-          <div class="lc-footer">
-            <span class="lc-reward">🪙 +200 por respuesta</span>
-            <span class="lc-arrow">→</span>
-          </div>
+      <div class="ac-stats">
+        <div class="acstat">
+          <div class="acstat-val">{{ profile.profile()?.quizzesCompleted ?? 0 }}</div>
+          <div class="acstat-lbl">Quizzes</div>
         </div>
+        <div class="acstat">
+          <div class="acstat-val">{{ profile.profile()?.xp ?? 0 }}</div>
+          <div class="acstat-lbl">XP Total</div>
+        </div>
+        <div class="acstat">
+          <div class="acstat-val">🪙 {{ profile.profile()?.coins | number }}</div>
+          <div class="acstat-lbl">Monedas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REWARD INFO -->
+    <div class="reward-banner card">
+      <span class="rb-icon">💡</span>
+      <div>
+        <strong>¿Cómo funciona?</strong>
+        <p>Cada respuesta correcta te da <strong>150 monedas</strong> y <strong>40 XP</strong>. Las preguntas se mezclan aleatoriamente en cada intento. ¡Juega varias veces para mejorar!</p>
+      </div>
+    </div>
+
+    <!-- TOPICS GRID -->
+    <div class="topics-grid">
+      @for (topic of topics(); track topic.id) {
+        <button class="topic-card" [style.--tc]="topic.color" (click)="openTopic(topic)">
+          <span class="tc-icon">{{ topic.icon }}</span>
+          <div class="tc-info">
+            <div class="tc-title">{{ topic.title }}</div>
+            <div class="tc-count">{{ topic.questions.length }} preguntas aleatorias</div>
+          </div>
+          <div class="tc-reward">+{{ topic.questions.length * 150 }} 🪙</div>
+          <span class="tc-arrow">→</span>
+        </button>
       }
     </div>
-  </section>
 
-  <!-- STATS -->
-  <section class="aca-stats">
-    <div class="astat">
-      <span class="astat-icon">✅</span>
-      <div class="astat-val">{{ game.correctAnswers() }}</div>
-      <div class="astat-label">Respuestas correctas</div>
+    <!-- PROGRESS section -->
+    <div class="card progress-card">
+      <h3 class="prog-title">📊 Tu progreso de nivel</h3>
+      <div class="prog-row">
+        <span class="prog-lv">Nivel {{ profile.profile()?.level ?? 1 }}</span>
+        <div class="xp-bar" style="flex:1">
+          <div class="xp-fill" [style.width.%]="profile.xpProgress"></div>
+        </div>
+        <span class="prog-xp">{{ profile.profile()?.xp ?? 0 }} XP</span>
+      </div>
+      <p class="prog-hint">Cada 300 XP subes de nivel. ¡Sigue respondiendo!</p>
     </div>
-    <div class="astat">
-      <span class="astat-icon">🪙</span>
-      <div class="astat-val">{{ game.correctAnswers() * 200 | number }}</div>
-      <div class="astat-label">Ganado en academia</div>
-    </div>
-    <div class="astat">
-      <span class="astat-icon">📚</span>
-      <div class="astat-val">{{ completedCount }}</div>
-      <div class="astat-label">Lecciones completas</div>
-    </div>
-  </section>
 
-  <div style="height: 100px"></div>
-  <app-nav />
+  </div>
 </div>
 
-<!-- LESSON MODAL -->
-@if (activeLesson()) {
-  <div class="modal-overlay" (click)="closeLesson()">
-    <div class="lesson-modal" (click)="$event.stopPropagation()">
-      <button class="modal-close" (click)="closeLesson()">✕</button>
+<!-- QUIZ MODAL -->
+@if (activeTopic()) {
+  <div class="modal-overlay" (click)="closeTopic()">
+    <div class="quiz-modal" (click)="$event.stopPropagation()">
 
-      @if (!showQuiz()) {
-        <!-- LESSON CONTENT -->
-        <div class="lm-content">
-          <div class="lm-emoji">{{ activeLesson()!.emoji }}</div>
-          <p class="lm-cat">{{ activeLesson()!.category }}</p>
-          <h2 class="lm-title">{{ activeLesson()!.title }}</h2>
-          <p class="lm-body">{{ activeLesson()!.content }}</p>
-
-          <div class="lm-tip">
-            <span class="tip-icon">💡</span>
-            <div>
-              <strong>Consejo clave</strong>
-              <p>{{ activeLesson()!.tip }}</p>
-            </div>
+      @if (!finished()) {
+        <!-- QUESTION -->
+        <div class="qm-head" [style.--tc]="activeTopic()!.color">
+          <button class="qm-close" (click)="closeTopic()">✕</button>
+          <span class="qm-ico">{{ activeTopic()!.icon }}</span>
+          <div class="qm-topic">{{ activeTopic()!.title }}</div>
+          <div class="qm-prog">{{ currentQ() + 1 }} / {{ totalQ }}</div>
+          <div class="qm-bar">
+            <div class="qm-fill" [style.width.%]="((currentQ() + 1) / totalQ) * 100" [style.background]="activeTopic()!.color"></div>
           </div>
-
-          <button class="quiz-start-btn" (click)="startQuiz()">
-            🎯 Hacer el quiz y ganar monedas
-          </button>
         </div>
-      } @else if (!quizFinished()) {
-        <!-- QUIZ IN PROGRESS -->
-        <div class="quiz-content">
-          <div class="qz-progress">
-            <div class="qz-dots">
-              @for (q of currentQuestions; track $index) {
-                <div class="qz-dot" [class.active]="$index <= currentQuestion()"></div>
-              }
-            </div>
-            <span>{{ currentQuestion() + 1 }}/{{ currentQuestions.length }}</span>
-          </div>
 
-          <h3 class="qz-question">{{ currentQ.question }}</h3>
+        <div class="qm-body">
+          <p class="qm-question">{{ current.q }}</p>
 
-          <div class="qz-options">
-            @for (opt of currentQ.options; track $index) {
+          <div class="qm-opts">
+            @for (opt of current.opts; track $index) {
               <button
-                class="qz-opt"
+                class="qm-opt"
                 [class.correct]="isCorrect($index)"
                 [class.wrong]="isWrong($index)"
                 [class.disabled]="answered()"
                 (click)="selectAnswer($index)"
               >
-                <span class="opt-letter">{{ ['A', 'B', 'C', 'D'][$index] }}</span>
-                {{ opt }}
+                <span class="opt-key">{{ ['A','B','C','D'][$index] }}</span>
+                <span>{{ opt }}</span>
               </button>
             }
           </div>
 
           @if (answered()) {
-            <div class="qz-explanation" [class.correct-bg]="selectedAnswer() === currentQ.correct">
-              <strong>{{ selectedAnswer() === currentQ.correct ? '✅ ¡Correcto!' : '❌ Incorrecto' }}</strong>
-              <p>{{ currentQ.explanation }}</p>
+            <div class="explanation" [class.ex-ok]="selected() === current.correct">
+              <strong>{{ selected() === current.correct ? '✅ ¡Correcto!' : '❌ Incorrecto' }}</strong>
+              <p>{{ current.explanation }}</p>
             </div>
-
-            <button class="next-btn" (click)="nextQuestion()">
-              {{ currentQuestion() + 1 < currentQuestions.length ? 'Siguiente →' : 'Ver resultado →' }}
+            <button class="next-btn btn-primary" (click)="next()">
+              {{ currentQ() + 1 < totalQ ? 'Siguiente pregunta →' : 'Ver resultado →' }}
             </button>
           }
         </div>
       } @else {
-        <!-- QUIZ RESULT -->
-        <div class="result-content">
-          <div class="result-big">
-            {{ quizScore() === currentQuestions.length ? '🏆' : quizScore() >= currentQuestions.length / 2 ? '🌟' : '📚' }}
-          </div>
-          <h3 class="result-h">{{ quizScore() }}/{{ currentQuestions.length }} correctas</h3>
-          <p class="result-sub">Ganaste <strong>{{ quizScore() * 200 }}</strong> monedas</p>
+        <!-- RESULT -->
+        <div class="result-view">
+          <button class="qm-close abs" (click)="closeTopic()">✕</button>
+          <div class="rv-star">{{ starRating }}</div>
+          <h3>{{ score() }}/{{ totalQ }} correctas</h3>
+          <p class="rv-sub">Ganaste <strong>{{ coinsEarned }} monedas</strong> y <strong>{{ score() * 40 }} XP</strong></p>
 
-          <div class="result-breakdown">
-            @for (q of currentQuestions; track $index) {
-              <div class="rb-item">
-                <span>{{ q.question | slice:0:50 }}...</span>
-                <span>{{ $index < quizScore() ? '✅' : '❌' }}</span>
-              </div>
+          <div class="rv-bars">
+            @for (i of [].constructor(totalQ); track $index) {
+              <div class="rv-bar-item" [class.rv-ok]="$index < score()"></div>
             }
           </div>
 
-          <button class="quiz-start-btn" (click)="closeLesson()">
-            ¡Volver a la Academia!
-          </button>
+          <div class="rv-actions">
+            <button class="btn-primary" (click)="retry()">🔄 Reintentar (nuevas preguntas)</button>
+            <button class="btn-secondary" (click)="closeTopic()">Volver a temas</button>
+          </div>
         </div>
       }
     </div>

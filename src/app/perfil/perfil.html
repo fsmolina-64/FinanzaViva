@@ -1,0 +1,166 @@
+<app-nav />
+
+<div class="page">
+  <div class="page-inner">
+
+    @if (toastMsg()) {
+      <div class="toast-container">
+        <div class="toast" [class.success]="toastPos()" [class.error]="!toastPos()">{{ toastMsg() }}</div>
+      </div>
+    }
+
+    <!-- PROFILE HERO -->
+    <div class="profile-hero card">
+      <div class="ph-bg"></div>
+      <div class="ph-content">
+        <div class="avatar-wrapper">
+          <div class="big-avatar">{{ profile.profile()?.avatar ?? '🦊' }}</div>
+          <div class="av-level">Lv.{{ profile.profile()?.level ?? 1 }}</div>
+        </div>
+        <div class="ph-info">
+          <h1 class="ph-name">{{ profile.profile()?.name }}</h1>
+          <p class="ph-email">{{ profile.profile()?.email }}</p>
+          @if (profile.profile()?.bio) {
+            <p class="ph-bio">{{ profile.profile()?.bio }}</p>
+          }
+          <div class="ph-meta">
+            @if (profile.profile()?.dob) {
+              <span class="meta-chip">🎂 {{ calcAge(profile.profile()!.dob) }} años</span>
+            }
+            <span class="meta-chip">📅 Desde {{ joinedFormatted }}</span>
+            @if (profile.profile()?.interests?.length) {
+              @for (int of profile.profile()!.interests.slice(0,3); track int) {
+                <span class="meta-chip interest">{{ int }}</span>
+              }
+            }
+          </div>
+        </div>
+        <button class="btn-secondary edit-btn" (click)="openEdit()">✏️ Editar perfil</button>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+      <div class="sg-card card">
+        <div class="sg-icon">🪙</div>
+        <div class="sg-val">{{ profile.profile()?.coins | number }}</div>
+        <div class="sg-lbl">Monedas</div>
+      </div>
+      <div class="sg-card card">
+        <div class="sg-icon">⭐</div>
+        <div class="sg-val">{{ profile.profile()?.level ?? 1 }}</div>
+        <div class="sg-lbl">Nivel actual</div>
+      </div>
+      <div class="sg-card card">
+        <div class="sg-icon">⚡</div>
+        <div class="sg-val">{{ profile.profile()?.xp ?? 0 }}</div>
+        <div class="sg-lbl">XP Total</div>
+      </div>
+      <div class="sg-card card">
+        <div class="sg-icon">🎓</div>
+        <div class="sg-val">{{ profile.profile()?.quizzesCompleted ?? 0 }}</div>
+        <div class="sg-lbl">Quizzes</div>
+      </div>
+      <div class="sg-card card">
+        <div class="sg-icon">🏆</div>
+        <div class="sg-val">{{ profile.profile()?.achievementsUnlocked?.length ?? 0 }}/{{ achievements.length }}</div>
+        <div class="sg-lbl">Logros</div>
+      </div>
+      <div class="sg-card card">
+        <div class="sg-icon">📅</div>
+        <div class="sg-val">{{ joinedFormatted }}</div>
+        <div class="sg-lbl">Miembro desde</div>
+      </div>
+    </div>
+
+    <!-- XP Progress -->
+    <div class="card xp-card">
+      <div class="xp-top-row">
+        <span class="xp-lv">Nivel {{ profile.profile()?.level ?? 1 }} → {{ (profile.profile()?.level ?? 1) + 1 }}</span>
+        <span class="xp-nums">{{ profile.profile()?.xp ?? 0 }} / {{ ((profile.profile()?.level ?? 1)) * 300 }} XP</span>
+      </div>
+      <div class="xp-bar">
+        <div class="xp-fill" [style.width.%]="profile.xpProgress"></div>
+      </div>
+      <p class="xp-hint">Cada 300 XP subes un nivel. Completa quizzes y juega en el tablero.</p>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div class="card ach-card">
+      <h3 class="section-h3">🏆 Logros</h3>
+      <div class="ach-list">
+        @for (ach of achievements; track ach.id) {
+          <div class="ach-row" [class.unlocked]="isUnlocked(ach.id)">
+            <div class="ach-ico">{{ ach.icon }}</div>
+            <div class="ach-info">
+              <div class="ach-label">{{ ach.label }}</div>
+              <div class="ach-desc">{{ ach.desc }}</div>
+            </div>
+            <div class="ach-status">
+              @if (isUnlocked(ach.id)) { <span class="status-ok">✓</span> }
+              @else { <span class="status-lock">🔒</span> }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+@if (editing()) {
+  <div class="modal-overlay" (click)="editing.set(false)">
+    <div class="modal-box edit-modal" (click)="$event.stopPropagation()">
+      <div class="em-head">
+        <h3>Editar Perfil</h3>
+        <button class="close-btn" (click)="editing.set(false)">✕</button>
+      </div>
+
+      <!-- Avatar picker -->
+      <div class="avatar-picker">
+        <label class="input-label">Elige tu avatar</label>
+        <div class="av-grid">
+          @for (av of profile.avatarOptions; track av) {
+            <button
+              class="av-btn"
+              [class.av-selected]="editAvatar === av"
+              (click)="editAvatar = av"
+            >{{ av }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="edit-fields">
+        <div>
+          <label class="input-label">Nombre completo *</label>
+          <input class="input-field" type="text" [(ngModel)]="editName" placeholder="Tu nombre" />
+        </div>
+        <div>
+          <label class="input-label">Fecha de nacimiento</label>
+          <input class="input-field" type="date" [(ngModel)]="editDob" />
+        </div>
+        <div>
+          <label class="input-label">Bio (máx 120 caracteres)</label>
+          <textarea class="input-field bio-area" [(ngModel)]="editBio" maxlength="120" rows="3" placeholder="Cuéntanos algo sobre ti..."></textarea>
+        </div>
+        <div>
+          <label class="input-label">Intereses financieros (máx 5)</label>
+          <div class="interests-grid">
+            @for (int of profile.interestOptions; track int) {
+              <button
+                class="int-btn"
+                [class.int-sel]="editInterests.includes(int)"
+                (click)="toggleInterest(int)"
+              >{{ int }}</button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%;justify-content:center;padding:14px;margin-top:24px" (click)="saveEdit()">
+        💾 Guardar cambios
+      </button>
+    </div>
+  </div>
+}

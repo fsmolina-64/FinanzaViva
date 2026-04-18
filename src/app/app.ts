@@ -7,6 +7,4 @@ import { RouterOutlet } from '@angular/router';
   template: '<router-outlet />',
   styles: [':host { display: block; }'],
 })
-export class App {
-  title = 'FinanzaPro';
-}
+export class App {}

@@ -3,11 +3,11 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "analytics": "2f9dddc3-684e-492e-8f96-e4cb6432f630"
+    "analytics": false
   },
   "newProjectRoot": "projects",
   "projects": {
-    "finanzas-piensa": {
+    "finanza-viva": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -18,6 +18,9 @@
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -28,14 +31,7 @@
             "styles": [
               "src/styles.css"
             ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "security": {
-              "allowedHosts": []
-            },
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -47,8 +43,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "8kB",
+                  "maximumError": "16kB"
                 }
               ],
               "outputHashing": "all"
@@ -65,10 +61,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "finanzas-piensa:build:production"
+              "buildTarget": "finanza-viva:build:production"
             },
             "development": {
-              "buildTarget": "finanzas-piensa:build:development"
+              "buildTarget": "finanza-viva:build:development"
             }
           },
           "defaultConfiguration": "development"

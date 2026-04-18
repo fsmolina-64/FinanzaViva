@@ -1,0 +1,90 @@
+<div class="auth-shell">
+  <!-- Left panel — branding -->
+  <div class="auth-left">
+    <div class="al-inner">
+      <div class="brand-hero">
+        <span class="brand-leaf">🌱</span>
+        <h1>FinanzaViva</h1>
+        <p>Aprende, juega y toma control de tu dinero de una forma que nunca habías visto.</p>
+      </div>
+
+      <div class="feature-pills">
+        <div class="fpill"><span>🎲</span> Tablero Multijugador</div>
+        <div class="fpill"><span>🎓</span> Academia Financiera</div>
+        <div class="fpill"><span>💳</span> Gestor de Finanzas</div>
+        <div class="fpill"><span>📈</span> Sistema de Niveles</div>
+      </div>
+
+      <div class="al-quote">
+        "El dinero es un gran sirviente pero un terrible amo."
+        <strong>— Francis Bacon</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="ac-head">
+        <h2>{{ mode() === 'login' ? '¡Bienvenido de nuevo!' : 'Crea tu cuenta' }}</h2>
+        <p>{{ mode() === 'login' ? 'Ingresa tus credenciales para continuar.' : 'Únete y empieza tu aventura financiera.' }}</p>
+      </div>
+
+      <form class="auth-form" (ngSubmit)="submit()" #f="ngForm">
+        @if (mode() === 'register') {
+          <div class="field">
+            <label class="input-label">Nombre completo</label>
+            <input class="input-field" type="text" placeholder="Ej: María García" [(ngModel)]="name" name="name" autocomplete="name" />
+          </div>
+        }
+
+        <div class="field">
+          <label class="input-label">Correo electrónico</label>
+          <input class="input-field" type="email" placeholder="correo@ejemplo.com" [(ngModel)]="email" name="email" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label class="input-label">Contraseña</label>
+          <div class="pass-wrap">
+            <input
+              class="input-field"
+              [type]="showPass() ? 'text' : 'password'"
+              placeholder="Mínimo 6 caracteres"
+              [(ngModel)]="password"
+              name="password"
+              autocomplete="current-password"
+            />
+            <button type="button" class="eye-btn" (click)="showPass.update(v => !v)">
+              {{ showPass() ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        @if (mode() === 'register') {
+          <div class="field">
+            <label class="input-label">Confirmar contraseña</label>
+            <input class="input-field" type="password" placeholder="Repite tu contraseña" [(ngModel)]="confirmPass" name="confirmPass" />
+          </div>
+        }
+
+        @if (error()) {
+          <div class="error-box">
+            <span>⚠️</span> {{ error() }}
+          </div>
+        }
+
+        <button class="submit-btn" type="submit" [disabled]="loading()">
+          @if (loading()) { <span class="spinner"></span> Cargando... }
+          @else { {{ mode() === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }} }
+        </button>
+      </form>
+
+      <div class="toggle-section">
+        {{ mode() === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?' }}
+        <button class="toggle-btn" type="button" (click)="toggle()">
+          {{ mode() === 'login' ? 'Regístrate gratis' : 'Inicia sesión' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

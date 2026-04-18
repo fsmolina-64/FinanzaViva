@@ -1,0 +1,189 @@
+<app-nav />
+
+<div class="page">
+  <div class="page-inner">
+
+    @if (toastMsg()) {
+      <div class="toast-container">
+        <div class="toast" [class.success]="toastPos()" [class.error]="!toastPos()">{{ toastMsg() }}</div>
+      </div>
+    }
+
+    <!-- HEADER -->
+    <div class="fin-header">
+      <div>
+        <p class="eyebrow">Control financiero</p>
+        <h1 class="section-title">Mis Finanzas 💳</h1>
+        <p class="fin-sub">Registra ingresos y gastos para visualizar tu balance real.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-income" (click)="openForm('ingreso')">+ Ingreso</button>
+        <button class="btn-expense" (click)="openForm('egreso')">− Egreso</button>
+      </div>
+    </div>
+
+    <!-- BALANCE CARDS -->
+    <div class="balance-grid">
+      <div class="bal-card card bal-total" [class.pos]="monthBalance() >= 0" [class.neg]="monthBalance() < 0">
+        <div class="bc-label">Balance del mes</div>
+        <div class="bc-val">{{ svc.formatMoney(monthBalance()) }}</div>
+        <div class="bc-sub">{{ monthLabel(selectedMonth()) }}</div>
+      </div>
+      <div class="bal-card card bal-in">
+        <div class="bc-icon">↑</div>
+        <div class="bc-label">Ingresos</div>
+        <div class="bc-val green">{{ svc.formatMoney(monthIngresos()) }}</div>
+      </div>
+      <div class="bal-card card bal-out">
+        <div class="bc-icon">↓</div>
+        <div class="bc-label">Egresos</div>
+        <div class="bc-val red">{{ svc.formatMoney(monthEgresos()) }}</div>
+      </div>
+    </div>
+
+    <!-- ALL-TIME SUMMARY -->
+    <div class="summary-row card">
+      <div class="sm-item">
+        <span class="sm-icon">📊</span>
+        <div>
+          <div class="sm-val">{{ svc.formatMoney(svc.balance()) }}</div>
+          <div class="sm-lbl">Balance total acumulado</div>
+        </div>
+      </div>
+      <div class="sm-divider"></div>
+      <div class="sm-item">
+        <span class="sm-icon">📅</span>
+        <div>
+          <div class="sm-val">{{ svc.formatMoney(svc.todayIngresos() - svc.todayEgresos()) }}</div>
+          <div class="sm-lbl">Balance hoy</div>
+        </div>
+      </div>
+      <div class="sm-divider"></div>
+      <div class="sm-item">
+        <span class="sm-icon">📋</span>
+        <div>
+          <div class="sm-val">{{ svc.movimientos().length }}</div>
+          <div class="sm-lbl">Movimientos totales</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MONTH NAVIGATOR + FILTERS -->
+    <div class="controls-row">
+      <div class="month-nav">
+        <button class="mnav-btn" (click)="prevMonth()">‹</button>
+        <span class="mnav-label">{{ monthLabel(selectedMonth()) }}</span>
+        <button class="mnav-btn" (click)="nextMonth()">›</button>
+      </div>
+      <div class="filter-pills">
+        <button class="fp" [class.active-all]="filterTipo() === 'all'" (click)="filterTipo.set('all')">Todos</button>
+        <button class="fp fp-in" [class.active-in]="filterTipo() === 'ingreso'" (click)="filterTipo.set('ingreso')">Ingresos</button>
+        <button class="fp fp-out" [class.active-out]="filterTipo() === 'egreso'" (click)="filterTipo.set('egreso')">Egresos</button>
+      </div>
+    </div>
+
+    <!-- MOVEMENTS LIST -->
+    <div class="movs-list">
+      @if (filteredMovs().length === 0) {
+        <div class="empty-state card">
+          <span>💳</span>
+          <p>No hay movimientos para este período.</p>
+          <button class="btn-primary" (click)="openForm('ingreso')">Registrar el primero</button>
+        </div>
+      } @else {
+        @for (mov of filteredMovs(); track mov.id) {
+          <div class="mov-card card" [class.mov-in]="mov.tipo === 'ingreso'" [class.mov-out]="mov.tipo === 'egreso'">
+            <div class="mc-left">
+              <div class="mc-cat-icon">{{ categoryIcon(mov.categoria) }}</div>
+              <div class="mc-info">
+                <div class="mc-concepto">{{ mov.concepto }}</div>
+                <div class="mc-meta">{{ mov.categoria }} · {{ formatDate(mov.fecha) }}</div>
+              </div>
+            </div>
+            <div class="mc-right">
+              <div class="mc-amount" [class.pos]="mov.tipo === 'ingreso'" [class.neg]="mov.tipo === 'egreso'">
+                {{ mov.tipo === 'ingreso' ? '+' : '−' }}{{ svc.formatMoney(mov.monto) }}
+              </div>
+              <div class="mc-tipo-badge" [class.badge-in]="mov.tipo === 'ingreso'" [class.badge-out]="mov.tipo === 'egreso'">
+                {{ mov.tipo === 'ingreso' ? '↑ Ingreso' : '↓ Egreso' }}
+              </div>
+              <button class="delete-btn" (click)="deleteConfirm.set(mov.id)" title="Eliminar">🗑</button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="showForm.set(false)">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="form-head" [class.head-in]="formTipo() === 'ingreso'" [class.head-out]="formTipo() === 'egreso'">
+        <h3>{{ formTipo() === 'ingreso' ? '+ Nuevo Ingreso' : '− Nuevo Egreso' }}</h3>
+        <button class="qm-close" (click)="showForm.set(false)">✕</button>
+      </div>
+
+      <!-- Tipo toggle -->
+      <div class="tipo-toggle">
+        <button class="tt-btn" [class.tt-in]="formTipo() === 'ingreso'" (click)="formTipo.set('ingreso'); formCategoria.set('')">↑ Ingreso</button>
+        <button class="tt-btn" [class.tt-out]="formTipo() === 'egreso'" (click)="formTipo.set('egreso'); formCategoria.set('')">↓ Egreso</button>
+      </div>
+
+      <div class="form-fields">
+        <div>
+          <label class="input-label">Monto ($)</label>
+          <input class="input-field" type="number" min="0.01" step="0.01" placeholder="0.00"
+            [ngModel]="formMonto()" (ngModelChange)="formMonto.set($event)" />
+        </div>
+
+        <div>
+          <label class="input-label">Concepto / Nota</label>
+          <input class="input-field" type="text" placeholder="Ej: Pago de factura de luz"
+            [ngModel]="formConcepto()" (ngModelChange)="formConcepto.set($event)" />
+        </div>
+
+        <div>
+          <label class="input-label">Fecha</label>
+          <input class="input-field" type="date"
+            [ngModel]="formFecha()" (ngModelChange)="formFecha.set($event)" />
+        </div>
+
+        <div>
+          <label class="input-label">Categoría</label>
+          <select class="input-field" [ngModel]="formCategoria()" (ngModelChange)="formCategoria.set($event)">
+            <option value="">Selecciona una categoría</option>
+            @for (cat of categorias; track cat) {
+              <option [value]="cat">{{ categoryIcon(cat) }} {{ cat }}</option>
+            }
+          </select>
+        </div>
+
+        @if (formError()) {
+          <div class="error-box">⚠️ {{ formError() }}</div>
+        }
+
+        <button class="btn-primary" style="width:100%;justify-content:center;padding:14px" (click)="submitForm()">
+          {{ formTipo() === 'ingreso' ? '✅ Guardar ingreso' : '✅ Guardar egreso' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- DELETE CONFIRM -->
+@if (deleteConfirm()) {
+  <div class="modal-overlay" (click)="deleteConfirm.set(null)">
+    <div class="modal-box" style="max-width:360px;text-align:center" (click)="$event.stopPropagation()">
+      <div style="font-size:3rem;margin-bottom:12px">🗑️</div>
+      <h3 style="margin-bottom:8px;font-size:1.2rem">¿Eliminar movimiento?</h3>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:.88rem">Esta acción no se puede deshacer.</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1;justify-content:center" (click)="deleteConfirm.set(null)">Cancelar</button>
+        <button class="delete-confirm-btn" (click)="eliminar(deleteConfirm()!)">Eliminar</button>
+      </div>
+    </div>
+  </div>
+}

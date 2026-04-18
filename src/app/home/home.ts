@@ -1,13 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { GameService, FinancialProfile } from '../services/game.service';
+import { ProfileService } from '../services/profile.service';
+import { FinanzasService } from '../services/finanzas.service';
+import { AuthService } from '../services/auth.service';
 import { Nav } from '../shared/nav/nav';
-
-interface QuizQuestion {
-  question: string;
-  options: { label: string; value: string }[];
-}
 
 @Component({
   selector: 'app-home',
@@ -15,113 +12,57 @@ interface QuizQuestion {
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home {
-  game = inject(GameService);
+export class Home implements OnInit {
+  profile = inject(ProfileService);
+  finanzas = inject(FinanzasService);
+  auth = inject(AuthService);
 
-  showQuiz = signal(false);
-  quizStep = signal(0);
-  answers = signal<string[]>([]);
-  profileResult = signal<FinancialProfile | null>(null);
-  toastMessage = signal<string | null>(null);
-
-  readonly features = [
-    { icon: '🎲', title: 'Tablero Interactivo', text: 'Juega al Monopoly financiero, tira dados y toma decisiones reales.', route: '/tablero' },
-    { icon: '📈', title: 'Mercado de Acciones', text: 'Compra y vende acciones que suben y bajan en tiempo real.', route: '/simulador' },
-    { icon: '🎓', title: 'Academia Express', text: 'Aprende conceptos financieros y gana monedas mientras estudias.', route: '/academia' },
-    { icon: '🏆', title: 'Ranking Global', text: 'Compite con otros jugadores y sube en la tabla de posiciones.', route: '/ranking' },
-    { icon: '💎', title: 'Tu Bóveda', text: 'Visualiza tu patrimonio, logros y progreso en tiempo real.', route: '/dashboard' },
-    { icon: '🌍', title: 'Simulador de Vida', text: 'Elige tu empleo, gestiona emergencias y construye tu futuro.', route: '/simulador' },
+  readonly quickActions = [
+    { icon: '🎲', label: 'Jugar Tablero', sub: 'Multijugador', route: '/tablero', color: '#10B981' },
+    { icon: '🎓', label: 'Academia', sub: 'Quizzes financieros', route: '/academia', color: '#8B5CF6' },
+    { icon: '💳', label: 'Mis Finanzas', sub: 'Ingresos y gastos', route: '/finanzas', color: '#F59E0B' },
+    { icon: '👤', label: 'Mi Perfil', sub: 'Estadísticas y logros', route: '/perfil', color: '#06B6D4' },
   ];
 
-  readonly quizQuestions: QuizQuestion[] = [
-    {
-      question: '¿Recibes dinero y tu primera reacción es...?',
-      options: [
-        { label: '🐷 Guardarlo inmediatamente', value: 'ahorrista' },
-        { label: '📈 Buscar dónde invertirlo', value: 'inversor' },
-        { label: '🛍️ Comprar algo que quería', value: 'gastador' },
-        { label: '⚖️ Una parte ahorro, otra gasto', value: 'equilibrado' },
-      ],
-    },
-    {
-      question: '¿Cómo defines tu relación con el riesgo financiero?',
-      options: [
-        { label: '🛡️ Prefiero lo seguro, aunque gane menos', value: 'ahorrista' },
-        { label: '🚀 Me gusta arriesgar por grandes ganancias', value: 'inversor' },
-        { label: '🎉 Vivo el momento, el futuro se verá', value: 'gastador' },
-        { label: '🎯 Busco el balance entre seguridad y ganancia', value: 'equilibrado' },
-      ],
-    },
-    {
-      question: '¿Con qué frase te identificas más?',
-      options: [
-        { label: '"Un centavo ahorrado es un centavo ganado"', value: 'ahorrista' },
-        { label: '"El dinero trabaja para mí, no yo para el dinero"', value: 'inversor' },
-        { label: '"Solo se vive una vez, disfrútalo"', value: 'gastador' },
-        { label: '"Disfruto hoy planificando el mañana"', value: 'equilibrado' },
-      ],
-    },
+  readonly achievements = [
+    { id: 'first_login', label: 'Primer paso', icon: '👣', desc: 'Iniciaste sesión por primera vez' },
+    { id: 'first_quiz',  label: 'Estudiante',  icon: '📖', desc: 'Completaste tu primer quiz' },
+    { id: 'first_mov',   label: 'Contable',    icon: '📊', desc: 'Registraste un movimiento' },
+    { id: 'board_lap',   label: 'Una vuelta',  icon: '🎲', desc: 'Completaste una vuelta al tablero' },
+    { id: 'level_3',     label: 'Nivel 3',     icon: '⭐', desc: 'Alcanzaste el nivel 3' },
+    { id: 'rich',        label: 'Acaudalado',  icon: '💰', desc: 'Tienes más de 5,000 monedas' },
   ];
 
-  readonly profileDescriptions: Record<FinancialProfile, { emoji: string; title: string; text: string; bonus: number }> = {
-    ahorrista: { emoji: '🐷', title: 'El Ahorrador Maestro', text: 'Eres disciplinado y constante. Tu superpoder es la seguridad financiera.', bonus: 1000 },
-    inversor: { emoji: '📈', title: 'El Inversor Audaz', text: 'Ves oportunidades donde otros ven riesgo. Tu capital trabaja por ti.', bonus: 750 },
-    gastador: { emoji: '🛍️', title: 'El Vividor Consciente', text: 'Amas la vida. Aquí aprenderás a disfrutarla sin comprometer tu futuro.', bonus: 300 },
-    equilibrado: { emoji: '⚖️', title: 'El Equilibrista Financiero', text: 'Tienes la mentalidad correcta. El balance es la clave del éxito.', bonus: 800 },
-  };
-
-  openQuiz() {
-    if (this.game.financialProfile()) {
-      this.showToast('Ya completaste tu perfil financiero 🎯');
-      return;
+  ngOnInit() {
+    // Ensure data is loaded if user refreshes the page
+    if (!this.profile.profile()) {
+      this.profile.loadForCurrentUser();
+      this.finanzas.loadForCurrentUser();
     }
-    this.showQuiz.set(true);
-    this.quizStep.set(0);
-    this.answers.set([]);
-    this.profileResult.set(null);
+    this.profile.unlockAchievement('first_login');
+    const coins = this.profile.profile()?.coins ?? 0;
+    const level = this.profile.profile()?.level ?? 0;
+    if (coins >= 5000) this.profile.unlockAchievement('rich');
+    if (level >= 3)    this.profile.unlockAchievement('level_3');
   }
 
-  closeQuiz() {
-    this.showQuiz.set(false);
+  isUnlocked(id: string): boolean {
+    return this.profile.profile()?.achievementsUnlocked.includes(id) ?? false;
   }
 
-  selectAnswer(value: string) {
-    this.answers.update(a => [...a, value]);
-    if (this.quizStep() < this.quizQuestions.length - 1) {
-      this.quizStep.update(s => s + 1);
-    } else {
-      this.calculateProfile();
-    }
+  get greeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return '¡Buenos días';
+    if (h < 18) return '¡Buenas tardes';
+    return '¡Buenas noches';
   }
 
-  calculateProfile() {
-    const answers = this.answers();
-    const counts: Record<string, number> = { ahorrista: 0, inversor: 0, gastador: 0, equilibrado: 0 };
-    answers.forEach(a => counts[a]++);
-    const profile = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as FinancialProfile;
-    this.profileResult.set(profile);
+  get firstName(): string {
+    const name = this.profile.profile()?.name?.trim();
+    return name ? name.split(/\s+/)[0] : 'amigo';
   }
 
-  confirmProfile() {
-    const profile = this.profileResult();
-    if (!profile) return;
-    this.game.setProfile(profile);
-    const desc = this.profileDescriptions[profile];
-    this.showQuiz.set(false);
-    this.showToast(`¡Perfil asignado! +$${desc.bonus} de bono inicial 🎉`);
-  }
-
-  showToast(msg: string) {
-    this.toastMessage.set(msg);
-    setTimeout(() => this.toastMessage.set(null), 3500);
-  }
-
-  get currentQuestion() {
-    return this.quizQuestions[this.quizStep()];
-  }
-
-  get profileInfo() {
-    const p = this.profileResult();
-    return p ? this.profileDescriptions[p] : null;
+  get recentMovs() {
+    return this.finanzas.movimientos().slice(0, 4);
   }
 }

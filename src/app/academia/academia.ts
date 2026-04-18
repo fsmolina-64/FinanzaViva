@@ -1,204 +1,150 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GameService } from '../services/game.service';
+import { ProfileService } from '../services/profile.service';
 import { Nav } from '../shared/nav/nav';
 
-interface Lesson {
-  id: string;
-  title: string;
-  emoji: string;
-  category: string;
-  content: string;
-  tip: string;
-  completed: boolean;
-}
+interface Question { q: string; opts: string[]; correct: number; explanation: string; }
+interface QuizTopic { id: string; title: string; icon: string; color: string; questions: Question[]; }
 
-interface QuizQuestion {
-  id: string;
-  lessonId: string;
-  question: string;
-  options: string[];
-  correct: number;
-  explanation: string;
+const ALL_TOPICS: QuizTopic[] = [
+  {
+    id: 'presupuesto', title: 'Presupuesto', icon: '📋', color: '#10B981',
+    questions: [
+      { q: '¿Qué porcentaje destina la regla 50/30/20 al ahorro?', opts: ['10%','20%','30%','50%'], correct: 1, explanation: 'El 20% va a ahorro y deudas, el 50% a necesidades y el 30% a deseos.' },
+      { q: '¿Cuál es el primer paso para crear un presupuesto?', opts: ['Abrir una cuenta','Registrar ingresos y gastos','Pedir un crédito','Invertir en bolsa'], correct: 1, explanation: 'Sin conocer tus números no puedes planificar. Registrar primero es clave.' },
+      { q: 'Un gasto fijo es aquel que...', opts: ['Varía cada mes','Se paga solo una vez','No cambia cada mes','Es opcional'], correct: 2, explanation: 'Gastos fijos son constantes: arriendo, servicios, suscripciones mensuales.' },
+      { q: '¿Qué significa "flujo de caja positivo"?', opts: ['Más deudas que ingresos','Ingresos mayores que gastos','Solo tener efectivo','No tener inversiones'], correct: 1, explanation: 'El flujo de caja positivo ocurre cuando tus ingresos superan tus gastos.' },
+      { q: '¿Cada cuánto deberías revisar tu presupuesto?', opts: ['Una vez al año','Solo cuando tienes problemas','Mensualmente','Cada 5 años'], correct: 2, explanation: 'Revisarlo mensualmente te permite ajustar y mejorar continuamente.' },
+    ],
+  },
+  {
+    id: 'ahorro', title: 'Ahorro', icon: '🐷', color: '#8B5CF6',
+    questions: [
+      { q: '¿Por qué se recomienda automatizar el ahorro?', opts: ['Para ganar más intereses','Para evitar decidir cada mes','Para pagar menos impuestos','Para tener mejor crédito'], correct: 1, explanation: 'Automatizar elimina la tentación de gastar lo que deberías ahorrar.' },
+      { q: '¿Cuántos meses de gastos debe tener un fondo de emergencia?', opts: ['1 mes','2 meses','3 a 6 meses','12 meses'], correct: 2, explanation: '3 a 6 meses es el estándar recomendado por expertos financieros.' },
+      { q: '¿Qué es el "interés compuesto"?', opts: ['Interés que solo se aplica al capital','Interés que se reinvierte y genera más interés','Un tipo de deuda','Un impuesto bancario'], correct: 1, explanation: 'Einstein lo llamó "la octava maravilla del mundo". El interés sobre el interés crece exponencialmente.' },
+      { q: 'Ahorrar primero y gastar el resto se llama...', opts: ['Presupuesto base cero','Pagarte a ti mismo primero','Método 50/30/20','Flujo libre'], correct: 1, explanation: '"Pagar primero a ti mismo" garantiza que el ahorro siempre ocurra.' },
+      { q: '¿Cuál es el enemigo más silencioso del ahorro?', opts: ['La inflación','Los impuestos','Los gastos hormiga','Las deudas'], correct: 2, explanation: 'Los pequeños gastos diarios acumulados son devastadores para el ahorro.' },
+    ],
+  },
+  {
+    id: 'inversion', title: 'Inversión', icon: '📈', color: '#F59E0B',
+    questions: [
+      { q: '¿Qué es un ETF?', opts: ['Un tipo de deuda','Fondo que replica un índice bursátil','Cuenta de ahorros','Seguro de vida'], correct: 1, explanation: 'ETF = Exchange Traded Fund. Invierte en múltiples activos con un solo instrumento.' },
+      { q: '¿Qué significa "diversificar una cartera"?', opts: ['Poner todo en una sola inversión','No invertir nunca','Distribuir el dinero en varios activos','Guardar todo en efectivo'], correct: 2, explanation: 'Diversificar reduce el riesgo: si un activo cae, los otros pueden compensar.' },
+      { q: '¿Qué es el riesgo en una inversión?', opts: ['La comisión del banco','La posibilidad de perder dinero','El plazo de tiempo','La tasa de interés'], correct: 1, explanation: 'Toda inversión tiene riesgo: la posibilidad de que el valor baje.' },
+      { q: '¿Qué principio describe "comprar barato y vender caro"?', opts: ['Especulación','Arbitraje','Inversión de valor','Dollar Cost Averaging'], correct: 0, explanation: 'Comprar bajo y vender alto es el concepto básico de la especulación en mercados.' },
+      { q: '¿Cuál es la inversión más segura en Ecuador?', opts: ['Criptomonedas','Acciones internacionales','Bonos del Estado','Coleccionables'], correct: 2, explanation: 'Los bonos del Estado tienen respaldo gubernamental, aunque ofrecen menores rendimientos.' },
+    ],
+  },
+  {
+    id: 'deuda', title: 'Gestión de Deuda', icon: '⛓️', color: '#EF4444',
+    questions: [
+      { q: '¿Qué estrategia paga primero la deuda de mayor interés?', opts: ['Bola de nieve','Avalancha','Consolidación','Quiebra'], correct: 1, explanation: 'La estrategia avalancha ahorra más dinero en intereses a largo plazo.' },
+      { q: '¿Cuál es el mayor error al usar una tarjeta de crédito?', opts: ['Usarla mucho','Pagar solo el mínimo','Pagar el total cada mes','Tener límite alto'], correct: 1, explanation: 'Pagar solo el mínimo puede multiplicar tu deuda 3x o más en 10 años.' },
+      { q: '¿Qué es la tasa de interés anual (TEA)?', opts: ['El monto total de tu deuda','El costo anual del dinero prestado','Tu puntaje crediticio','El plazo del crédito'], correct: 1, explanation: 'La TEA representa el costo real de pedir prestado dinero durante un año.' },
+      { q: '¿Qué porcentaje del ingreso se recomienda máximo para deudas?', opts: ['10%','20%','36%','50%'], correct: 2, explanation: 'El ratio deuda-ingreso no debería superar el 36% para mantener salud financiera.' },
+      { q: '¿Qué tipo de deuda se considera "buena"?', opts: ['Tarjeta de crédito al 30%','Crédito de consumo','Hipoteca o crédito educativo','Deudas de juego'], correct: 2, explanation: 'La deuda "buena" genera un activo o retorno futuro que supera su costo.' },
+    ],
+  },
+  {
+    id: 'credito', title: 'Crédito y Score', icon: '🏦', color: '#06B6D4',
+    questions: [
+      { q: '¿Qué factor afecta más el puntaje crediticio?', opts: ['Cuántas tarjetas tienes','Historial de pagos','Tu ingreso mensual','El banco donde estás'], correct: 1, explanation: 'El historial de pagos representa el 35% del puntaje crediticio.' },
+      { q: '¿Cuál es el porcentaje ideal de utilización de crédito?', opts: ['Máximo 10%','Máximo 30%','Máximo 60%','Máximo 90%'], correct: 1, explanation: 'Usar menos del 30% de tu crédito disponible mejora tu score significativamente.' },
+      { q: 'Un puntaje de crédito alto te permite...', opts: ['Pagar más impuestos','Acceder a mejores tasas de interés','Obtener más tarjetas automáticamente','Evitar pagar deudas'], correct: 1, explanation: 'Mejor puntaje = menor tasa = miles de dólares ahorrados en préstamos.' },
+      { q: '¿Cuánto tiempo tarda una cuenta morosa en salir del historial?', opts: ['1 año','2 años','5 años','Nunca sale'], correct: 2, explanation: 'En Ecuador, las deudas en mora permanecen en el buró hasta 5 años después de pagadas.' },
+      { q: '¿Qué NO hacer para mejorar tu score?', opts: ['Pagar a tiempo','Cerrar todas tus tarjetas viejas','Mantener baja la utilización','Revisar tu reporte anual'], correct: 1, explanation: 'Cerrar tarjetas antiguas reduce tu historial y aumenta la utilización del crédito disponible.' },
+    ],
+  },
+  {
+    id: 'impuestos', title: 'Impuestos', icon: '🏛️', color: '#64748B',
+    questions: [
+      { q: '¿Qué significa IVA?', opts: ['Interés Variable Anual','Impuesto al Valor Agregado','Ingreso Variable Autorizado','Inversión de Valor Adicional'], correct: 1, explanation: 'En Ecuador el IVA es del 12% y se aplica a la mayoría de bienes y servicios.' },
+      { q: '¿Quiénes deben declarar impuesto a la renta en Ecuador?', opts: ['Solo empresas','Personas con ingresos mayores a la base exenta','Todos los ciudadanos','Solo asalariados'], correct: 1, explanation: 'Las personas naturales con ingresos sobre la fracción básica deben declarar.' },
+      { q: '¿Qué es una deducción fiscal?', opts: ['Un tipo de multa','Un gasto que reduce la base imponible','Un impuesto extra','Un formulario del SRI'], correct: 1, explanation: 'Las deducciones (educación, salud, vivienda) reducen los ingresos sobre los que pagas impuestos.' },
+      { q: '¿Cuál es el ente recaudador de impuestos en Ecuador?', opts: ['BCE','Banco del Pacífico','SRI','Ministerio de Finanzas'], correct: 2, explanation: 'El Servicio de Rentas Internas (SRI) es la autoridad tributaria en Ecuador.' },
+      { q: '¿Qué pasa si no declaras impuestos a tiempo?', opts: ['Nada','Multas e intereses','Deportación','Pérdida del RUC permanentemente'], correct: 1, explanation: 'Las multas por declaración tardía son el 3% por mes, más intereses acumulados.' },
+    ],
+  },
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 @Component({
   selector: 'app-academia',
-  imports: [RouterLink, CommonModule, Nav],
+  imports: [CommonModule, Nav],
   templateUrl: './academia.html',
   styleUrl: './academia.css',
 })
 export class Academia {
-  game = inject(GameService);
+  profile = inject(ProfileService);
 
-  activeLesson = signal<Lesson | null>(null);
-  showQuiz = signal(false);
-  currentQuestion = signal(0);
-  selectedAnswer = signal<number | null>(null);
+  topics = signal(ALL_TOPICS);
+  activeTopic = signal<QuizTopic | null>(null);
+  quizQuestions = signal<Question[]>([]);
+  currentQ = signal(0);
+  selected = signal<number | null>(null);
   answered = signal(false);
-  quizScore = signal(0);
-  quizFinished = signal(false);
-  toastMsg = signal<string | null>(null);
+  score = signal(0);
+  finished = signal(false);
 
-  readonly lessons = signal<Lesson[]>([
-    {
-      id: 'presupuesto', title: 'El Arte del Presupuesto', emoji: '📋', category: 'Fundamentos',
-      content: 'Un presupuesto no es una prisión: es un mapa. La regla 50/30/20 divide tus ingresos en Necesidades (50%), Deseos (30%) y Ahorro/Deuda (20%). Esta simple estructura te da claridad sin hacerte sentir restringido.',
-      tip: 'Empieza por registrar gastos solo 7 días. El solo hecho de observarlos ya cambia tu comportamiento.',
-      completed: false,
-    },
-    {
-      id: 'ahorro', title: 'El Poder del Ahorro Automático', emoji: '🐷', category: 'Ahorro',
-      content: 'La psicología del ahorro exitoso tiene un secreto: automatizarlo. Cuando el dinero llega a tu cuenta y una parte se va inmediatamente a ahorros, no tienes que tomar la decisión de ahorrar cada vez. Tu cerebro lo acepta como un gasto fijo.',
-      tip: 'Abre una cuenta separada SOLO para ahorros. La fricción de accederla reduce el gasto impulsivo un 40%.',
-      completed: false,
-    },
-    {
-      id: 'inversion', title: 'Inversión para No Inversores', emoji: '📈', category: 'Inversión',
-      content: 'No necesitas saber analizar balances para invertir. Los ETFs indexados como el S&P 500 te dan exposición a 500 empresas con una sola compra. Históricamente han rendido un 10% anual promedio. La clave: tiempo en el mercado, no timing del mercado.',
-      tip: 'Invierte aunque sea $10 al mes. El hábito vale más que el monto. Luego escala cuando puedas.',
-      completed: false,
-    },
-    {
-      id: 'deuda', title: 'Cómo Domar la Deuda', emoji: '⛓️', category: 'Deuda',
-      content: 'Hay deuda buena (hipoteca, educación con retorno) y deuda mala (tarjeta de crédito al 30% anual). La estrategia avalancha: paga mínimos en todas y el exceso en la de mayor interés. Ahorra miles en comparación con la estrategia bola de nieve.',
-      tip: 'Pagar el mínimo de tu tarjeta de crédito hace que una deuda de $1,000 cueste $3,000 en 10 años.',
-      completed: false,
-    },
-    {
-      id: 'fondo', title: 'El Fondo de Emergencia', emoji: '🛡️', category: 'Protección',
-      content: 'Tu fondo de emergencia es tu red de seguridad financiera. La meta: 3-6 meses de gastos fijos en una cuenta líquida y separada. Sin este fondo, cada emergencia se convierte en deuda. Con él, es solo un inconveniente.',
-      tip: 'Empieza con la meta de $500. Es suficiente para cubrir la mayoría de emergencias menores.',
-      completed: false,
-    },
-    {
-      id: 'credito', title: 'Construye tu Historial de Crédito', emoji: '🏦', category: 'Crédito',
-      content: 'Tu puntaje de crédito es como tu reputación financiera. Factores clave: historial de pagos (35%), utilización del crédito (30%), antigüedad (15%), tipos de crédito (10%) y consultas nuevas (10%). Pagar a tiempo es el factor más importante.',
-      tip: 'Usa tu tarjeta de crédito para gastos que ya harías en efectivo, y paga el saldo completo cada mes.',
-      completed: false,
-    },
-  ]);
-
-  readonly allQuestions: QuizQuestion[] = [
-    {
-      id: 'q1', lessonId: 'presupuesto',
-      question: 'En la regla 50/30/20, ¿qué porcentaje va destinado al ahorro?',
-      options: ['50%', '30%', '20%', '10%'],
-      correct: 2,
-      explanation: 'La regla 50/30/20 destina el 20% para ahorro y pago de deudas, el 50% para necesidades y el 30% para deseos.',
-    },
-    {
-      id: 'q2', lessonId: 'ahorro',
-      question: '¿Por qué se recomienda automatizar el ahorro?',
-      options: ['Para ganar más intereses', 'Para evitar tomar la decisión cada vez', 'Para tener mejor crédito', 'Para pagar menos impuestos'],
-      correct: 1,
-      explanation: 'Automatizar elimina la "fatiga de decisión". Si el dinero sale automáticamente, nunca tienes que elegir entre gastarlo o ahorrarlo.',
-    },
-    {
-      id: 'q3', lessonId: 'inversion',
-      question: '¿Qué es un ETF indexado?',
-      options: ['Una cuenta de ahorros con alto interés', 'Un préstamo del banco', 'Un fondo que replica un índice de mercado', 'Un seguro de vida'],
-      correct: 2,
-      explanation: 'Un ETF indexado (como el S&P 500) invierte en todas las empresas de un índice, dando diversificación instantánea con bajos costos.',
-    },
-    {
-      id: 'q4', lessonId: 'deuda',
-      question: '¿Qué es la estrategia "avalancha" para pagar deudas?',
-      options: ['Pagar la deuda más pequeña primero', 'Pagar solo los mínimos', 'Pagar primero la deuda con mayor tasa de interés', 'Ignorar las deudas hasta poder pagarlas'],
-      correct: 2,
-      explanation: 'La estrategia avalancha paga primero la deuda con mayor tasa, ahorrando más dinero en intereses totales.',
-    },
-    {
-      id: 'q5', lessonId: 'fondo',
-      question: '¿Cuántos meses de gastos debe tener tu fondo de emergencia?',
-      options: ['1 mes', '2 meses', '3-6 meses', '12 meses'],
-      correct: 2,
-      explanation: 'Un fondo de 3-6 meses es el estándar recomendado. Cubre la mayoría de emergencias sin ser tan difícil de acumular.',
-    },
-    {
-      id: 'q6', lessonId: 'credito',
-      question: '¿Cuál es el factor más importante en tu puntaje de crédito?',
-      options: ['Cuántas tarjetas tienes', 'Historial de pagos', 'Tu ingreso mensual', 'El banco donde tienes cuenta'],
-      correct: 1,
-      explanation: 'El historial de pagos representa el 35% del puntaje crediticio, siendo el factor más determinante.',
-    },
-  ];
-
-  get currentQuestions() {
-    const lesson = this.activeLesson();
-    if (!lesson) return [];
-    return this.allQuestions.filter(q => q.lessonId === lesson.id);
-  }
-
-  get currentQ() {
-    return this.currentQuestions[this.currentQuestion()];
-  }
-
-  openLesson(lesson: Lesson) {
-    this.activeLesson.set(lesson);
-    this.showQuiz.set(false);
-    this.quizFinished.set(false);
-    this.currentQuestion.set(0);
-    this.selectedAnswer.set(null);
+  openTopic(topic: QuizTopic) {
+    this.activeTopic.set(topic);
+    this.quizQuestions.set(shuffle(topic.questions)); // randomise every time
+    this.currentQ.set(0);
+    this.selected.set(null);
     this.answered.set(false);
-    this.quizScore.set(0);
+    this.score.set(0);
+    this.finished.set(false);
   }
 
-  closeLesson() {
-    this.activeLesson.set(null);
-  }
-
-  startQuiz() {
-    this.showQuiz.set(true);
-    this.currentQuestion.set(0);
-    this.selectedAnswer.set(null);
-    this.answered.set(false);
-    this.quizScore.set(0);
-    this.quizFinished.set(false);
-  }
+  closeTopic() { this.activeTopic.set(null); }
 
   selectAnswer(idx: number) {
     if (this.answered()) return;
-    this.selectedAnswer.set(idx);
+    this.selected.set(idx);
     this.answered.set(true);
-    if (idx === this.currentQ.correct) {
-      this.quizScore.update(s => s + 1);
-      this.game.addQuizCorrect();
+    if (idx === this.quizQuestions()[this.currentQ()].correct) {
+      this.score.update(s => s + 1);
     }
   }
 
-  nextQuestion() {
-    const next = this.currentQuestion() + 1;
-    if (next >= this.currentQuestions.length) {
-      this.quizFinished.set(true);
-      const lesson = this.activeLesson();
-      if (lesson) {
-        this.lessons.update(arr => arr.map(l => l.id === lesson.id ? { ...l, completed: true } : l));
-        const bonus = this.quizScore() * 200;
-        this.showToast(`¡Quiz completado! +${bonus} monedas ganadas 🎓`);
-      }
+  next() {
+    const nextIdx = this.currentQ() + 1;
+    if (nextIdx >= this.quizQuestions().length) {
+      // Award coins + XP
+      const coins = this.score() * 150;
+      const xp    = this.score() * 40;
+      this.profile.completeQuiz(coins, xp);
+      this.profile.unlockAchievement('first_quiz');
+      this.finished.set(true);
     } else {
-      this.currentQuestion.set(next);
-      this.selectedAnswer.set(null);
+      this.currentQ.set(nextIdx);
+      this.selected.set(null);
       this.answered.set(false);
     }
   }
 
-  isCorrect(idx: number): boolean {
-    return this.answered() && idx === this.currentQ?.correct;
-  }
+  retry() { this.openTopic(this.activeTopic()!); }
 
-  isWrong(idx: number): boolean {
-    return this.answered() && idx === this.selectedAnswer() && idx !== this.currentQ?.correct;
-  }
+  isCorrect = (i: number) => this.answered() && i === this.current?.correct;
+  isWrong   = (i: number) => this.answered() && i === this.selected() && i !== this.current?.correct;
 
-  showToast(msg: string) {
-    this.toastMsg.set(msg);
-    setTimeout(() => this.toastMsg.set(null), 3500);
-  }
-
-  get completedCount() {
-    return this.lessons().filter(l => l.completed).length;
+  get current(): Question { return this.quizQuestions()[this.currentQ()]; }
+  get totalQ(): number { return this.quizQuestions().length; }
+  get coinsEarned(): number { return this.score() * 150; }
+  get starRating(): string {
+    const pct = this.score() / this.totalQ;
+    if (pct === 1) return '🏆';
+    if (pct >= .6) return '🌟';
+    return '📚';
   }
 }
