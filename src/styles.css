@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-/* ─── FinanzaViva Design Tokens ─────────────────────────── */
+
 :root {
-  /* Signature palette — Emerald + Amber + Violet */
+
   --primary: #10B981;
   --primary-dark: #059669;
   --primary-deep: #064E3B;
@@ -22,7 +22,6 @@
   --success: #10B981;
   --warning: #F59E0B;
 
-  /* Backgrounds — light, airy, green-tinted */
   --bg: #F0FDF6;
   --bg-alt: #E8F9F1;
   --surface: #FFFFFF;
@@ -44,7 +43,7 @@
   --shadow-lg: 0 8px 48px rgba(16, 185, 129, 0.16);
   --shadow-xl: 0 16px 64px rgba(16, 185, 129, 0.2);
 
-  /* Coin / money color */
+
   --coin: #F59E0B;
 
   /* Border radius */
@@ -53,11 +52,11 @@
   --radius-lg: 24px;
   --radius-xl: 32px;
 
-  /* Nav height */
+
   --nav-h: 68px;
 }
 
-/* ─── Reset ──────────────────────────────────────────────── */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; font-size: 16px; }
 body {
@@ -72,7 +71,6 @@ a { text-decoration: none; color: inherit; }
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
 
-/* ─── Utility classes ─────────────────────────────────────── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -177,7 +175,6 @@ input, select, textarea { font-family: inherit; }
   to   { opacity:1; transform:scale(1) translateY(0); }
 }
 
-/* ─── Page shell ─────────────────────────────────────────── */
 .page {
   min-height: 100vh;
   padding-top: var(--nav-h);
@@ -188,7 +185,6 @@ input, select, textarea { font-family: inherit; }
   padding: 28px 20px 48px;
 }
 
-/* ─── Section titles ─────────────────────────────────────── */
 .eyebrow {
   display: inline-block; font-size: .72rem; font-weight: 800;
   letter-spacing: .14em; text-transform: uppercase; color: var(--primary);
@@ -199,11 +195,11 @@ input, select, textarea { font-family: inherit; }
   color: var(--text); letter-spacing: -.02em; line-height: 1.2;
 }
 
-/* ─── XP bar ─────────────────────────────────────────────── */
+
 .xp-bar { height: 6px; background: var(--primary-light); border-radius: 999px; overflow: hidden; }
 .xp-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 999px; transition: width 600ms ease; }
 
-/* ─── View transitions ─────────────────────────────────────── */
+
 ::view-transition-old(root) { animation: vt-out 200ms ease both; }
 ::view-transition-new(root) { animation: vt-in  200ms ease both; }
 @keyframes vt-out { to { opacity:0; transform: translateY(8px); } }
