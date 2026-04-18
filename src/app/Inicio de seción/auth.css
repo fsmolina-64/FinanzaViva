@@ -4,7 +4,7 @@
   min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
 }
 
-/* Left branding panel */
+
 .auth-left {
   background: linear-gradient(145deg, #064E3B 0%, #065F46 40%, #047857 70%, #059669 100%);
   position: relative; overflow: hidden; display: flex; align-items: center;

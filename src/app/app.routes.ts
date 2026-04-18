@@ -20,7 +20,7 @@ export const routes: Routes = [
   {
     path: 'auth',
     canActivate: [requireGuest],
-    loadComponent: () => import('./auth/auth').then(m => m.Auth),
+    loadComponent: () => import('./Inicio de seción/auth').then(m => m.Auth),
     title: 'FinanzaViva — Acceder',
   },
   {

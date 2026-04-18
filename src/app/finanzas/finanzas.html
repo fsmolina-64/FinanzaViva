@@ -36,7 +36,7 @@
       </div>
       <div class="bal-card card bal-out">
         <div class="bc-icon">↓</div>
-        <div class="bc-label">Egresos</div>
+        <div class="bc-label">Gastos</div>
         <div class="bc-val red">{{ svc.formatMoney(monthEgresos()) }}</div>
       </div>
     </div>
@@ -78,7 +78,7 @@
       <div class="filter-pills">
         <button class="fp" [class.active-all]="filterTipo() === 'all'" (click)="filterTipo.set('all')">Todos</button>
         <button class="fp fp-in" [class.active-in]="filterTipo() === 'ingreso'" (click)="filterTipo.set('ingreso')">Ingresos</button>
-        <button class="fp fp-out" [class.active-out]="filterTipo() === 'egreso'" (click)="filterTipo.set('egreso')">Egresos</button>
+        <button class="fp fp-out" [class.active-out]="filterTipo() === 'egreso'" (click)="filterTipo.set('egreso')">Gastos</button>
       </div>
     </div>
 
