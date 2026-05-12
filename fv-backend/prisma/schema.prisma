@@ -1,0 +1,681 @@
+// ============================================================
+// FinanzaViva — Prisma Schema
+// ETAPA 2 — Base de datos completa
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum AccountType {
+  CASH
+  BANK
+  DIGITAL_WALLET
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum UserRank {
+  ROOKIE
+  APPRENTICE
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+  MASTER
+}
+
+enum XpSource {
+  LESSON_COMPLETED
+  QUIZ_PASSED
+  TRANSACTION_LOGGED
+  SIMULATOR_ROUND
+  STREAK_BONUS
+  ACHIEVEMENT_UNLOCKED
+  GOAL_COMPLETED
+}
+
+enum AchievementCategory {
+  LEARNING
+  FINANCES
+  SIMULATOR
+  STREAK
+  GENERAL
+}
+
+enum LessonType {
+  READING
+  INTERACTIVE
+  VIDEO
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SCENARIO
+}
+
+enum QuizDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SimulatorStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+}
+
+enum RoundType {
+  WEEKLY
+  MONTHLY
+}
+
+enum EventCategory {
+  RISK
+  OPPORTUNITY
+  NEUTRAL
+  CRISIS
+}
+
+enum RewardType {
+  AVATAR
+  THEME
+  BADGE
+  SIMULATOR_EVENT
+  FRAME
+}
+
+enum UnlockType {
+  LEVEL
+  RANK
+  ACHIEVEMENT
+  XP_TOTAL
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+// ============================================================
+// AUTH / USUARIOS
+// ============================================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relaciones
+  profile              Profile?
+  gameStats            UserGameStats?
+  statistics           UserStatistics?
+  xpTransactions       XpTransaction[]
+  achievements         UserAchievement[]
+  rewards              UserReward[]
+  financialAccounts    FinancialAccount[]
+  categories           Category[]
+  transactions         Transaction[]
+  budgets              Budget[]
+  goals                FinancialGoal[]
+  moduleProgress       UserModuleProgress[]
+  lessonProgress       UserLessonProgress[]
+  quizAttempts         QuizAttempt[]
+  simulatorGames       SimulatorGame[]
+  simulatorPlayers     SimulatorPlayer[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  displayName String
+  avatarUrl   String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ============================================================
+// GAMIFICACIÓN
+// ============================================================
+
+model UserGameStats {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  xp             Int       @default(0)
+  level          Int       @default(1)
+  rank           UserRank  @default(ROOKIE)
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
+  lastActivityAt DateTime?
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_game_stats")
+}
+
+model Level {
+  id          String  @id @default(uuid())
+  number      Int     @unique
+  name        String
+  xpRequired  Int
+  badge       String
+  rank        UserRank
+  perks       Json?   // descripción de beneficios al alcanzar este nivel
+
+  @@map("levels")
+}
+
+model XpTransaction {
+  id          String    @id @default(uuid())
+  userId      String
+  amount      Int
+  source      XpSource
+  referenceId String?   // UUID del objeto que generó el XP (quizAttemptId, lessonId, etc.)
+  description String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("xp_transactions")
+}
+
+// ============================================================
+// LOGROS
+// ============================================================
+
+model Achievement {
+  id          String              @id @default(uuid())
+  key         String              @unique  // ej: "first_quiz_passed"
+  name        String
+  description String
+  icon        String
+  category    AchievementCategory
+  xpReward    Int                 @default(0)
+  condition   Json                // lógica evaluable: { type, metric, threshold }
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+
+  userAchievements UserAchievement[]
+  rewards          Reward[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ============================================================
+// RECOMPENSAS
+// ============================================================
+
+model Reward {
+  id            String     @id @default(uuid())
+  name          String
+  description   String
+  icon          String
+  type          RewardType
+  unlockType    UnlockType
+  unlockValue   String     // "10" = nivel 10 | "EXPERT" = rango | "first_quiz_passed" = key logro | "5000" = XP total
+  achievementId String?    // solo si unlockType = ACHIEVEMENT
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+
+  achievement Achievement? @relation(fields: [achievementId], references: [id])
+  userRewards UserReward[]
+
+  @@map("rewards")
+}
+
+model UserReward {
+  id         String   @id @default(uuid())
+  userId     String
+  rewardId   String
+  unlockedAt DateTime @default(now())
+  isEquipped Boolean  @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward Reward @relation(fields: [rewardId], references: [id])
+
+  @@unique([userId, rewardId])
+  @@map("user_rewards")
+}
+
+// ============================================================
+// FINANZAS PERSONALES
+// ============================================================
+
+model FinancialAccount {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  type      AccountType
+  balance   Decimal     @default(0) @db.Decimal(12, 2)
+  currency  String      @default("USD")
+  isDefault Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@map("financial_accounts")
+}
+
+model Category {
+  id       String       @id @default(uuid())
+  name     String
+  icon     String
+  color    String
+  type     CategoryType
+  isGlobal Boolean      @default(false) // true = predefinida del sistema
+  userId   String?      // null si isGlobal = true
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@index([userId])
+  @@map("categories")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  userId      String
+  accountId   String
+  categoryId  String
+  amount      Decimal         @db.Decimal(12, 2)
+  type        TransactionType
+  description String?
+  date        DateTime
+  createdAt   DateTime        @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  FinancialAccount @relation(fields: [accountId], references: [id])
+  category Category         @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([date])
+  @@map("transactions")
+}
+
+model Budget {
+  id         String       @id @default(uuid())
+  userId     String
+  categoryId String
+  amount     Decimal      @db.Decimal(12, 2)
+  period     BudgetPeriod
+  startDate  DateTime
+  endDate    DateTime?
+  createdAt  DateTime     @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@map("budgets")
+}
+
+model FinancialGoal {
+  id            String     @id @default(uuid())
+  userId        String
+  name          String
+  targetAmount  Decimal    @db.Decimal(12, 2)
+  currentAmount Decimal    @default(0) @db.Decimal(12, 2)
+  deadline      DateTime?
+  status        GoalStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("financial_goals")
+}
+
+// ============================================================
+// ACADEMIA
+// ============================================================
+
+model Module {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  icon        String
+  order       Int      @unique
+  xpReward    Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  lessons        Lesson[]
+  quizzes        Quiz[]
+  moduleProgress UserModuleProgress[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id        String     @id @default(uuid())
+  moduleId  String
+  title     String
+  content   Json       // bloques: [{ type: "text"|"image"|"example", data: {} }]
+  type      LessonType
+  order     Int
+  xpReward  Int        @default(0)
+  duration  Int        // minutos estimados
+  createdAt DateTime   @default(now())
+
+  module         Module              @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizzes        Quiz[]
+  lessonProgress UserLessonProgress[]
+
+  @@index([moduleId])
+  @@map("lessons")
+}
+
+model UserModuleProgress {
+  id          String         @id @default(uuid())
+  userId      String
+  moduleId    String
+  status      ProgressStatus @default(NOT_STARTED)
+  completedAt DateTime?
+  updatedAt   DateTime       @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id])
+
+  @@unique([userId, moduleId])
+  @@map("user_module_progress")
+}
+
+model UserLessonProgress {
+  id          String         @id @default(uuid())
+  userId      String
+  lessonId    String
+  status      ProgressStatus @default(NOT_STARTED)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+  @@map("user_lesson_progress")
+}
+
+// ============================================================
+// QUIZZES
+// ============================================================
+
+model Quiz {
+  id           String         @id @default(uuid())
+  moduleId     String
+  lessonId     String?
+  title        String
+  difficulty   QuizDifficulty
+  xpReward     Int            @default(0)
+  passingScore Int            @default(70) // porcentaje mínimo para pasar
+  timeLimit    Int?           // segundos; null = sin límite
+  createdAt    DateTime       @default(now())
+
+  module    Module        @relation(fields: [moduleId], references: [id])
+  lesson    Lesson?       @relation(fields: [lessonId], references: [id])
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([moduleId])
+  @@map("quizzes")
+}
+
+model Question {
+  id     String       @id @default(uuid())
+  quizId String
+  text   String
+  type   QuestionType
+  order  Int
+
+  quiz                Quiz                @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers             Answer[]
+  attemptAnswers      QuizAttemptAnswer[]
+
+  @@index([quizId])
+  @@map("questions")
+}
+
+model Answer {
+  id          String  @id @default(uuid())
+  questionId  String
+  text        String
+  isCorrect   Boolean
+  explanation String? // mostrada después de responder
+
+  question       Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attemptAnswers QuizAttemptAnswer[]
+
+  @@index([questionId])
+  @@map("answers")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  userId      String
+  quizId      String
+  score       Int      // porcentaje obtenido (0-100)
+  passed      Boolean
+  timeTaken   Int      // segundos totales
+  completedAt DateTime @default(now())
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz    Quiz                @relation(fields: [quizId], references: [id])
+  answers QuizAttemptAnswer[]
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id         String  @id @default(uuid())
+  attemptId  String
+  questionId String
+  answerId   String
+  isCorrect  Boolean
+  timeTaken  Int?    // segundos en responder esta pregunta
+
+  attempt  QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id])
+  answer   Answer      @relation(fields: [answerId], references: [id])
+
+  @@map("quiz_attempt_answers")
+}
+
+// ============================================================
+// SIMULADOR FINANCIERO
+// ============================================================
+
+model SimulatorGame {
+  id              String          @id @default(uuid())
+  createdByUserId String
+  status          SimulatorStatus @default(WAITING)
+  currentRound    Int             @default(0)
+  maxRounds       Int
+  roundType       RoundType
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime        @default(now())
+
+  createdBy User              @relation(fields: [createdByUserId], references: [id])
+  players   SimulatorPlayer[]
+  rounds    SimulatorRound[]
+
+  @@map("simulator_games")
+}
+
+model SimulatorPlayer {
+  id             String   @id @default(uuid())
+  gameId         String
+  userId         String?  // null = jugador local sin cuenta
+  displayName    String
+  money          Decimal  @default(1000) @db.Decimal(12, 2)
+  income         Decimal  @default(0)   @db.Decimal(12, 2)
+  expenses       Decimal  @default(0)   @db.Decimal(12, 2)
+  debt           Decimal  @default(0)   @db.Decimal(12, 2)
+  financialScore Int      @default(500)
+  isEliminated   Boolean  @default(false)
+  finalRank      Int?     // posición final al terminar la partida
+  createdAt      DateTime @default(now())
+
+  game        SimulatorGame        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user        User?                @relation(fields: [userId], references: [id])
+  roundEvents SimulatorPlayerRound[]
+
+  @@index([gameId])
+  @@map("simulator_players")
+}
+
+model SimulatorEvent {
+  id          String        @id @default(uuid())
+  name        String
+  description String
+  category    EventCategory
+  probability Decimal       @db.Decimal(3, 2) // 0.00 a 1.00
+  isGlobal    Boolean       @default(false)   // true = afecta a todos los jugadores
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+
+  options      SimulatorEventOption[]
+  playerRounds SimulatorPlayerRound[]
+
+  @@map("simulator_events")
+}
+
+model SimulatorEventOption {
+  id            String  @id @default(uuid())
+  eventId       String
+  text          String  // texto de la opción que ve el jugador
+  effectMoney   Decimal @db.Decimal(12, 2)
+  effectIncome  Decimal @db.Decimal(12, 2)
+  effectDebt    Decimal @db.Decimal(12, 2)
+  effectScore   Int
+  explanation   String  // retroalimentación educativa al elegir esta opción
+
+  event        SimulatorEvent       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  playerRounds SimulatorPlayerRound[]
+
+  @@index([eventId])
+  @@map("simulator_event_options")
+}
+
+model SimulatorRound {
+  id          String    @id @default(uuid())
+  gameId      String
+  roundNumber Int
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  game         SimulatorGame          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerRounds SimulatorPlayerRound[]
+
+  @@unique([gameId, roundNumber])
+  @@index([gameId])
+  @@map("simulator_rounds")
+}
+
+model SimulatorPlayerRound {
+  id             String   @id @default(uuid())
+  roundId        String
+  playerId       String
+  eventId        String
+  chosenOptionId String
+  moneyBefore    Decimal  @db.Decimal(12, 2)
+  moneyAfter     Decimal  @db.Decimal(12, 2)
+  debtBefore     Decimal  @db.Decimal(12, 2)
+  debtAfter      Decimal  @db.Decimal(12, 2)
+  scoreBefore    Int
+  scoreAfter     Int
+  decidedAt      DateTime @default(now())
+
+  round        SimulatorRound       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player       SimulatorPlayer      @relation(fields: [playerId], references: [id])
+  event        SimulatorEvent       @relation(fields: [eventId], references: [id])
+  chosenOption SimulatorEventOption @relation(fields: [chosenOptionId], references: [id])
+
+  @@map("simulator_player_rounds")
+}
+
+// ============================================================
+// ESTADÍSTICAS AGREGADAS
+// ============================================================
+
+model UserStatistics {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  totalXpEarned      Int      @default(0)
+  quizzesCompleted   Int      @default(0)
+  quizzesPassed      Int      @default(0)
+  modulesCompleted   Int      @default(0)
+  lessonsCompleted   Int      @default(0)
+  gamesPlayed        Int      @default(0)
+  gamesWon           Int      @default(0)
+  totalTransactions  Int      @default(0)
+  achievementsCount  Int      @default(0)
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_statistics")
+}
