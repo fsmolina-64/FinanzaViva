@@ -6,6 +6,7 @@ import { UsersModule } from './user/users.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { FinancesModule } from './finances/finances.module';
 
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
