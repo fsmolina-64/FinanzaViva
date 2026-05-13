@@ -7,6 +7,7 @@ import { GamificationModule } from './gamification/gamification.module';
 import { FinancesModule } from './finances/finances.module';
 import { AcademyModule } from './academy/academy.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
+import { SimulatorModule } from './simulator/simulator.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { QuizzesModule } from './quizzes/quizzes.module';
     FinancesModule,
     AcademyModule,
     QuizzesModule,
+    SimulatorModule,
   ],
 })
 export class AppModule {}

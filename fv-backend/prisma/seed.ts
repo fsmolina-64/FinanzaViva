@@ -215,6 +215,86 @@ async function main() {
     }
   }
   console.log('✅ Quizzes creados');
+
+    const events = [
+    {
+      name: 'Daño del celular',
+      description: 'Tu celular se dañó y necesitas repararlo o reemplazarlo.',
+      category: 'RISK',
+      probability: 0.30,
+      isGlobal: false,
+      options: [
+        { text: 'Reparar el celular ($150)',        effectMoney: -150, effectIncome: 0,  effectDebt: 0,   effectScore: 5,   explanation: 'Buena decisión. Reparar es más barato que comprar nuevo.' },
+        { text: 'Comprar celular nuevo a crédito',  effectMoney: 0,    effectIncome: 0,  effectDebt: 400, effectScore: -20, explanation: 'Cuidado. Endeudarte por un celular afecta tu salud financiera.' },
+        { text: 'Usar celular viejo por ahora',     effectMoney: 0,    effectIncome: 0,  effectDebt: 0,   effectScore: 15,  explanation: 'Excelente. Evitar gastos innecesarios es una decisión inteligente.' },
+      ],
+    },
+    {
+      name: 'Oportunidad de negocio',
+      description: 'Un amigo te invita a invertir en un pequeño negocio.',
+      category: 'OPPORTUNITY',
+      probability: 0.20,
+      isGlobal: false,
+      options: [
+        { text: 'Invertir $300 de tus ahorros',     effectMoney: -300, effectIncome: 100, effectDebt: 0,   effectScore: 20,  explanation: 'Invertir con dinero propio es lo más seguro.' },
+        { text: 'Pedir préstamo para invertir',     effectMoney: 200,  effectIncome: 100, effectDebt: 500, effectScore: -10, explanation: 'Invertir con deuda es riesgoso. El negocio puede fallar.' },
+        { text: 'Rechazar la oferta',               effectMoney: 0,    effectIncome: 0,   effectDebt: 0,   effectScore: 0,   explanation: 'Válido. No toda inversión es buena si no tienes capital.' },
+      ],
+    },
+    {
+      name: 'Aumento de salario',
+      description: 'Tu empleador te ofrece un aumento del 20%.',
+      category: 'OPPORTUNITY',
+      probability: 0.15,
+      isGlobal: false,
+      options: [
+        { text: 'Aceptar y ahorrar el extra',       effectMoney: 0,    effectIncome: 100, effectDebt: 0,   effectScore: 30,  explanation: 'Perfecto. Ahorrar el aumento acelera tu libertad financiera.' },
+        { text: 'Aceptar y gastar el extra',        effectMoney: 0,    effectIncome: 100, effectDebt: 0,   effectScore: 5,   explanation: 'Aceptaste pero no aprovechaste para mejorar tu situación.' },
+        { text: 'Negociar un aumento mayor',        effectMoney: 0,    effectIncome: 150, effectDebt: 0,   effectScore: 25,  explanation: 'Negociar tu salario es una habilidad financiera valiosa.' },
+      ],
+    },
+    {
+      name: 'Inflación',
+      description: 'Los precios subieron un 10% este mes.',
+      category: 'CRISIS',
+      probability: 0.25,
+      isGlobal: true,
+      options: [
+        { text: 'Ajustar tu presupuesto',           effectMoney: -50,  effectIncome: 0,   effectDebt: 0,   effectScore: 20,  explanation: 'Adaptar tu presupuesto ante la inflación es lo correcto.' },
+        { text: 'Ignorar el impacto',               effectMoney: -100, effectIncome: 0,   effectDebt: 0,   effectScore: -15, explanation: 'Ignorar la inflación genera déficit sin darte cuenta.' },
+        { text: 'Buscar ingresos extra',            effectMoney: 50,   effectIncome: 50,  effectDebt: 0,   effectScore: 25,  explanation: 'Buscar ingresos adicionales es una respuesta inteligente.' },
+      ],
+    },
+    {
+      name: 'Emergencia médica',
+      description: 'Tuviste un accidente menor y necesitas atención médica.',
+      category: 'RISK',
+      probability: 0.20,
+      isGlobal: false,
+      options: [
+        { text: 'Pagar con fondo de emergencia',    effectMoney: -200, effectIncome: 0,   effectDebt: 0,   effectScore: 30,  explanation: 'Para eso existe el fondo de emergencia. Excelente planificación.' },
+        { text: 'Pagar con tarjeta de crédito',     effectMoney: 0,    effectIncome: 0,   effectDebt: 200, effectScore: -10, explanation: 'Usa el crédito solo si no tienes otra opción.' },
+        { text: 'Pedir dinero prestado a familia',  effectMoney: -200, effectIncome: 0,   effectDebt: 0,   effectScore: -5,  explanation: 'Mezclar dinero y familia puede generar conflictos.' },
+      ],
+    },
+  ];
+
+  for (const event of events) {
+    const exists = await prisma.simulatorEvent.findFirst({ where: { name: event.name } });
+    if (!exists) {
+      await prisma.simulatorEvent.create({
+        data: {
+          name: event.name,
+          description: event.description,
+          category: event.category as any,
+          probability: event.probability,
+          isGlobal: event.isGlobal,
+          options: { create: event.options },
+        },
+      });
+    }
+  }
+  console.log('✅ Eventos del simulador creados');
 }
 
 main()
