@@ -295,6 +295,52 @@ async function main() {
     }
   }
   console.log('✅ Eventos del simulador creados');
+
+    const achievements = [
+    { key: 'first_quiz_passed',     name: 'Primer Quiz',         description: 'Aprueba tu primer quiz.',              icon: '🎯', category: 'LEARNING',  xpReward: 50,  condition: { metric: 'quizzes_passed',     threshold: 1  } },
+    { key: 'quiz_master',           name: 'Quiz Master',         description: 'Aprueba 10 quizzes.',                  icon: '🏆', category: 'LEARNING',  xpReward: 150, condition: { metric: 'quizzes_passed',     threshold: 10 } },
+    { key: 'first_lesson',          name: 'Primer Paso',         description: 'Completa tu primera lección.',         icon: '📘', category: 'LEARNING',  xpReward: 30,  condition: { metric: 'lessons_completed',  threshold: 1  } },
+    { key: 'module_master',         name: 'Módulo Completo',     description: 'Completa un módulo entero.',           icon: '📗', category: 'LEARNING',  xpReward: 100, condition: { metric: 'modules_completed',  threshold: 1  } },
+    { key: 'first_transaction',     name: 'Registro Financiero', description: 'Registra tu primera transacción.',     icon: '💰', category: 'FINANCES',  xpReward: 30,  condition: { metric: 'total_transactions', threshold: 1  } },
+    { key: 'transaction_master',    name: 'Contador',            description: 'Registra 50 transacciones.',          icon: '📊', category: 'FINANCES',  xpReward: 100, condition: { metric: 'total_transactions', threshold: 50 } },
+    { key: 'first_game',            name: 'Primer Juego',        description: 'Completa tu primera partida.',        icon: '🎮', category: 'SIMULATOR', xpReward: 50,  condition: { metric: 'games_played',       threshold: 1  } },
+    { key: 'streak_7',              name: 'Semana Constante',    description: 'Mantén una racha de 7 días.',         icon: '🔥', category: 'STREAK',    xpReward: 100, condition: { metric: 'current_streak',     threshold: 7  } },
+    { key: 'streak_30',             name: 'Mes Constante',       description: 'Mantén una racha de 30 días.',        icon: '⚡', category: 'STREAK',    xpReward: 300, condition: { metric: 'current_streak',     threshold: 30 } },
+    { key: 'level_5',               name: 'Nivel 5',             description: 'Alcanza el nivel 5.',                 icon: '⭐', category: 'GENERAL',   xpReward: 100, condition: { metric: 'level',              threshold: 5  } },
+    { key: 'level_10',              name: 'Leyenda',             description: 'Alcanza el nivel máximo.',            icon: '👑', category: 'GENERAL',   xpReward: 500, condition: { metric: 'level',              threshold: 10 } },
+  ];
+
+  for (const achievement of achievements) {
+    const exists = await prisma.achievement.findUnique({ where: { key: achievement.key } });
+    if (!exists) {
+      await prisma.achievement.create({
+        data: { ...achievement, category: achievement.category as any },
+      });
+    }
+  }
+  console.log('✅ Logros creados');
+
+  // ── RECOMPENSAS ───────────────────────────────────
+  const rewards = [
+    { name: 'Avatar Inversor',      description: 'Desbloquea el avatar de inversor.',      icon: '👔', type: 'AVATAR', unlockType: 'LEVEL',       unlockValue: '5'              },
+    { name: 'Avatar Maestro',       description: 'Desbloquea el avatar de maestro.',       icon: '🎓', type: 'AVATAR', unlockType: 'LEVEL',       unlockValue: '10'             },
+    { name: 'Tema Oscuro Premium',  description: 'Desbloquea el tema oscuro premium.',     icon: '🌙', type: 'THEME',  unlockType: 'RANK',        unlockValue: 'INTERMEDIATE'   },
+    { name: 'Tema Dorado',          description: 'Desbloquea el tema dorado.',             icon: '✨', type: 'THEME',  unlockType: 'RANK',        unlockValue: 'EXPERT'         },
+    { name: 'Marco Plata',          description: 'Marco de perfil plateado.',              icon: '🥈', type: 'FRAME',  unlockType: 'LEVEL',       unlockValue: '3'              },
+    { name: 'Marco Oro',            description: 'Marco de perfil dorado.',                icon: '🥇', type: 'FRAME',  unlockType: 'RANK',        unlockValue: 'ADVANCED'       },
+    { name: 'Insignia Quiz Master', description: 'Insignia exclusiva de Quiz Master.',     icon: '🏆', type: 'BADGE',  unlockType: 'ACHIEVEMENT', unlockValue: 'quiz_master'    },
+    { name: 'Insignia Constante',   description: 'Insignia por racha de 30 días.',         icon: '🔥', type: 'BADGE',  unlockType: 'ACHIEVEMENT', unlockValue: 'streak_30'      },
+  ];
+
+  for (const reward of rewards) {
+    const exists = await prisma.reward.findFirst({ where: { name: reward.name } });
+    if (!exists) {
+      await prisma.reward.create({
+        data: { ...reward, type: reward.type as any, unlockType: reward.unlockType as any },
+      });
+    }
+  }
+  console.log('✅ Recompensas creadas');
 }
 
 main()

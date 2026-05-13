@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddXpDto } from './dto/add-xp.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UserActionEvent } from '../common/events/user-action.event';
 
 @Injectable()
 export class GamificationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   async addXp(userId: string, dto: AddXpDto) {
     await this.prisma.xpTransaction.create({
@@ -28,6 +33,8 @@ export class GamificationService {
       where: { userId },
       data: { totalXpEarned: { increment: dto.amount } },
     });
+
+    this.eventEmitter.emit('user.action', new UserActionEvent(userId));
 
     return {
       xp: stats.xp,

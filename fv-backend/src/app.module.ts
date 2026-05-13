@@ -8,7 +8,8 @@ import { FinancesModule } from './finances/finances.module';
 import { AcademyModule } from './academy/academy.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { SimulatorModule } from './simulator/simulator.module';
-
+import { AchievementsModule } from './achievements/achievements.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -20,6 +21,8 @@ import { SimulatorModule } from './simulator/simulator.module';
     AcademyModule,
     QuizzesModule,
     SimulatorModule,
+    AchievementsModule,
+    EventEmitterModule.forRoot(),
   ],
 })
 export class AppModule {}
