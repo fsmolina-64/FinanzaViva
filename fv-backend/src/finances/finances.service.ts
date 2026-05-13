@@ -15,11 +15,17 @@ export class FinancesService {
   ) {}
 
 
-  async createAccount(userId: string, dto: CreateAccountDto) {
-    return this.prisma.financialAccount.create({
-      data: { ...dto, userId },
-    });
-  }
+async createAccount(userId: string, dto: CreateAccountDto) {
+  return this.prisma.financialAccount.create({
+    data: {
+      userId,
+      name: dto.name,
+      type: dto.type,
+      isDefault: dto.isDefault ?? false,
+      balance: dto.initialBalance ?? 0,
+    },
+  });
+}
 
   async getAccounts(userId: string) {
     return this.prisma.financialAccount.findMany({
@@ -164,4 +170,30 @@ export class FinancesService {
 
     return { totalBalance, monthlyIncome: income, monthlyExpenses: expenses };
   }
+  async deleteTransaction(userId: string, transactionId: string) {
+  const transaction = await this.prisma.transaction.findUnique({
+    where: { id: transactionId },
+  });
+
+  if (!transaction) throw new NotFoundException('Transacción no encontrada');
+  if (transaction.userId !== userId) throw new ForbiddenException();
+
+  const balanceDelta = transaction.type === 'INCOME' 
+    ? -Number(transaction.amount) 
+    : Number(transaction.amount);
+
+  await this.prisma.$transaction([
+    this.prisma.transaction.delete({ where: { id: transactionId } }),
+    this.prisma.financialAccount.update({
+      where: { id: transaction.accountId },
+      data: { balance: { increment: balanceDelta } },
+    }),
+    this.prisma.userStatistics.update({
+      where: { userId },
+      data: { totalTransactions: { decrement: 1 } },
+    }),
+  ]);
+
+  return { message: 'Transacción eliminada' };
+}
 }

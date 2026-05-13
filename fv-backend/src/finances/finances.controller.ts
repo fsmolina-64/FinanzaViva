@@ -65,4 +65,8 @@ export class FinancesController {
   getGoals(@Request() req: any) {
     return this.financesService.getGoals(req.user.id);
   }
+  @Delete('transactions/:id')
+deleteTransaction(@Request() req: any, @Param('id') id: string) {
+  return this.financesService.deleteTransaction(req.user.id, id);
+}
 }
