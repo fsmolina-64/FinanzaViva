@@ -19,6 +19,32 @@ async function main() {
     { number: 10, name: 'Leyenda',      xpRequired: 6000, rank: UserRank.MASTER,       badge: '👑' },
   ];
 
+  const categories = [
+    { name: 'Salario',        icon: '💼', color: '#10B981', type: 'INCOME',  isGlobal: true },
+    { name: 'Freelance',      icon: '💻', color: '#10B981', type: 'INCOME',  isGlobal: true },
+    { name: 'Inversiones',    icon: '📈', color: '#10B981', type: 'INCOME',  isGlobal: true },
+    { name: 'Alimentación',   icon: '🍔', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Transporte',     icon: '🚌', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Entretenimiento',icon: '🎮', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Salud',          icon: '🏥', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Educación',      icon: '📚', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Servicios',      icon: '💡', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+    { name: 'Ropa',           icon: '👕', color: '#EF4444', type: 'EXPENSE', isGlobal: true },
+  ];
+
+for (const category of categories) {
+    const exists = await prisma.category.findFirst({
+      where: { name: category.name, isGlobal: true },
+    });
+    if (!exists) {
+      await prisma.category.create({
+        data: { ...category, type: category.type as any },
+      });
+    }
+  }
+
+  console.log('✅ Categorías creadas');
+
   for (const level of levels) {
     await prisma.level.upsert({
       where: { number: level.number },
