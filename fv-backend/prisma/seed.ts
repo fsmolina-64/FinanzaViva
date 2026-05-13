@@ -56,8 +56,7 @@ async function main() {
   }
   console.log('✅ Categorías creadas');
 
-  // ── MÓDULOS ACADEMIA ──────────────────────────────
-  const academyModules = [
+    const academyModules = [
     {
       title: 'Presupuesto Personal',
       description: 'Aprende a controlar tus gastos e ingresos.',
@@ -155,6 +154,67 @@ async function main() {
     }
   }
   console.log('✅ Módulos de academia creados');
+  // ── QUIZZES ───────────────────────────────────────
+  const firstModule = await prisma.module.findFirst({ where: { order: 1 } });
+
+  if (firstModule) {
+    const existingQuiz = await prisma.quiz.findFirst({ where: { moduleId: firstModule.id } });
+
+    if (!existingQuiz) {
+      await prisma.quiz.create({
+        data: {
+          moduleId: firstModule.id,
+          title: 'Quiz: Presupuesto Personal',
+          difficulty: 'EASY',
+          xpReward: 50,
+          passingScore: 70,
+          timeLimit: 120,
+          questions: {
+            create: [
+              {
+                text: '¿Qué es un presupuesto personal?',
+                type: 'MULTIPLE_CHOICE',
+                order: 1,
+                answers: {
+                  create: [
+                    { text: 'Un plan para controlar ingresos y gastos', isCorrect: true,  explanation: 'Correcto. El presupuesto organiza tu dinero.' },
+                    { text: 'Un préstamo bancario',                     isCorrect: false, explanation: 'No. Un préstamo es deuda, no un plan.' },
+                    { text: 'Una cuenta de ahorros',                    isCorrect: false, explanation: 'No. Una cuenta es un producto bancario.' },
+                    { text: 'Un estado de cuenta',                      isCorrect: false, explanation: 'No. El estado de cuenta muestra movimientos pasados.' },
+                  ],
+                },
+              },
+              {
+                text: 'La regla 50/30/20 asigna el 20% al ahorro.',
+                type: 'TRUE_FALSE',
+                order: 2,
+                answers: {
+                  create: [
+                    { text: 'Verdadero', isCorrect: true,  explanation: 'Correcto. 20% va destinado al ahorro.' },
+                    { text: 'Falso',     isCorrect: false, explanation: 'Incorrecto. Sí es el 20% para ahorro.' },
+                  ],
+                },
+              },
+              {
+                text: 'Tienes $1000 de ingreso. ¿Cuánto deberías ahorrar según la regla 50/30/20?',
+                type: 'SCENARIO',
+                order: 3,
+                answers: {
+                  create: [
+                    { text: '$200', isCorrect: true,  explanation: 'Correcto. 20% de $1000 = $200.' },
+                    { text: '$500', isCorrect: false, explanation: 'Ese sería el 50% para necesidades.' },
+                    { text: '$300', isCorrect: false, explanation: 'Ese sería el 30% para deseos.' },
+                    { text: '$100', isCorrect: false, explanation: 'Eso sería solo el 10%.' },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+    }
+  }
+  console.log('✅ Quizzes creados');
 }
 
 main()
