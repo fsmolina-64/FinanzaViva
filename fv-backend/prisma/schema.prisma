@@ -1,8 +1,3 @@
-// ============================================================
-// FinanzaViva — Prisma Schema
-// ETAPA 2 — Base de datos completa
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
 // ENUMS
-// ============================================================
 
 enum AccountType {
   CASH
@@ -128,9 +121,7 @@ enum CategoryType {
   EXPENSE
 }
 
-// ============================================================
-// AUTH / USUARIOS
-// ============================================================
+// AUTH - USUARIO
 
 model User {
   id           String   @id @default(uuid())
@@ -141,7 +132,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Relaciones
+// Relaciones
+
   profile              Profile?
   gameStats            UserGameStats?
   statistics           UserStatistics?
@@ -176,9 +168,7 @@ model Profile {
   @@map("profiles")
 }
 
-// ============================================================
 // GAMIFICACIÓN
-// ============================================================
 
 model UserGameStats {
   id             String    @id @default(uuid())
@@ -224,9 +214,7 @@ model XpTransaction {
   @@map("xp_transactions")
 }
 
-// ============================================================
 // LOGROS
-// ============================================================
 
 model Achievement {
   id          String              @id @default(uuid())
@@ -259,9 +247,7 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
-// ============================================================
 // RECOMPENSAS
-// ============================================================
 
 model Reward {
   id            String     @id @default(uuid())
@@ -295,9 +281,7 @@ model UserReward {
   @@map("user_rewards")
 }
 
-// ============================================================
 // FINANZAS PERSONALES
-// ============================================================
 
 model FinancialAccount {
   id        String      @id @default(uuid())
@@ -388,9 +372,7 @@ model FinancialGoal {
   @@map("financial_goals")
 }
 
-// ============================================================
 // ACADEMIA
-// ============================================================
 
 model Module {
   id          String   @id @default(uuid())
@@ -457,9 +439,7 @@ model UserLessonProgress {
   @@map("user_lesson_progress")
 }
 
-// ============================================================
 // QUIZZES
-// ============================================================
 
 model Quiz {
   id           String         @id @default(uuid())
@@ -543,9 +523,7 @@ model QuizAttemptAnswer {
   @@map("quiz_attempt_answers")
 }
 
-// ============================================================
 // SIMULADOR FINANCIERO
-// ============================================================
 
 model SimulatorGame {
   id              String          @id @default(uuid())
@@ -657,9 +635,7 @@ model SimulatorPlayerRound {
   @@map("simulator_player_rounds")
 }
 
-// ============================================================
 // ESTADÍSTICAS AGREGADAS
-// ============================================================
 
 model UserStatistics {
   id                 String   @id @default(uuid())
