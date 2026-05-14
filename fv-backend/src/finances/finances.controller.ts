@@ -69,4 +69,8 @@ export class FinancesController {
 deleteTransaction(@Request() req: any, @Param('id') id: string) {
   return this.financesService.deleteTransaction(req.user.id, id);
 }
+@Get('budget-health')
+getBudgetHealth(@Request() req: any) {
+  return this.financesService.getBudgetHealth(req.user.id);
+}
 }

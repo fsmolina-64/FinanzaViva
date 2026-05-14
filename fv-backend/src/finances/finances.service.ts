@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { CreateAccountDto } from './dto/create-account.dto';
@@ -14,18 +14,19 @@ export class FinancesService {
     private gamification: GamificationService,
   ) {}
 
+  // ── CUENTAS ──────────────────────────────────────
 
-async createAccount(userId: string, dto: CreateAccountDto) {
-  return this.prisma.financialAccount.create({
-    data: {
-      userId,
-      name: dto.name,
-      type: dto.type,
-      isDefault: dto.isDefault ?? false,
-      balance: dto.initialBalance ?? 0,
-    },
-  });
-}
+  async createAccount(userId: string, dto: CreateAccountDto) {
+    return this.prisma.financialAccount.create({
+      data: {
+        userId,
+        name: dto.name,
+        type: dto.type,
+        isDefault: dto.isDefault ?? false,
+        balance: dto.initialBalance ?? 0,
+      },
+    });
+  }
 
   async getAccounts(userId: string) {
     return this.prisma.financialAccount.findMany({
@@ -43,6 +44,7 @@ async createAccount(userId: string, dto: CreateAccountDto) {
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
 
+  // ── TRANSACCIONES ─────────────────────────────────
 
   async createTransaction(userId: string, dto: CreateTransactionDto) {
     const account = await this.prisma.financialAccount.findUnique({
@@ -50,8 +52,16 @@ async createAccount(userId: string, dto: CreateAccountDto) {
     });
     if (!account || account.userId !== userId) throw new ForbiddenException();
 
-    const balanceDelta =
-      dto.type === 'INCOME' ? dto.amount : -dto.amount;
+    // Validar saldo suficiente antes de gastar
+    if (dto.type === 'EXPENSE') {
+      if (Number(account.balance) < dto.amount) {
+        throw new BadRequestException(
+          `Saldo insuficiente. Tienes $${Number(account.balance).toFixed(2)} y quieres gastar $${dto.amount.toFixed(2)}`,
+        );
+      }
+    }
+
+    const balanceDelta = dto.type === 'INCOME' ? dto.amount : -dto.amount;
 
     const [transaction] = await this.prisma.$transaction([
       this.prisma.transaction.create({
@@ -82,7 +92,52 @@ async createAccount(userId: string, dto: CreateAccountDto) {
       description: 'Transacción registrada',
     });
 
-    return transaction;
+    // Verificar alerta de presupuesto por categoría
+    let alert: { type: string; message: string; percentage: number } | null = null;
+
+    if (dto.type === 'EXPENSE') {
+      const budget = await this.prisma.budget.findFirst({
+        where: {
+          userId,
+          categoryId: dto.categoryId,
+          startDate: { lte: new Date() },
+          OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+        },
+      });
+
+      if (budget) {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const spent = await this.prisma.transaction.aggregate({
+          where: {
+            userId,
+            categoryId: dto.categoryId,
+            type: 'EXPENSE',
+            date: { gte: startOfMonth },
+          },
+          _sum: { amount: true },
+        });
+
+        const totalSpent = Number(spent._sum.amount ?? 0);
+        const budgetAmount = Number(budget.amount);
+        const percentage = Math.round((totalSpent / budgetAmount) * 100);
+
+        if (totalSpent > budgetAmount) {
+          alert = {
+            type: 'BUDGET_EXCEEDED',
+            message: `Superaste tu presupuesto en esta categoría. Gastaste $${totalSpent.toFixed(2)} de $${budgetAmount.toFixed(2)}`,
+            percentage,
+          };
+        } else if (percentage >= 80) {
+          alert = {
+            type: 'BUDGET_WARNING',
+            message: `Llevas el ${percentage}% de tu presupuesto en esta categoría.`,
+            percentage,
+          };
+        }
+      }
+    }
+
+    return { transaction, alert };
   }
 
   async getTransactions(userId: string) {
@@ -93,6 +148,33 @@ async createAccount(userId: string, dto: CreateAccountDto) {
     });
   }
 
+  async deleteTransaction(userId: string, transactionId: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) throw new NotFoundException('Transacción no encontrada');
+    if (transaction.userId !== userId) throw new ForbiddenException();
+
+    const balanceDelta =
+      transaction.type === 'INCOME'
+        ? -Number(transaction.amount)
+        : Number(transaction.amount);
+
+    await this.prisma.$transaction([
+      this.prisma.transaction.delete({ where: { id: transactionId } }),
+      this.prisma.financialAccount.update({
+        where: { id: transaction.accountId },
+        data: { balance: { increment: balanceDelta } },
+      }),
+      this.prisma.userStatistics.update({
+        where: { userId },
+        data: { totalTransactions: { decrement: 1 } },
+      }),
+    ]);
+
+    return { message: 'Transacción eliminada' };
+  }
 
   async getCategories(userId: string) {
     return this.prisma.category.findMany({
@@ -102,7 +184,6 @@ async createAccount(userId: string, dto: CreateAccountDto) {
       orderBy: { name: 'asc' },
     });
   }
-
 
   async createBudget(userId: string, dto: CreateBudgetDto) {
     return this.prisma.budget.create({
@@ -123,7 +204,6 @@ async createAccount(userId: string, dto: CreateAccountDto) {
       include: { category: true },
     });
   }
-
 
   async createGoal(userId: string, dto: CreateGoalDto) {
     return this.prisma.financialGoal.create({
@@ -170,30 +250,61 @@ async createAccount(userId: string, dto: CreateAccountDto) {
 
     return { totalBalance, monthlyIncome: income, monthlyExpenses: expenses };
   }
-  async deleteTransaction(userId: string, transactionId: string) {
-  const transaction = await this.prisma.transaction.findUnique({
-    where: { id: transactionId },
-  });
 
-  if (!transaction) throw new NotFoundException('Transacción no encontrada');
-  if (transaction.userId !== userId) throw new ForbiddenException();
+  async getBudgetHealth(userId: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const balanceDelta = transaction.type === 'INCOME' 
-    ? -Number(transaction.amount) 
-    : Number(transaction.amount);
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId, date: { gte: startOfMonth } },
+      include: { category: true },
+    });
 
-  await this.prisma.$transaction([
-    this.prisma.transaction.delete({ where: { id: transactionId } }),
-    this.prisma.financialAccount.update({
-      where: { id: transaction.accountId },
-      data: { balance: { increment: balanceDelta } },
-    }),
-    this.prisma.userStatistics.update({
-      where: { userId },
-      data: { totalTransactions: { decrement: 1 } },
-    }),
-  ]);
+    const income = transactions
+      .filter((t) => t.type === 'INCOME')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  return { message: 'Transacción eliminada' };
-}
+    const expenses = transactions
+      .filter((t) => t.type === 'EXPENSE')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const available = income - expenses;
+    const percentage = income > 0 ? Math.round((expenses / income) * 100) : 0;
+
+    let status: string;
+    let message: string;
+
+    if (percentage >= 100) {
+      status = 'CRITICAL';
+      message = `Gastaste más de lo que ganaste. Déficit de $${Math.abs(available).toFixed(2)}`;
+    } else if (percentage >= 90) {
+      status = 'DANGER';
+      message = `Cuidado. Usaste el ${percentage}% de tus ingresos. Solo te quedan $${available.toFixed(2)}`;
+    } else if (percentage >= 80) {
+      status = 'WARNING';
+      message = `Vas al ${percentage}% de tu presupuesto. Modera tus gastos.`;
+    } else {
+      status = 'HEALTHY';
+      message = `Vas bien. Llevas el ${percentage}% de tu presupuesto usado.`;
+    }
+
+    // Gastos agrupados por categoría
+    const breakdown = transactions
+      .filter((t) => t.type === 'EXPENSE')
+      .reduce((acc: Record<string, number>, t) => {
+        const cat = t.category.name;
+        acc[cat] = (acc[cat] || 0) + Number(t.amount);
+        return acc;
+      }, {});
+
+    return {
+      income,
+      expenses,
+      available,
+      percentage,
+      status,
+      message,
+      breakdown,
+    };
+  }
 }
