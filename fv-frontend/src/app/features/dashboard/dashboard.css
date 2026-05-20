@@ -1,0 +1,24 @@
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease forwards;
+}
+
+.card-glow {
+  box-shadow: 0 0 40px rgba(37, 99, 235, 0.08);
+}
+
+.xp-bar {
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+}
+
+.stat-card {
+  cursor: default;
+}
+
+.quick-action {
+  text-decoration: none;
+}
