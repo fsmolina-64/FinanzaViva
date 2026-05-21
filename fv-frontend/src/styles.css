@@ -1,26 +1,15 @@
-@import "tailwindcss";
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   * {
     box-sizing: border-box;
   }
-
   body {
     font-family: 'Inter', sans-serif;
     background-color: #0F172A;
     color: #1E293B;
     margin: 0;
-  }
-}
-
-@layer theme {
-  :root {
-    --color-primary: #2563EB;
-    --color-secondary: #10B981;
-    --color-bg-dark: #0F172A;
-    --color-bg-light: #F8FAFC;
-    --color-text: #1E293B;
-    --color-error: #EF4444;
-    --color-warning: #F59E0B;
   }
 }
