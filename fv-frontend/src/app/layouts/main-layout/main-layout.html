@@ -54,15 +54,15 @@
       <div class="flex items-center gap-4">
         @if (gamificationService.stats()) {
           <div class="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg">
-            <span class="text-white text-sm font-semibold">Racha: {{ gamificationService.stats()!.streak }}</span>
+            <span class="text-white text-sm font-semibold">Racha: {{ gamificationService.stats()!.currentStreak }}</span>
           </div>
         }
         @if (authService.currentUser()) {
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 bg-[#2563EB] rounded-full flex items-center justify-center hover:scale-105 cursor-pointer transition-all duration-200">
-              <span class="text-white text-xs font-bold">{{ authService.currentUser()!.name.charAt(0).toUpperCase() }}</span>
+              <span class="text-white text-xs font-bold">{{ authService.currentUser()!.displayName.charAt(0).toUpperCase() }}</span>
             </div>
-            <span class="text-slate-300 text-sm font-medium hidden md:block">{{ authService.currentUser()!.name }}</span>
+            <span class="text-slate-300 text-sm font-medium hidden md:block">{{ authService.currentUser()!.displayName }}</span>
           </div>
         }
       </div>

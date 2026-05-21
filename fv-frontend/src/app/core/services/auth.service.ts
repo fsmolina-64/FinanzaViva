@@ -2,12 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import {
-  LoginRequest,
-  RegisterRequest,
-  AuthResponse
-} from '../models/auth.model';
-import { UserProfile } from '../models/user.model';
+import { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +12,7 @@ export class AuthService {
   private readonly USER_KEY = 'fv_user';
 
   isLoggedIn = signal<boolean>(this.hasToken());
-  currentUser = signal<UserProfile | null>(this.getSavedUser());
+  currentUser = signal<AuthUser | null>(this.getSavedUser());
 
   constructor(
     private api: ApiService,
@@ -52,15 +47,15 @@ export class AuthService {
     return !!localStorage.getItem(this.TOKEN_KEY);
   }
 
-  private getSavedUser(): UserProfile | null {
+  private getSavedUser(): AuthUser | null {
     const saved = localStorage.getItem(this.USER_KEY);
     return saved ? JSON.parse(saved) : null;
   }
 
   private saveSession(response: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, response.access_token);
+    localStorage.setItem(this.TOKEN_KEY, response.token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     this.isLoggedIn.set(true);
-    this.currentUser.set(response.user as UserProfile);
+    this.currentUser.set(response.user);
   }
 }

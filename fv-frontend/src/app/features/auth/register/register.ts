@@ -22,19 +22,18 @@ export class Register {
     private router: Router
   ) {
     this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
+      displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatch });
   }
 
-  get name() { return this.form.get('name')!; }
+  get displayName() { return this.form.get('displayName')!; }
   get email() { return this.form.get('email')!; }
   get password() { return this.form.get('password')!; }
   get confirmPassword() { return this.form.get('confirmPassword')!; }
 
-  // Validador personalizado — verifica que passwords coincidan
   passwordMatch(group: FormGroup) {
     const pass = group.get('password')?.value;
     const confirm = group.get('confirmPassword')?.value;
@@ -46,13 +45,12 @@ export class Register {
       this.form.markAllAsTouched();
       return;
     }
-
     this.loading.set(true);
     this.error.set(null);
 
-    const { name, email, password } = this.form.value;
+    const { displayName, email, password } = this.form.value;
 
-    this.authService.register({ name, email, password }).subscribe({
+    this.authService.register({ displayName, email, password }).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
         this.error.set(err.error?.message || 'Error al registrarse');

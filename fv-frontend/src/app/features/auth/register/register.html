@@ -1,10 +1,9 @@
-<div class="animate-slide-up">
+﻿<div class="animate-slide-up">
   <h2 class="text-white text-2xl font-bold mb-1">Crea tu cuenta</h2>
   <p class="text-slate-400 text-sm mb-8">Empieza tu camino financiero hoy</p>
 
   @if (error()) {
-    <div class="bg-red-950/50 border border-red-500/50 text-red-400 text-sm px-4 py-3 rounded-xl mb-6 animate-shake flex items-center gap-2">
-      <span>⚠️</span>
+    <div class="bg-red-950/50 border border-red-500/50 text-red-400 text-sm px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
       <span>{{ error() }}</span>
     </div>
   }
@@ -12,103 +11,78 @@
   <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
-        Nombre completo
-      </label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">👤</span>
-        <input
-          formControlName="name"
-          type="text"
-          placeholder="Tu nombre"
-          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
-        />
-      </div>
-      @if (name.touched && name.errors?.['required']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">El nombre es requerido</p>
+      <label class="text-slate-300 text-sm font-medium mb-2 block">Nombre completo</label>
+      <input
+        formControlName="displayName"
+        type="text"
+        placeholder="Tu nombre"
+        class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+      />
+      @if (displayName.touched && displayName.errors?.['required']) {
+        <p class="text-red-400 text-xs mt-1.5">El nombre es requerido</p>
       }
-      @if (name.touched && name.errors?.['minlength']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Mínimo 2 caracteres</p>
+      @if (displayName.touched && displayName.errors?.['minlength']) {
+        <p class="text-red-400 text-xs mt-1.5">Minimo 2 caracteres</p>
       }
     </div>
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
-        Correo electrónico
-      </label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">📧</span>
-        <input
-          formControlName="email"
-          type="email"
-          placeholder="tu@email.com"
-          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
-        />
-      </div>
+      <label class="text-slate-300 text-sm font-medium mb-2 block">Correo electronico</label>
+      <input
+        formControlName="email"
+        type="email"
+        placeholder="tu@email.com"
+        class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+      />
       @if (email.touched && email.errors?.['required']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">El correo es requerido</p>
+        <p class="text-red-400 text-xs mt-1.5">El correo es requerido</p>
       }
       @if (email.touched && email.errors?.['email']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Correo inválido</p>
+        <p class="text-red-400 text-xs mt-1.5">Correo invalido</p>
       }
     </div>
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
-        Contraseña
-      </label>
+      <label class="text-slate-300 text-sm font-medium mb-2 block">Contrasena</label>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
         <input
           formControlName="password"
           [type]="showPassword() ? 'text' : 'password'"
-          placeholder="••••••••"
-          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+          placeholder="********"
+          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
         />
-        <button
-          type="button"
-          (click)="togglePassword()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors duration-200"
-        >
-          {{ showPassword() ? '🙈' : '👁️' }}
+        <button type="button" (click)="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors duration-200 text-xs">
+          {{ showPassword() ? 'OCULTAR' : 'VER' }}
         </button>
       </div>
       @if (password.touched && password.errors?.['required']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">La contraseña es requerida</p>
+        <p class="text-red-400 text-xs mt-1.5">La contrasena es requerida</p>
       }
       @if (password.touched && password.errors?.['minlength']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Mínimo 6 caracteres</p>
+        <p class="text-red-400 text-xs mt-1.5">Minimo 8 caracteres</p>
       }
     </div>
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
-        Confirmar contraseña
-      </label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
-        <input
-          formControlName="confirmPassword"
-          [type]="showPassword() ? 'text' : 'password'"
-          placeholder="••••••••"
-          class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
-        />
-      </div>
+      <label class="text-slate-300 text-sm font-medium mb-2 block">Confirmar contrasena</label>
+      <input
+        formControlName="confirmPassword"
+        [type]="showPassword() ? 'text' : 'password'"
+        placeholder="********"
+        class="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+      />
       @if (confirmPassword.touched && form.errors?.['mismatch']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Las contraseñas no coinciden</p>
+        <p class="text-red-400 text-xs mt-1.5">Las contrasenas no coinciden</p>
       }
     </div>
 
     <button
       type="submit"
       [disabled]="loading()"
-      class="w-full bg-[#10B981] hover:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+      class="w-full bg-[#10B981] hover:bg-emerald-400 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
     >
       @if (loading()) {
-        <span class="flex items-center justify-center gap-2">
-          <span class="animate-spin">⏳</span>
-          Creando cuenta...
-        </span>
+        <span>Creando cuenta...</span>
       } @else {
         Crear cuenta gratis
       }
@@ -117,9 +91,9 @@
   </form>
 
   <p class="text-slate-400 text-sm text-center mt-6">
-    ¿Ya tienes cuenta?
+    Ya tienes cuenta?
     <a routerLink="/auth/login" class="text-[#2563EB] hover:text-blue-400 font-medium transition-colors duration-200 hover:underline">
-      Inicia sesión
+      Inicia sesion
     </a>
   </p>
 </div>

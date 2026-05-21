@@ -6,18 +6,16 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
+  displayName: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
 }
 
 export interface AuthResponse {
-  access_token: string;
-  user: User;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-  createdAt: string;
+  token: string;
+  user: AuthUser;
 }

@@ -1,7 +1,6 @@
 export type AccountType = 'CHECKING' | 'SAVINGS' | 'CREDIT' | 'CASH';
-export type TransactionType = 'INCOME' | 'EXPENSE';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type BudgetStatus = 'HEALTHY' | 'WARNING' | 'DANGER' | 'CRITICAL';
-export type AlertType = 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | null;
 
 export interface Account {
   id: string;
@@ -13,17 +12,25 @@ export interface Account {
 
 export interface Transaction {
   id: string;
-  amount: number;
-  type: TransactionType;
-  categoryId: string;
+  userId: string;
   accountId: string;
-  description?: string;
+  categoryId: string;
+  amount: string; // Prisma devuelve decimal como string
+  type: TransactionType;
+  description: string | null;
   date: string;
+  createdAt: string;
+}
+
+export interface TransactionAlert {
+  type: 'BUDGET_WARNING' | 'BUDGET_EXCEEDED';
+  message: string;
+  percentage: number;
 }
 
 export interface TransactionResponse {
   transaction: Transaction;
-  alert: AlertType;
+  alert: TransactionAlert | null;
 }
 
 export interface Category {
@@ -51,16 +58,17 @@ export interface Goal {
 }
 
 export interface BudgetHealth {
-  status: BudgetStatus;
-  totalBudget: number;
-  totalSpent: number;
+  income: number;
+  expenses: number;
+  available: number;
   percentage: number;
+  status: BudgetStatus;
   message: string;
+  breakdown: Record<string, number>;
 }
 
 export interface FinanceSummary {
   totalBalance: number;
-  totalIncome: number;
-  totalExpenses: number;
-  savingsRate: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
 }

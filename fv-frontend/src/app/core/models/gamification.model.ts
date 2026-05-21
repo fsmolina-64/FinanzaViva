@@ -7,11 +7,15 @@ export type Rank =
   | 'MASTER';
 
 export interface GamificationStats {
+  id: string;
+  userId: string;
   xp: number;
   level: number;
   rank: Rank;
-  streak: number;
-  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityAt: string | null;
+  updatedAt: string;
 }
 
 export interface XpRequest {

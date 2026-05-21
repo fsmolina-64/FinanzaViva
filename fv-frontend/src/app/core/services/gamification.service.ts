@@ -37,12 +37,12 @@ export class GamificationService {
     );
   }
 
-  registerStreak(): Observable<{ streak: number }> {
-    return this.api.post<{ streak: number }>('/gamification/streak', {}).pipe(
+  registerStreak(): Observable<{ currentStreak: number }> {
+    return this.api.post<{ currentStreak: number }>('/gamification/streak', {}).pipe(
       tap(response => {
         const current = this.stats();
         if (current) {
-          this.stats.set({ ...current, streak: response.streak });
+          this.stats.set({ ...current, currentStreak: response.currentStreak });
         }
       })
     );
