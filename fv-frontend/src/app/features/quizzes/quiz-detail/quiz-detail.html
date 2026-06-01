@@ -1,0 +1,122 @@
+<div class="space-y-6 animate-slide-up">
+
+    <a routerLink="/quizzes" class="text-slate-400 hover:text-white transition-colors text-sm no-underline">
+        &larr; Quizzes
+    </a>
+
+    @if (loading()) {
+    <div class="space-y-4">
+        <div class="bg-slate-800 rounded-2xl h-20 animate-pulse border border-slate-700"></div>
+        <div class="bg-slate-800 rounded-2xl h-48 animate-pulse border border-slate-700"></div>
+    </div>
+    }
+
+    @if (!loading() && quiz()) {
+    <div class="space-y-5 animate-fade-in">
+
+        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-white font-bold text-lg">{{ quiz()!.title }}</h1>
+                    @if (quiz()!.description) {
+                    <p class="text-slate-400 text-xs mt-1">{{ quiz()!.description }}</p>
+                    }
+                </div>
+                <div class="text-right flex-shrink-0 ml-4">
+                    <div class="text-slate-400 text-xs">Aprobacion</div>
+                    <div class="text-white font-bold">{{ quiz()!.passingScore }}%</div>
+                </div>
+            </div>
+            @if (!result()) {
+            <div class="mt-4 space-y-1.5">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>Pregunta {{ currentIndex() + 1 }} de {{ quiz()!.questions.length }}</span>
+                    <span>{{ (Object.keys(answers()).length) }} respondidas</span>
+                </div>
+                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500"
+                        [style.width.%]="(Object.keys(answers()).length / quiz()!.questions.length) * 100"></div>
+                </div>
+            </div>
+            }
+        </div>
+
+        @if (result()) {
+        <div class="rounded-2xl p-6 border text-center space-y-3"
+            [ngClass]="result()!.passed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'">
+            <div class="text-4xl font-bold" [ngClass]="result()!.passed ? 'text-emerald-400' : 'text-red-400'">
+                {{ result()!.score }}%
+            </div>
+            <p class="text-white font-semibold">{{ result()!.passed ? 'Aprobado' : 'No aprobado' }}</p>
+            @if (result()!.xpEarned > 0) {
+            <p class="text-blue-400 text-sm">+{{ result()!.xpEarned }} XP ganados</p>
+            }
+            <button (click)="restart()"
+                class="mt-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200">
+                Intentar de nuevo
+            </button>
+        </div>
+        }
+
+        @if (currentQuestion()) {
+        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-4">
+            <p class="text-white font-semibold">{{ currentQuestion()!.text }}</p>
+            <div class="space-y-2">
+                @for (opt of currentQuestion()!.options; track opt.id) {
+                <button (click)="selectOption(currentQuestion()!.id, opt.id)" [disabled]="!!result()"
+                    class="w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200"
+                    [ngClass]="getOptionState(currentQuestion()!.id, opt.id)">
+                    {{ opt.text }}
+                </button>
+                }
+            </div>
+        </div>
+        }
+
+        @if (!result()) {
+        <div class="flex items-center justify-between gap-3">
+            <button (click)="prev()" [disabled]="currentIndex() === 0"
+                class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-300 text-sm font-medium disabled:opacity-40 hover:border-slate-500 transition-all duration-200">
+                &larr; Anterior
+            </button>
+
+            @if (currentIndex() < quiz()!.questions.length - 1) { <button (click)="next()"
+                class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-all duration-200">
+                Siguiente &rarr;
+                </button>
+                } @else {
+                <button (click)="submit()" [disabled]="!allAnswered() || submitting()"
+                    class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    {{ submitting() ? 'Enviando...' : 'Enviar respuestas' }}
+                </button>
+                }
+        </div>
+        }
+
+        @if (history().length > 0) {
+        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+            <h3 class="text-white font-semibold mb-3 text-sm">Historial</h3>
+            <div class="space-y-2">
+                @for (h of history(); track h.id) {
+                <div
+                    class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-2.5 border border-slate-600">
+                    <span class="text-slate-400 text-xs">{{ h.completedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-sm" [ngClass]="h.passed ? 'text-emerald-400' : 'text-red-400'">
+                            {{ h.score }}%
+                        </span>
+                        <span class="text-xs px-2 py-0.5 rounded-full border"
+                            [ngClass]="h.passed ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'">
+                            {{ h.passed ? 'Aprobado' : 'Reprobado' }}
+                        </span>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        }
+
+    </div>
+    }
+
+</div>
