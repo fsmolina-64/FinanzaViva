@@ -59,7 +59,7 @@ const MODULES_DATA: ModuleData[] = [
         ]),
         tf('El presupuesto base cero asigna cada dolar de ingreso a una categoria especifica.', true,
           'En el presupuesto base cero, ingresos menos gastos asignados = 0. Cada dolar tiene un proposito, evitando el gasto impulsivo.'),
-        tf('El presupuesto mensual solo debe revisarse una vez al ano.', false,
+        tf('El presupuesto mensual solo debe revisarse una vez al año.', false,
           'Debe revisarse mensualmente o cada vez que cambien los ingresos. La vida cambia y el presupuesto debe adaptarse.'),
         tf('El ingreso bruto es lo que recibes despues de impuestos y deducciones.', false,
           'El ingreso BRUTO es antes de descuentos. El NETO es lo que realmente recibes. Siempre presupuesta sobre el neto.'),
@@ -84,8 +84,8 @@ const MODULES_DATA: ModuleData[] = [
         mc('Cuantos meses de gastos recomienda tener un fondo de emergencia?', [
           w('1-2 meses'), c('3-6 meses', 'Con 3-6 meses cubiertos puedes enfrentar perdida de empleo, enfermedad o emergencias sin endeudarte. Es tu primera red de seguridad.'), w('12 meses'), w('24 meses'),
         ]),
-        mc('Con la Regla del 72, cuantos anos tarda en duplicarse dinero al 8% anual?', [
-          w('10 anos'), c('9 anos', 'La Regla del 72 dice: divide 72 entre la tasa de interes. 72/8 = 9 anos. Es una aproximacion rapida muy util.'), w('6 anos'), w('12 anos'),
+        mc('Con la Regla del 72, cuantos años tarda en duplicarse dinero al 8% anual?', [
+          w('10 años'), c('9 años', 'La Regla del 72 dice: divide 72 entre la tasa de interes. 72/8 = 9 años. Es una aproximacion rapida muy util.'), w('6 años'), w('12 años'),
         ]),
         mc('Cuanto deberia ahorrar quien gana $600/mes segun 50/30/20?', [
           w('$60'), c('$120', 'El 20% de $600 son $120. Este dinero va a ahorro e inversion antes de gastar en deseos.'), w('$300'), w('$180'),
@@ -96,25 +96,25 @@ const MODULES_DATA: ModuleData[] = [
         mc('Cual tipo de ahorro ofrece mayor interes generalmente?', [
           w('Cuenta corriente'), c('Cuenta de ahorro a plazo fijo', 'Los plazos fijos ofrecen mayor tasa porque comprometes el dinero por un periodo. A mayor plazo y monto, mayor tasa.'), w('Guardar en efectivo'), w('Cuenta vista sin rendimiento'),
         ]),
-        mc('Si ahorras $200/mes durante 30 anos al 6% anual con interes compuesto, el resultado es:', [
-          w('Exactamente $72,000'), c('Mucho mayor a $72,000', 'Con interes compuesto al 6%, $200/mes durante 30 anos genera aproximadamente $200,000. El tiempo es el factor mas poderoso.'), w('Igual a $72,000'), w('Menor por comisiones bancarias'),
+        mc('Si ahorras $200/mes durante 30 años al 6% anual con interes compuesto, el resultado es:', [
+          w('Exactamente $72,000'), c('Mucho mayor a $72,000', 'Con interes compuesto al 6%, $200/mes durante 30 años genera aproximadamente $200,000. El tiempo es el factor mas poderoso.'), w('Igual a $72,000'), w('Menor por comisiones bancarias'),
         ]),
         mc('Que es la "liquidez" de un activo?', [
           w('Su rendimiento anual'), c('La facilidad de convertirlo en efectivo rapidamente', 'Un activo liquido se convierte en dinero sin perder valor. El efectivo es el mas liquido; una casa es poco liquida.'), w('Su nivel de riesgo'), w('El plazo minimo de inversion'),
         ]),
-        tf('Empezar a ahorrar a los 20 anos da mejores resultados que empezar a los 30.', true,
-          'Cada ano extra de interes compuesto tiene efecto exponencial. Una decada mas de tiempo puede duplicar o triplicar el resultado final.'),
+        tf('Empezar a ahorrar a los 20 años da mejores resultados que empezar a los 30.', true,
+          'Cada año extra de interes compuesto tiene efecto exponencial. Una decada mas de tiempo puede duplicar o triplicar el resultado final.'),
         tf('El interes simple siempre genera mas ganancias que el interes compuesto en el largo plazo.', false,
           'El interes compuesto supera al simple en cualquier plazo mayor a un periodo porque acumula interes sobre interes.'),
-        tf('La Regla del 72 sirve para estimar en cuantos anos se duplica un ahorro.', true,
-          'Divide 72 entre la tasa de rendimiento anual y obtienes los anos aproximados para duplicar tu dinero. Simple y util.'),
+        tf('La Regla del 72 sirve para estimar en cuantos años se duplica un ahorro.', true,
+          'Divide 72 entre la tasa de rendimiento anual y obtienes los años aproximados para duplicar tu dinero. Simple y util.'),
         tf('El APY siempre es mayor o igual al APR cuando hay capitalizacion frecuente.', true,
           'APY incluye el efecto de la capitalizacion compuesta. Si el banco capitaliza mensualmente, el APY sera mayor que el APR nominal.'),
         mc('Cual es el primer paso antes de comenzar a invertir?', [
           w('Comprar acciones del mercado'), c('Tener fondo de emergencia completo', 'Invertir sin fondo de emergencia es peligroso: ante una crisis deberias liquidar inversiones en mal momento. Primero el colchon, luego invertir.'), w('Pagar todas las deudas incluyendo hipoteca'), w('Abrir cuenta en una corredora'),
         ]),
         mc('Que hace que el interes compuesto sea mas poderoso con el tiempo?', [
-          w('Las tasas de interes suben con los anos'), c('Los intereses generan nuevos intereses de forma acumulativa', 'Cada periodo los intereses se suman al capital y generan nuevos intereses. Este ciclo se acelera con el tiempo de forma geometrica.'), w('Los bancos dan mejores tasas a clientes antiguos'), w('La inflacion favorece al ahorrador'),
+          w('Las tasas de interes suben con los años'), c('Los intereses generan nuevos intereses de forma acumulativa', 'Cada periodo los intereses se suman al capital y generan nuevos intereses. Este ciclo se acelera con el tiempo de forma geometrica.'), w('Los bancos dan mejores tasas a clientes antiguos'), w('La inflacion favorece al ahorrador'),
         ]),
       ],
     },
@@ -129,7 +129,7 @@ const MODULES_DATA: ModuleData[] = [
           w('Tu salario mensual'), c('Tu comportamiento al pagar deudas en el pasado', 'El historial crediticio registra si pagas a tiempo, cuanto debes y cuantos creditos tienes. Es tu "reputacion financiera" ante prestamistas.'), w('El saldo de tu cuenta bancaria'), w('Cuantas tarjetas de credito tienes'),
         ]),
         mc('Que es la tasa de interes anual (APR) de un credito?', [
-          w('El interes que gana tu cuenta de ahorro'), c('El costo anual de un credito expresado en porcentaje', 'El APR te dice cuanto te cuesta realmente el dinero prestado por ano. Siempre compara APR, no cuotas mensuales, al elegir un credito.'), w('El impuesto sobre prestamos'), w('El plazo de pago del credito'),
+          w('El interes que gana tu cuenta de ahorro'), c('El costo anual de un credito expresado en porcentaje', 'El APR te dice cuanto te cuesta realmente el dinero prestado por año. Siempre compara APR, no cuotas mensuales, al elegir un credito.'), w('El impuesto sobre prestamos'), w('El plazo de pago del credito'),
         ]),
         mc('El metodo "avalancha" para pagar deudas consiste en:', [
           w('Pagar primero la deuda mas pequena'), c('Pagar primero la deuda con mayor tasa de interes', 'La avalancha elimina primero la deuda mas cara matematicamente. Ahorra mas dinero en intereses totales que cualquier otro metodo.'), w('Pagar cuotas iguales a todas las deudas'), w('Negociar con todos los acreedores simultaneamente'),
@@ -138,7 +138,7 @@ const MODULES_DATA: ModuleData[] = [
           w('Pagar primero la deuda con mayor interes'), c('Pagar primero la deuda mas pequena para ganar motivacion', 'La bola de nieve prioriza victorias psicologicas. Al eliminar deudas pequenas rapido, el dinero liberado se suma al siguiente pago.'), w('Pagar cuotas iguales a todas'), w('Ignorar las deudas mas grandes'),
         ]),
         mc('Cual accion dania mas el historial crediticio?', [
-          w('Consultar tu propio score'), c('No pagar una cuota en la fecha acordada', 'Los pagos tardios o incumplidos quedan registrados por anos. El factor mas importante del historial es el cumplimiento en fechas.'), w('Tener varias cuentas de ahorro'), w('Cambiar de banco'),
+          w('Consultar tu propio score'), c('No pagar una cuota en la fecha acordada', 'Los pagos tardios o incumplidos quedan registrados por años. El factor mas importante del historial es el cumplimiento en fechas.'), w('Tener varias cuentas de ahorro'), w('Cambiar de banco'),
         ]),
         mc('Que es el "periodo de gracia" en una tarjeta de credito?', [
           c('El tiempo para pagar el saldo completo sin intereses adicionales', 'Si pagas el total de tu estado de cuenta antes del vencimiento, no pagas intereses. El periodo de gracia es tu aliado si lo usas bien.'), w('El tiempo para solicitar aumento de limite'), w('La penalizacion por pago tardio'), w('El plazo para cambiar la fecha de corte'),
@@ -153,7 +153,7 @@ const MODULES_DATA: ModuleData[] = [
           w('La deuda buena siempre tiene tasa baja'), c('La deuda buena financia activos que generan valor o ingresos', 'Un prestamo estudiantil o hipoteca pueden ser "deuda buena" si generan retorno. Deuda para consumo depreciable es "mala".'), w('La deuda mala siempre es de mayor monto'), w('No existe diferencia real entre ambas'),
         ]),
         tf('Pagar solo el minimo de la tarjeta de credito evita intereses adicionales.', false,
-          'Pagar el minimo mantiene el saldo restante acumulando interes. En tarjetas con 25%+ APR, una deuda pequena puede triplicarse en anos.'),
+          'Pagar el minimo mantiene el saldo restante acumulando interes. En tarjetas con 25%+ APR, una deuda pequena puede triplicarse en años.'),
         tf('Un score crediticio alto indica mayor riesgo para el prestamista.', false,
           'Score alto = menor riesgo para el prestamista = mejores tasas para ti. Score bajo = mayor riesgo percibido = tasas mas altas o rechazo.'),
         tf('Las deudas de tarjeta de credito suelen tener tasas mas altas que los prestamos hipotecarios.', true,
@@ -195,8 +195,8 @@ const MODULES_DATA: ModuleData[] = [
         mc('Que es el ROI (retorno sobre inversion)?', [
           w('El riesgo relativo de una inversion'), c('La ganancia o perdida generada en relacion al capital invertido', 'ROI = (Ganancia - Costo) / Costo x 100. Un ROI del 20% significa que por cada $100 invertidos ganaste $20 adicionales.'), w('El plazo de recuperacion del capital'), w('La tasa de interes del mercado actual'),
         ]),
-        mc('Para un joven de 22 anos con horizonte de 30 anos, que cartera es mas adecuada?', [
-          w('100% bonos del gobierno, maxima seguridad'), c('Mayor proporcion en acciones con algo de renta fija', 'Con 30 anos por delante, puedes tolerar la volatilidad de las acciones. Historicamente las acciones superan a los bonos en plazos largos.'), w('Solo criptomonedas de alta volatilidad'), w('Solo efectivo en cuenta de ahorro tradicional'),
+        mc('Para un joven de 22 años con horizonte de 30 años, que cartera es mas adecuada?', [
+          w('100% bonos del gobierno, maxima seguridad'), c('Mayor proporcion en acciones con algo de renta fija', 'Con 30 años por delante, puedes tolerar la volatilidad de las acciones. Historicamente las acciones superan a los bonos en plazos largos.'), w('Solo criptomonedas de alta volatilidad'), w('Solo efectivo en cuenta de ahorro tradicional'),
         ]),
         tf('Diversificar una cartera de inversiones reduce el riesgo total.', true,
           'La diversificacion elimina el "riesgo especifico" de un activo. Si diversificas bien, el mal desempeno de uno se compensa con otros.'),
@@ -236,7 +236,7 @@ const MODULES_DATA: ModuleData[] = [
           w('Un error en los precios que corrige el sistema'), c('Una caida del 10% o mas desde el ultimo maximo registrado', 'Las correcciones son normales y ocurren frecuentemente. Para inversores de largo plazo son oportunidades de compra, no motivo de panico.'), w('El cierre temporal de la bolsa'), w('Una alza repentina de precios'),
         ]),
         mc('Que ventaja clave tienen los fondos indexados frente a gestores activos?', [
-          w('Mayor rentabilidad garantizada'), c('Menores comisiones y resultados frecuentemente similares o superiores', 'Estudios muestran que mas del 80% de gestores activos no superan al indice en periodos de 10+ anos. Las comisiones bajas marcan la diferencia.'), w('Acceso exclusivo a empresas privadas'), w('Proteccion total contra caidas del mercado'),
+          w('Mayor rentabilidad garantizada'), c('Menores comisiones y resultados frecuentemente similares o superiores', 'Estudios muestran que mas del 80% de gestores activos no superan al indice en periodos de 10+ años. Las comisiones bajas marcan la diferencia.'), w('Acceso exclusivo a empresas privadas'), w('Proteccion total contra caidas del mercado'),
         ]),
         mc('Que es un broker de valores?', [
           w('Una empresa que emite acciones al mercado'), c('Un intermediario que ejecuta ordenes de compra y venta en bolsa', 'Sin broker no puedes operar en bolsa. Hoy existen brokers online con comisiones muy bajas o cero, democratizando el acceso a la inversion.'), w('Un indice que mide el mercado'), w('Un tipo de bono corporativo'),
@@ -250,7 +250,7 @@ const MODULES_DATA: ModuleData[] = [
         tf('El day trading tiene mayor riesgo que la inversion a largo plazo.', true,
           'El trading diario requiere predecir movimientos de corto plazo, que son esencialmente aleatorios. Estudios muestran que mas del 90% de day traders pierden dinero.'),
         tf('Invertir durante caidas del mercado puede ser oportunidad si tu horizonte es largo.', true,
-          'Comprar cuando el mercado cae significa comprar a descuento. Si tu horizonte es 10+ anos, esas caidas son ruido temporal y oportunidades de acumulacion.'),
+          'Comprar cuando el mercado cae significa comprar a descuento. Si tu horizonte es 10+ años, esas caidas son ruido temporal y oportunidades de acumulacion.'),
         mc('Que diferencia a una accion de un bono como instrumento de inversion?', [
           w('Los bonos dan mas rentabilidad que las acciones siempre'), c('Las acciones dan participacion en la empresa; los bonos son prestamos con interes fijo', 'Acciones = renta variable (potencial ilimitado, riesgo mayor). Bonos = renta fija (retorno predecible, menor riesgo). Ambos tienen lugar en una cartera diversificada.'), w('Las acciones garantizan dividendos, los bonos no'), w('Los bonos son exclusivos para gobiernos'),
         ]),
@@ -272,25 +272,25 @@ const MODULES_DATA: ModuleData[] = [
         mc('Cual es el objetivo principal de un seguro?', [
           w('Generar ganancias al asegurado'), c('Transferir el riesgo financiero de eventos adversos a la aseguradora', 'El seguro no evita que ocurran eventos, pero evita que te destruyan financieramente. Es proteccion, no inversion.'), w('Evitar que ocurran accidentes'), w('Sustituir completamente el fondo de emergencia'),
         ]),
-        mc('Que tipo de seguro cubre danos causados por ti a terceros?', [
-          w('Seguro de vida a termino'), c('Seguro de responsabilidad civil', 'La responsabilidad civil cubre danos que causes a otras personas o su propiedad. Es obligatorio para vehiculos en la mayoria de paises.'), w('Seguro medico personal'), w('Seguro de contenido del hogar'),
+        mc('Que tipo de seguro cubre daños causados por ti a terceros?', [
+          w('Seguro de vida a termino'), c('Seguro de responsabilidad civil', 'La responsabilidad civil cubre daños que causes a otras personas o su propiedad. Es obligatorio para vehiculos en la mayoria de paises.'), w('Seguro medico personal'), w('Seguro de contenido del hogar'),
         ]),
         mc('Que es el coaseguro en una poliza de salud?', [
           w('Un seguro compartido entre dos companias aseguradoras'), c('El porcentaje del costo que el asegurado paga despues de cubrir el deducible', 'Ejemplo: 80/20 significa el seguro paga 80% y tu pagas 20% de los gastos medicos tras el deducible. Define cuanto compartes el riesgo.'), w('Una penalizacion por usar el seguro frecuentemente'), w('El limite maximo de cobertura de por vida'),
         ]),
         mc('Cual es la diferencia entre seguro de vida a termino y permanente?', [
-          w('El de termino cubre toda la vida, el permanente por anos definidos'), c('El de termino cubre un periodo definido, el permanente cubre toda la vida', 'El termino es mas barato y suficiente si tienes dependientes temporales. El permanente acumula valor en efectivo pero cuesta mucho mas.'), w('No hay diferencia practica entre ambos'), w('El de termino acumula valor en efectivo con el tiempo'),
+          w('El de termino cubre toda la vida, el permanente por años definidos'), c('El de termino cubre un periodo definido, el permanente cubre toda la vida', 'El termino es mas barato y suficiente si tienes dependientes temporales. El permanente acumula valor en efectivo pero cuesta mucho mas.'), w('No hay diferencia practica entre ambos'), w('El de termino acumula valor en efectivo con el tiempo'),
         ]),
         mc('Cuando tiene mas sentido contratar seguro de vida?', [
-          w('Cuando no tienes personas que dependan de tus ingresos'), c('Cuando tienes dependientes economicos que quedarian desprotegidos sin tus ingresos', 'El seguro de vida reemplaza tus ingresos para quienes dependen de ti: hijos, conyuge, padres. Si nadie depende de ti economicamente, no es urgente.'), w('Solo despues de los 60 anos'), w('Nunca, es mejor ahorrar ese dinero'),
+          w('Cuando no tienes personas que dependan de tus ingresos'), c('Cuando tienes dependientes economicos que quedarian desprotegidos sin tus ingresos', 'El seguro de vida reemplaza tus ingresos para quienes dependen de ti: hijos, conyuge, padres. Si nadie depende de ti economicamente, no es urgente.'), w('Solo despues de los 60 años'), w('Nunca, es mejor ahorrar ese dinero'),
         ]),
         mc('Que significa "exclusion" en una poliza de seguro?', [
-          w('Una condicion que duplica la cobertura en emergencias'), c('Situaciones especificas o danos que la poliza NO cubre', 'Siempre lee las exclusiones antes de firmar. Una poliza medica puede excluir condiciones preexistentes. Conocerlas evita sorpresas al reclamar.'), w('Un descuento especial por fidelidad al asegurador'), w('La cancelacion automatica del seguro por impago'),
+          w('Una condicion que duplica la cobertura en emergencias'), c('Situaciones especificas o daños que la poliza NO cubre', 'Siempre lee las exclusiones antes de firmar. Una poliza medica puede excluir condiciones preexistentes. Conocerlas evita sorpresas al reclamar.'), w('Un descuento especial por fidelidad al asegurador'), w('La cancelacion automatica del seguro por impago'),
         ]),
         tf('Tener un deducible mas alto generalmente reduce el valor de la prima mensual.', true,
           'Al aceptar pagar mas de tu bolsillo antes de que el seguro actue, el asegurador reduce tu prima. Es equilibrio entre costo mensual y riesgo asumido.'),
         tf('Es recomendable comparar varias polizas antes de contratar un seguro.', true,
-          'Coberturas, deducibles, exclusiones y primas varian enormemente entre companias. Comparar puede ahorrarte cientos de dolares al ano con mejor cobertura.'),
+          'Coberturas, deducibles, exclusiones y primas varian enormemente entre companias. Comparar puede ahorrarte cientos de dolares al año con mejor cobertura.'),
         tf('El seguro de salud es innecesario para jovenes sanos porque no se enferman.', false,
           'Los accidentes no distinguen edad ni salud. Una hospitalizacion sin seguro puede generar deudas de miles de dolares. El seguro es para lo inesperado, no lo esperado.'),
         tf('El infraaseguramiento puede generar perdidas financieras graves en un siniestro.', true,
@@ -299,7 +299,7 @@ const MODULES_DATA: ModuleData[] = [
           w('Porque la ley siempre los obliga a tenerlo'), c('Porque accidentes e imprevistos ocurren a cualquier edad y el costo sin seguro puede ser devastador', 'Un accidente de transito o una apendicitis puede costar miles de dolares. El seguro convierte un costo potencialmente catastrofico en uno predecible y manejable.'), w('Porque acumula dinero que pueden retirar despues'), w('No deberian, es un gasto innecesario a esa edad'),
         ]),
         mc('Que es el "limite de cobertura" en una poliza de seguro?', [
-          w('El deducible maximo del periodo'), c('El monto maximo que la aseguradora pagara en caso de siniestro', 'Si tu limite es $50,000 y el dano es $80,000, tu cubres los $30,000 restantes. Elegir limite adecuado es tan importante como elegir la prima.'), w('El numero maximo de reclamaciones por ano'), w('El descuento maximo aplicable a la prima'),
+          w('El deducible maximo del periodo'), c('El monto maximo que la aseguradora pagara en caso de siniestro', 'Si tu limite es $50,000 y el daño es $80,000, tu cubres los $30,000 restantes. Elegir limite adecuado es tan importante como elegir la prima.'), w('El numero maximo de reclamaciones por año'), w('El descuento maximo aplicable a la prima'),
         ]),
       ],
     },
@@ -317,15 +317,15 @@ const MODULES_DATA: ModuleData[] = [
           w('Sumando todos tus ingresos anuales'), c('Restando tus deudas totales al valor de todos tus activos', 'Patrimonio neto = Activos - Pasivos. Es la fotografia real de tu riqueza. Puede ser negativo al inicio y debe crecer con el tiempo.'), w('Sumando activos mas deudas'), w('Dividiendo ingresos entre gastos mensuales'),
         ]),
         mc('Cuando es el mejor momento para empezar a planificar la jubilacion?', [
-          w('A los 50 anos cuando ya tienes experiencia laboral'), c('Lo antes posible, idealmente desde los primeros ingresos regulares', 'Cada ano de retraso tiene costo enorme por el interes compuesto perdido. Empezar a los 25 vs 35 puede duplicar el fondo de retiro final.'), w('A los 40 cuando ya tienes familia estable'), w('Cuando hayas pagado todas tus deudas'),
+          w('A los 50 años cuando ya tienes experiencia laboral'), c('Lo antes posible, idealmente desde los primeros ingresos regulares', 'Cada año de retraso tiene costo enorme por el interes compuesto perdido. Empezar a los 25 vs 35 puede duplicar el fondo de retiro final.'), w('A los 40 cuando ya tienes familia estable'), w('Cuando hayas pagado todas tus deudas'),
         ]),
         mc('Que es la "regla del 4%" en planificacion de jubilacion?', [
-          w('Ahorrar el 4% del ingreso cada mes para la vejez'), c('Retirar el 4% anual del fondo de retiro para que dure aproximadamente 30 anos', 'Si tienes $500,000 ahorrados, puedes retirar $20,000/ano (4%) con alta probabilidad de que el fondo dure 30 anos asumiendo rendimientos normales.'), w('Invertir el 4% en activos de alto riesgo'), w('Pagar el 4% de interes maximo en prestamos'),
+          w('Ahorrar el 4% del ingreso cada mes para la vejez'), c('Retirar el 4% anual del fondo de retiro para que dure aproximadamente 30 años', 'Si tienes $500,000 ahorrados, puedes retirar $20,000/año (4%) con alta probabilidad de que el fondo dure 30 años asumiendo rendimientos normales.'), w('Invertir el 4% en activos de alto riesgo'), w('Pagar el 4% de interes maximo en prestamos'),
         ]),
         mc('Que es el "costo de oportunidad"?', [
           w('El costo de administrar una cartera de inversiones'), c('El valor de la mejor alternativa que sacrificas al tomar una decision', 'Si usas $10,000 para vacaciones en lugar de invertirlos al 8%, el costo de oportunidad es todo el rendimiento futuro perdido de esa inversion.'), w('Los impuestos sobre ganancias de capital'), w('El precio de una oportunidad de negocio'),
         ]),
-        mc('Cual es un hito financiero recomendado antes de los 30 anos?', [
+        mc('Cual es un hito financiero recomendado antes de los 30 años?', [
           w('Tener un millon de dolares en inversiones'), c('Fondo de emergencia completo, cero deuda de consumo e inversiones iniciadas', 'Estos tres pilares a los 30 son el punto de lanzamiento ideal: red de seguridad, sin lastres de deuda cara, y el tiempo trabajando a tu favor.'), w('Tener casa propia totalmente pagada'), w('Haber iniciado al menos un negocio propio'),
         ]),
         mc('Que significa "independencia financiera"?', [
@@ -335,14 +335,14 @@ const MODULES_DATA: ModuleData[] = [
           w('Que la deuda se reduce sola con el paso del tiempo'), c('Que los intereses se acumulan sobre el saldo pendiente haciendo crecer la deuda exponencialmente', 'El mismo efecto del interes compuesto que construye riqueza en inversiones destruye riqueza en deudas impagadas. Es identico mecanismo, opuesto resultado.'), w('Un beneficio especial de ciertos prestamos personales'), w('Intereses menores al promedio del mercado actual'),
         ]),
         mc('Cual es la principal ventaja de comenzar a invertir joven?', [
-          w('Acceso a mejores productos financieros exclusivos'), c('El tiempo amplifica el interes compuesto generando mayor riqueza final', 'Quien invierte $200/mes de los 22 a los 65 anos acumula aproximadamente el doble que quien invierte $400/mes de los 35 a los 65. El tiempo vale mas que el monto.'), w('Pagar menos impuestos sobre ganancias'), w('Tener mayor tolerancia legal al riesgo'),
+          w('Acceso a mejores productos financieros exclusivos'), c('El tiempo amplifica el interes compuesto generando mayor riqueza final', 'Quien invierte $200/mes de los 22 a los 65 años acumula aproximadamente el doble que quien invierte $400/mes de los 35 a los 65. El tiempo vale mas que el monto.'), w('Pagar menos impuestos sobre ganancias'), w('Tener mayor tolerancia legal al riesgo'),
         ]),
         tf('El patrimonio neto se calcula restando pasivos a activos.', true,
           'Patrimonio neto = Activos - Pasivos. Es la medida real de tu posicion financiera. Aumentarlo sistematicamente es el objetivo de la planificacion financiera.'),
         tf('Un plan financiero solo debe incluir metas de ahorro, no de inversion.', false,
           'Un plan financiero completo incluye: presupuesto, fondo de emergencia, eliminacion de deudas, ahorro, inversion y planificacion del retiro. Solo ahorrar no es suficiente.'),
         tf('La inflacion reduce el poder de compra del dinero en el tiempo.', true,
-          'Si la inflacion es 5% anual, con $100 hoy compras lo que en un ano costara $105. Por eso el dinero sin invertir pierde valor real sistematicamente.'),
+          'Si la inflacion es 5% anual, con $100 hoy compras lo que en un año costara $105. Por eso el dinero sin invertir pierde valor real sistematicamente.'),
         tf('Las metas financieras deben revisarse y ajustarse periodicamente.', true,
           'La vida cambia: ingresos, familia, objetivos. Un plan financiero rigido que no se adapta falla. Revision semestral o anual es minimo recomendado.'),
         tf('La planificacion financiera es solo util para personas con ingresos altos.', false,
