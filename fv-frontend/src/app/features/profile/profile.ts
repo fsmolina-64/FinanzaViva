@@ -12,31 +12,31 @@ import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model'
   styleUrl: './profile.css'
 })
 export class Profile implements OnInit {
-  user     = signal<UserProfile | null>(null);
-  loading  = signal(true);
-  saving   = signal(false);
-  saved    = signal(false);
-  editing  = signal(false);
+  user = signal<UserProfile | null>(null);
+  loading = signal(true);
+  saving = signal(false);
+  saved = signal(false);
+  editing = signal(false);
 
   form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
 
   constructor(
     private userService: UserService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.userService.getProfile().subscribe({
       next: d => { this.user.set(d); this.loading.set(false); this.syncForm(d); },
-      error: ()  => this.loading.set(false)
+      error: () => this.loading.set(false)
     });
   }
 
   private syncForm(u: UserProfile): void {
     this.form = {
       displayName: u.profile.displayName ?? '',
-      bio:         u.profile.bio ?? '',
-      avatarUrl:   u.profile.avatarUrl ?? ''
+      bio: u.profile.bio ?? '',
+      avatarUrl: u.profile.avatarUrl ?? ''
     };
   }
 
@@ -45,7 +45,7 @@ export class Profile implements OnInit {
     this.saving.set(true);
     this.userService.updateProfile(this.form).subscribe({
       next: d => {
-        this.user.set(d);
+        this.user.update(prev => prev ? { ...prev, profile: d.profile ?? prev.profile } : d);
         this.saving.set(false);
         this.saved.set(true);
         this.editing.set(false);
@@ -74,12 +74,12 @@ export class Profile implements OnInit {
 
   getRankColor(rank: string): string {
     return ({
-      ROOKIE:       'bg-slate-500/20 text-slate-400 border-slate-500/30',
-      APPRENTICE:   'bg-green-500/20 text-green-400 border-green-500/30',
+      ROOKIE: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+      APPRENTICE: 'bg-green-500/20 text-green-400 border-green-500/30',
       INTERMEDIATE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      ADVANCED:     'bg-purple-500/20 text-purple-400 border-purple-500/30',
-      EXPERT:       'bg-amber-500/20 text-amber-400 border-amber-500/30',
-      MASTER:       'bg-red-500/20 text-red-400 border-red-500/30'
+      ADVANCED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      EXPERT: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      MASTER: 'bg-red-500/20 text-red-400 border-red-500/30'
     } as any)[rank] ?? 'bg-slate-500/20 text-slate-400 border-slate-500/30';
   }
 

@@ -6,211 +6,211 @@
       <p class="text-slate-400 text-sm mt-0.5">Tu progreso y configuracion</p>
     </div>
     @if (saved()) {
-      <span class="text-emerald-400 text-sm font-semibold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
-        Guardado
-      </span>
+    <span
+      class="text-emerald-400 text-sm font-semibold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+      Guardado
+    </span>
     }
   </div>
 
   @if (loading()) {
-    <div class="space-y-4">
-      <div class="bg-slate-800 rounded-2xl h-36 animate-pulse border border-slate-700"></div>
-      <div class="bg-slate-800 rounded-2xl h-24 animate-pulse border border-slate-700"></div>
-      <div class="bg-slate-800 rounded-2xl h-48 animate-pulse border border-slate-700"></div>
-    </div>
+  <div class="space-y-4">
+    <div class="bg-slate-800 rounded-2xl h-36 animate-pulse border border-slate-700"></div>
+    <div class="bg-slate-800 rounded-2xl h-24 animate-pulse border border-slate-700"></div>
+    <div class="bg-slate-800 rounded-2xl h-48 animate-pulse border border-slate-700"></div>
+  </div>
   }
 
   @if (!loading() && user()) {
-    <div class="space-y-5 animate-fade-in">
+  <div class="space-y-5 animate-fade-in">
 
-      <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
-        <div class="flex items-start gap-4">
+    <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
+      <div class="flex items-start gap-4">
 
-          <div class="relative flex-shrink-0">
-            @if (user()!.profile.avatarUrl) {
-              <img [src]="user()!.profile.avatarUrl" alt="avatar"
-                   class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600" />
-            } @else {
-              <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2 border-blue-500/50">
-                <span class="text-white font-bold text-2xl">
-                  {{ getInitials(user()!.profile.displayName) }}
-                </span>
-              </div>
-            }
-          </div>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h2 class="text-white font-bold text-xl">{{ user()!.profile.displayName }}</h2>
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
-                    [ngClass]="getRankColor(user()!.gameStats.rank)">
-                {{ getRankLabel(user()!.gameStats.rank) }}
-              </span>
-            </div>
-            <p class="text-slate-400 text-sm mt-0.5">{{ user()!.email }}</p>
-            @if (user()!.profile.bio) {
-              <p class="text-slate-300 text-sm mt-2 leading-relaxed">{{ user()!.profile.bio }}</p>
-            }
-
-            <div class="mt-3 space-y-1.5">
-              <div class="flex justify-between text-xs text-slate-400">
-                <span>Nivel {{ user()!.gameStats.level }}</span>
-                <span>{{ getXpProgress() }}/100 XP</span>
-              </div>
-              <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-1000"
-                     [style.width.%]="getXpProgress()"></div>
-              </div>
-              <p class="text-slate-500 text-xs">{{ user()!.gameStats.xp }} XP total acumulado</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-2 mt-4">
-          <button (click)="editing.set(true)"
-                  class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-            Editar perfil
-          </button>
-          <button (click)="logout()"
-                  class="px-4 py-2.5 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-semibold transition-all duration-200">
-            Salir
-          </button>
-        </div>
-      </div>
-
-      @if (editing()) {
-        <div class="form-slide bg-[#1E293B] rounded-2xl p-5 border border-blue-500/30 space-y-4">
-          <h3 class="text-white font-semibold">Editar perfil</h3>
-
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Nombre de usuario</label>
-            <input [(ngModel)]="form.displayName" type="text"
-                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Bio</label>
-            <textarea [(ngModel)]="form.bio" rows="3" placeholder="Cuéntanos sobre ti..."
-                      class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
-          </div>
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">URL de avatar</label>
-            <input [(ngModel)]="form.avatarUrl" type="url" placeholder="https://..."
-                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-            @if (form.avatarUrl) {
-              <div class="mt-2 flex items-center gap-2">
-                <img [src]="form.avatarUrl" alt="preview"
-                     class="w-10 h-10 rounded-xl object-cover border border-slate-600" />
-                <span class="text-slate-400 text-xs">Preview</span>
-              </div>
-            }
-          </div>
-
-          <div class="flex gap-2">
-            <button (click)="saveProfile()" [disabled]="saving()"
-                    class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
-              {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
-            </button>
-            <button (click)="cancelEdit()"
-                    class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-400 hover:text-white text-sm font-semibold transition-all duration-200">
-              Cancelar
-            </button>
-          </div>
-        </div>
-      }
-
-      <div class="grid grid-cols-3 gap-3">
-        <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
-          <p class="text-slate-400 text-xs mb-1">Racha actual</p>
-          <p class="text-white font-bold text-2xl">{{ user()!.gameStats.currentStreak }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">dias</p>
-        </div>
-        <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
-          <p class="text-slate-400 text-xs mb-1">Racha maxima</p>
-          <p class="text-amber-400 font-bold text-2xl">{{ user()!.gameStats.longestStreak }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">dias</p>
-        </div>
-        <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
-          <p class="text-slate-400 text-xs mb-1">Logros</p>
-          <p class="text-emerald-400 font-bold text-2xl">{{ user()!.statistics.achievementsCount }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">ganados</p>
-        </div>
-      </div>
-
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-        <h3 class="text-white font-semibold mb-4">Academia</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-            <p class="text-slate-400 text-xs">Modulos completados</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.modulesCompleted }}</p>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-            <p class="text-slate-400 text-xs">Lecciones completadas</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.lessonsCompleted }}</p>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-            <p class="text-slate-400 text-xs">Quizzes completados</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.quizzesCompleted }}</p>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-            <p class="text-slate-400 text-xs">Tasa de aprobacion</p>
-            <p class="font-bold text-xl mt-1"
-               [ngClass]="getPassRate() >= 70 ? 'text-emerald-400' : 'text-amber-400'">
-              {{ getPassRate() }}%
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-        <h3 class="text-white font-semibold mb-4">Simulador</h3>
-        <div class="grid grid-cols-3 gap-3">
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
-            <p class="text-slate-400 text-xs">Partidas</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.gamesPlayed }}</p>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
-            <p class="text-slate-400 text-xs">Ganadas</p>
-            <p class="text-emerald-400 font-bold text-xl mt-1">{{ user()!.statistics.gamesWon }}</p>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
-            <p class="text-slate-400 text-xs">Tasa victoria</p>
-            <p class="font-bold text-xl mt-1"
-               [ngClass]="getWinRate() >= 50 ? 'text-emerald-400' : 'text-red-400'">
-              {{ getWinRate() }}%
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-        <h3 class="text-white font-semibold mb-4">Finanzas</h3>
-        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-          <p class="text-slate-400 text-xs">Total transacciones registradas</p>
-          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.totalTransactions }}</p>
-        </div>
-      </div>
-
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-        <h3 class="text-white font-semibold mb-3">Cuenta</h3>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-slate-400">Email</span>
-            <span class="text-white">{{ user()!.email }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400">Verificado</span>
-            <span [ngClass]="user()!.isVerified ? 'text-emerald-400' : 'text-red-400'">
-              {{ user()!.isVerified ? 'Si' : 'No' }}
+        <div class="relative flex-shrink-0">
+          @if (user()!.profile?.avatarUrl) {
+          <img [src]="user()!.profile.avatarUrl" alt="avatar"
+            class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600" />
+          } @else {
+          <div
+            class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2 border-blue-500/50">
+            <span class="text-white font-bold text-2xl">
+              {{ getInitials(user()!.profile?.displayName ?? '') }}
             </span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400">Miembro desde</span>
-            <span class="text-white">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
+          }
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-white font-bold text-xl">{{ user()!.profile.displayName }}</h2>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
+              [ngClass]="getRankColor(user()!.gameStats.rank)">
+              {{ getRankLabel(user()!.gameStats.rank) }}
+            </span>
+          </div>
+          <p class="text-slate-400 text-sm mt-0.5">{{ user()!.email }}</p>
+          @if (user()!.profile.bio) {
+          <p class="text-slate-300 text-sm mt-2 leading-relaxed">{{ user()!.profile.bio }}</p>
+          }
+
+          <div class="mt-3 space-y-1.5">
+            <div class="flex justify-between text-xs text-slate-400">
+              <span>Nivel {{ user()!.gameStats.level }}</span>
+              <span>{{ getXpProgress() }}/100 XP</span>
+            </div>
+            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-1000"
+                [style.width.%]="getXpProgress()"></div>
+            </div>
+            <p class="text-slate-500 text-xs">{{ user()!.gameStats.xp }} XP total acumulado</p>
           </div>
         </div>
       </div>
 
+      <div class="flex gap-2 mt-4">
+        <button (click)="editing.set(true)"
+          class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+          Editar perfil
+        </button>
+        <button (click)="logout()"
+          class="px-4 py-2.5 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-semibold transition-all duration-200">
+          Salir
+        </button>
+      </div>
     </div>
+
+    @if (editing()) {
+    <div class="form-slide bg-[#1E293B] rounded-2xl p-5 border border-blue-500/30 space-y-4">
+      <h3 class="text-white font-semibold">Editar perfil</h3>
+
+      <div>
+        <label class="text-slate-400 text-xs mb-1 block">Nombre de usuario</label>
+        <input [(ngModel)]="form.displayName" type="text"
+          class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+      </div>
+      <div>
+        <label class="text-slate-400 text-xs mb-1 block">Bio</label>
+        <textarea [(ngModel)]="form.bio" rows="3" placeholder="Cuéntanos sobre ti..."
+          class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+      </div>
+      <div>
+        <label class="text-slate-400 text-xs mb-1 block">URL de avatar</label>
+        <input [(ngModel)]="form.avatarUrl" type="url" placeholder="https://..."
+          class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+        @if (form.avatarUrl) {
+        <div class="mt-2 flex items-center gap-2">
+          <img [src]="form.avatarUrl" alt="preview" class="w-10 h-10 rounded-xl object-cover border border-slate-600" />
+          <span class="text-slate-400 text-xs">Preview</span>
+        </div>
+        }
+      </div>
+
+      <div class="flex gap-2">
+        <button (click)="saveProfile()" [disabled]="saving()"
+          class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+          {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+        <button (click)="cancelEdit()"
+          class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-400 hover:text-white text-sm font-semibold transition-all duration-200">
+          Cancelar
+        </button>
+      </div>
+    </div>
+    }
+
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
+        <p class="text-slate-400 text-xs mb-1">Racha actual</p>
+        <p class="text-white font-bold text-2xl">{{ user()!.gameStats.currentStreak }}</p>
+        <p class="text-slate-500 text-xs mt-0.5">dias</p>
+      </div>
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
+        <p class="text-slate-400 text-xs mb-1">Racha maxima</p>
+        <p class="text-amber-400 font-bold text-2xl">{{ user()!.gameStats.longestStreak }}</p>
+        <p class="text-slate-500 text-xs mt-0.5">dias</p>
+      </div>
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 text-center">
+        <p class="text-slate-400 text-xs mb-1">Logros</p>
+        <p class="text-emerald-400 font-bold text-2xl">{{ user()!.statistics.achievementsCount }}</p>
+        <p class="text-slate-500 text-xs mt-0.5">ganados</p>
+      </div>
+    </div>
+
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <h3 class="text-white font-semibold mb-4">Academia</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
+          <p class="text-slate-400 text-xs">Modulos completados</p>
+          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.modulesCompleted }}</p>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
+          <p class="text-slate-400 text-xs">Lecciones completadas</p>
+          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.lessonsCompleted }}</p>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
+          <p class="text-slate-400 text-xs">Quizzes completados</p>
+          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.quizzesCompleted }}</p>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
+          <p class="text-slate-400 text-xs">Tasa de aprobacion</p>
+          <p class="font-bold text-xl mt-1" [ngClass]="getPassRate() >= 70 ? 'text-emerald-400' : 'text-amber-400'">
+            {{ getPassRate() }}%
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <h3 class="text-white font-semibold mb-4">Simulador</h3>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
+          <p class="text-slate-400 text-xs">Partidas</p>
+          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.gamesPlayed }}</p>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
+          <p class="text-slate-400 text-xs">Ganadas</p>
+          <p class="text-emerald-400 font-bold text-xl mt-1">{{ user()!.statistics.gamesWon }}</p>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
+          <p class="text-slate-400 text-xs">Tasa victoria</p>
+          <p class="font-bold text-xl mt-1" [ngClass]="getWinRate() >= 50 ? 'text-emerald-400' : 'text-red-400'">
+            {{ getWinRate() }}%
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <h3 class="text-white font-semibold mb-4">Finanzas</h3>
+      <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
+        <p class="text-slate-400 text-xs">Total transacciones registradas</p>
+        <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.totalTransactions }}</p>
+      </div>
+    </div>
+
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <h3 class="text-white font-semibold mb-3">Cuenta</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-slate-400">Email</span>
+          <span class="text-white">{{ user()!.email }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Verificado</span>
+          <span [ngClass]="user()!.isVerified ? 'text-emerald-400' : 'text-red-400'">
+            {{ user()!.isVerified ? 'Si' : 'No' }}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Miembro desde</span>
+          <span class="text-white">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
   }
 
 </div>
