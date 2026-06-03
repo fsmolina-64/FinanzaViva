@@ -32,9 +32,10 @@ export class Quizzes implements OnInit {
     if (this.loadingId()) return;
     this.loadingId.set(moduleId);
     this.quizService.getQuizByModule(moduleId).subscribe({
-      next: quiz => {
+      next: quizzes => {
         this.loadingId.set(null);
-        this.router.navigate(['/quizzes', quiz.id]);
+        if (!quizzes.length) { alert('Este módulo no tiene quizzes aún.'); return; }
+        this.router.navigate(['/quizzes', quizzes[0].id]);
       },
       error: () => this.loadingId.set(null)
     });

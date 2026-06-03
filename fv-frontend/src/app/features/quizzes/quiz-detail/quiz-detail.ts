@@ -15,10 +15,9 @@ export class QuizDetail implements OnInit {
   submitting = signal(false);
   result = signal<QuizSubmitResponse | null>(null);
   history = signal<QuizHistoryEntry[]>([]);
-
   answers = signal<Record<string, string>>({});
-
   currentIndex = signal(0);
+  expandedAttemptId = signal<string | null>(null);
   protected Object = Object;
 
   currentQuestion = computed<QuizQuestion | null>(() => {
@@ -33,19 +32,12 @@ export class QuizDetail implements OnInit {
     return q.questions.every(qq => !!this.answers()[qq.id]);
   });
 
-  constructor(
-    private route: ActivatedRoute,
-    private quizService: QuizService
-  ) { }
+  constructor(private route: ActivatedRoute, private quizService: QuizService) { }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.quizService.getQuiz(id).subscribe({
-      next: d => {
-        this.quiz.set(d);
-        this.loading.set(false);
-        this.loadHistory(id);
-      },
+      next: d => { this.quiz.set(d); this.loading.set(false); this.loadHistory(id); },
       error: () => this.loading.set(false)
     });
   }
@@ -57,9 +49,9 @@ export class QuizDetail implements OnInit {
     });
   }
 
-  selectOption(questionId: string, optionId: string): void {
+  selectOption(questionId: string, answerId: string): void {
     if (this.result()) return;
-    this.answers.update(a => ({ ...a, [questionId]: optionId }));
+    this.answers.update(a => ({ ...a, [questionId]: answerId }));
   }
 
   next(): void {
@@ -68,21 +60,18 @@ export class QuizDetail implements OnInit {
   }
 
   prev(): void {
-    if (this.currentIndex() > 0)
-      this.currentIndex.update(i => i - 1);
+    if (this.currentIndex() > 0) this.currentIndex.update(i => i - 1);
   }
 
   submit(): void {
     if (!this.allAnswered() || this.submitting()) return;
     this.submitting.set(true);
     const payload = {
-      answers: Object.entries(this.answers()).map(([questionId, optionId]) => ({ questionId, optionId }))
+      answers: Object.entries(this.answers()).map(([questionId, answerId]) => ({ questionId, answerId })),
+      timeTaken: 0
     };
     this.quizService.submitQuiz(this.quiz()!.id, payload).subscribe({
-      next: res => {
-        this.result.set(res);
-        this.submitting.set(false);
-      },
+      next: res => { this.result.set(res); this.submitting.set(false); },
       error: () => this.submitting.set(false)
     });
   }
@@ -97,18 +86,27 @@ export class QuizDetail implements OnInit {
     }
     const qResult = res.results.find(r => r.questionId === questionId);
     if (!qResult) return 'border-slate-600 bg-slate-800 text-slate-300';
-    if (optionId === qResult.correctOptionId)
-      return 'border-emerald-500 bg-emerald-500/20 text-emerald-300';
-    if (optionId === selected && !qResult.correct)
-      return 'border-red-500 bg-red-500/20 text-red-300';
+    if (optionId === qResult.correctAnswerId) return 'border-emerald-500 bg-emerald-500/20 text-emerald-300';
+    if (optionId === selected && !qResult.correct) return 'border-red-500 bg-red-500/20 text-red-300';
     return 'border-slate-600 bg-slate-800 text-slate-500';
+  }
+
+  isQuestionCorrect(questionId: string): boolean {
+    return this.result()?.results.find(r => r.questionId === questionId)?.correct ?? false;
+  }
+
+  getExplanation(questionId: string): string {
+    return this.result()?.results.find(r => r.questionId === questionId)?.explanation ?? '';
+  }
+
+  toggleAttempt(id: string): void {
+    this.expandedAttemptId.update(cur => cur === id ? null : id);
   }
 
   restart(): void {
     this.answers.set({});
     this.result.set(null);
     this.currentIndex.set(0);
-    const id = this.quiz()!.id;
-    this.loadHistory(id);
+    this.loadHistory(this.quiz()!.id);
   }
 }
