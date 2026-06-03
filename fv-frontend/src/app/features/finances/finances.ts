@@ -17,21 +17,21 @@ type Tab = 'resumen' | 'transacciones' | 'presupuestos' | 'metas';
   styleUrl: './finances.css'
 })
 export class Finances implements OnInit {
-  activeTab  = signal<Tab>('resumen');
-  loading    = signal(true);
-  summary    = signal<FinanceSummary | null>(null);
-  health     = signal<BudgetHealth | null>(null);
-  accounts   = signal<Account[]>([]);
+  activeTab = signal<Tab>('resumen');
+  loading = signal(true);
+  summary = signal<FinanceSummary | null>(null);
+  health = signal<BudgetHealth | null>(null);
+  accounts = signal<Account[]>([]);
   transactions = signal<Transaction[]>([]);
   categories = signal<Category[]>([]);
-  budgets    = signal<Budget[]>([]);
-  goals      = signal<Goal[]>([]);
-  lastAlert  = signal<TransactionAlert | null>(null);
+  budgets = signal<Budget[]>([]);
+  goals = signal<Goal[]>([]);
+  lastAlert = signal<TransactionAlert | null>(null);
 
-  showAccountForm     = signal(false);
+  showAccountForm = signal(false);
   showTransactionForm = signal(false);
-  showBudgetForm      = signal(false);
-  showGoalForm        = signal(false);
+  showBudgetForm = signal(false);
+  showGoalForm = signal(false);
 
   newAccount = { name: '', type: 'CHECKING' as const, balance: 0, currency: 'USD' };
   newTransaction = {
@@ -39,25 +39,25 @@ export class Finances implements OnInit {
     type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER',
     description: '', date: new Date().toISOString().split('T')[0]
   };
-  newBudget = { categoryId: '', amount: 0 };
-  newGoal   = { name: '', targetAmount: 0, currentAmount: 0, deadline: '' };
+  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY' };
+  newGoal = { name: '', targetAmount: 0, currentAmount: 0, deadline: '' };
 
   expenseCategories = computed(() => this.categories().filter(c => c.type === 'EXPENSE'));
   filteredCategories = computed(() => {
     const t = this.newTransaction.type;
-    if (t === 'INCOME')  return this.categories().filter(c => c.type === 'INCOME');
+    if (t === 'INCOME') return this.categories().filter(c => c.type === 'INCOME');
     if (t === 'EXPENSE') return this.categories().filter(c => c.type === 'EXPENSE');
     return this.categories();
   });
 
   tabs: { key: Tab; label: string }[] = [
-    { key: 'resumen',       label: 'Resumen'       },
+    { key: 'resumen', label: 'Resumen' },
     { key: 'transacciones', label: 'Transacciones' },
-    { key: 'presupuestos',  label: 'Presupuestos'  },
-    { key: 'metas',         label: 'Metas'         }
+    { key: 'presupuestos', label: 'Presupuestos' },
+    { key: 'metas', label: 'Metas' }
   ];
 
-  constructor(private financeService: FinanceService) {}
+  constructor(private financeService: FinanceService) { }
 
   ngOnInit(): void {
     let loaded = 0;
@@ -120,11 +120,20 @@ export class Finances implements OnInit {
 
   submitBudget(): void {
     const now = new Date();
-    this.financeService.createBudget({ ...this.newBudget, month: now.getMonth() + 1, year: now.getFullYear() }).subscribe({
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const payload = {
+      categoryId: this.newBudget.categoryId,
+      amount: this.newBudget.amount,
+      period: this.newBudget.period,
+      startDate,
+      endDate,
+    };
+    this.financeService.createBudget(payload).subscribe({
       next: b => {
         this.budgets.update(l => [b, ...l]);
         this.showBudgetForm.set(false);
-        this.newBudget = { categoryId: '', amount: 0 };
+        this.newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' };
       }
     });
   }
@@ -145,7 +154,7 @@ export class Finances implements OnInit {
   getBudgetStatusColor(b: Budget): string {
     const p = this.getBudgetPercent(b);
     if (p >= 100) return 'from-red-500 to-red-400';
-    if (p >= 80)  return 'from-amber-500 to-amber-400';
+    if (p >= 80) return 'from-amber-500 to-amber-400';
     return 'from-emerald-500 to-emerald-400';
   }
   getBudgetCategory(b: Budget): string {
@@ -166,7 +175,7 @@ export class Finances implements OnInit {
     return ({ HEALTHY: 'from-emerald-500 to-emerald-400', WARNING: 'from-amber-500 to-amber-400', DANGER: 'from-orange-500 to-orange-400', CRITICAL: 'from-red-500 to-red-400' } as any)[s] ?? 'from-slate-500 to-slate-400';
   }
   getTransactionColor(t: string): string { return t === 'INCOME' ? 'text-emerald-400' : 'text-red-400'; }
-  getTransactionSign(t: string):  string { return t === 'INCOME' ? '+' : '-'; }
+  getTransactionSign(t: string): string { return t === 'INCOME' ? '+' : '-'; }
   getAccountTypeLabel(t: string): string {
     return ({ CHECKING: 'Corriente', SAVINGS: 'Ahorros', CREDIT: 'Credito', CASH: 'Efectivo' } as any)[t] ?? t;
   }
@@ -174,5 +183,5 @@ export class Finances implements OnInit {
     return ({ CHECKING: 'bg-blue-500/20 text-blue-400 border-blue-500/30', SAVINGS: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', CREDIT: 'bg-red-500/20 text-red-400 border-red-500/30', CASH: 'bg-amber-500/20 text-amber-400 border-amber-500/30' } as any)[t] ?? 'bg-slate-500/20 text-slate-400';
   }
   getCategoryName(id: string): string { return this.categories().find(c => c.id === id)?.name ?? 'Sin categoria'; }
-  getAccountName(id: string):  string { return this.accounts().find(a => a.id === id)?.name ?? 'Cuenta'; }
+  getAccountName(id: string): string { return this.accounts().find(a => a.id === id)?.name ?? 'Cuenta'; }
 }
