@@ -1,0 +1,135 @@
+<div class="space-y-6 animate-slide-up">
+
+    <a routerLink="/academy" class="text-slate-400 hover:text-white transition-colors text-sm no-underline">
+        &larr; Academia
+    </a>
+
+    @if (loading()) {
+    <div class="space-y-4">
+        <div class="bg-slate-800 rounded-2xl h-12 animate-pulse border border-slate-700"></div>
+        <div class="bg-slate-800 rounded-2xl h-64 animate-pulse border border-slate-700"></div>
+    </div>
+    }
+
+    @if (!loading() && lesson()) {
+    <div class="animate-fade-in space-y-5">
+
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-white text-xl font-bold">{{ lesson()!.title }}</h1>
+                <p class="text-slate-400 text-xs mt-1">{{ lesson()!.duration }} min &middot; +{{ lesson()!.xpReward }}
+                    XP</p>
+            </div>
+            <div
+                class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-3 py-1.5 text-blue-400 font-bold text-sm">
+                +{{ lesson()!.xpReward }} XP
+            </div>
+        </div>
+
+        <div class="bg-[#1E293B] rounded-2xl p-6 border border-slate-700 space-y-4">
+            @for (block of lesson()!.content; track $index) {
+            @switch (block.type) {
+            @case ('heading') {
+            <h2 class="text-white font-bold text-base border-b border-slate-700 pb-2">{{ block.text }}</h2>
+            }
+            @case ('text') {
+            <p class="text-slate-300 text-sm leading-relaxed">{{ block.text }}</p>
+            }
+            @case ('key_concept') {
+            <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-1">
+                <p class="text-blue-400 font-semibold text-xs uppercase tracking-wide">Concepto clave: {{ block.title }}
+                </p>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+            </div>
+            }
+            @case ('example') {
+            <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-1">
+                <p class="text-emerald-400 font-semibold text-xs uppercase tracking-wide">Ejemplo: {{ block.title }}</p>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+            </div>
+            }
+            @case ('tip') {
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex gap-3">
+                <span class="text-amber-400 font-bold text-sm flex-shrink-0">TIP</span>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+            </div>
+            }
+            @case ('warning') {
+            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex gap-3">
+                <span class="text-red-400 font-bold text-sm flex-shrink-0">ATENCION</span>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+            </div>
+            }
+            @case ('video') {
+            <a [href]="block.url" target="_blank" rel="noopener"
+                class="flex items-center gap-4 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-red-500/50 rounded-xl p-4 transition-all no-underline">
+                <div
+                    class="w-10 h-10 bg-red-500/20 border border-red-500/30 rounded-xl flex items-center justify-center text-red-400 flex-shrink-0 font-bold text-lg">
+                    &#9654;
+                </div>
+                <div>
+                    <p class="text-white font-semibold text-sm">{{ block.title }}</p>
+                    <p class="text-slate-400 text-xs mt-0.5">Ver en YouTube</p>
+                </div>
+            </a>
+            }
+            @case ('list') {
+            <div class="space-y-2">
+                @if (block.title) {
+                <p class="text-white font-semibold text-sm">{{ block.title }}</p>
+                }
+                <ul class="space-y-1.5 pl-1">
+                    @for (item of block.items ?? []; track $index) {
+                    <li class="flex items-start gap-2 text-slate-300 text-sm">
+                        <span class="text-blue-400 mt-0.5 flex-shrink-0 font-bold">&#8226;</span>
+                        <span>{{ item }}</span>
+                    </li>
+                    }
+                </ul>
+            </div>
+            }
+            @case ('exercise') {
+            <div class="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 space-y-2">
+                <p class="text-purple-400 font-semibold text-xs uppercase tracking-wide">Ejercicio practico</p>
+                <p class="text-slate-200 text-sm leading-relaxed">{{ block.question }}</p>
+                @if (block.hint) {
+                <p class="text-slate-500 text-xs italic border-t border-purple-500/20 pt-2">Pista: {{ block.hint }}</p>
+                }
+            </div>
+            }
+            }
+            }
+        </div>
+
+        @if (result()) {
+        <div
+            class="xp-banner bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-5 text-center space-y-2">
+            <div class="text-emerald-400 font-bold text-2xl">+{{ result()!.xpEarned }} XP</div>
+            <p class="text-white font-semibold">Leccion completada</p>
+            @if (result()!.moduleCompleted) {
+            <p class="text-emerald-400 text-sm">Modulo completado</p>
+            }
+            <button (click)="goNext()"
+                class="mt-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                {{ result()!.nextLesson ? 'Siguiente leccion' : 'Volver a Academia' }}
+            </button>
+        </div>
+        }
+
+        @if (!result() && lesson()!.status !== 'COMPLETED') {
+        <button (click)="complete()" [disabled]="completing()"
+            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+            {{ completing() ? 'Completando...' : 'Marcar como completada' }}
+        </button>
+        }
+
+        @if (lesson()!.status === 'COMPLETED' && !result()) {
+        <div class="text-center py-3 text-emerald-400 font-semibold text-sm">
+            Leccion ya completada
+        </div>
+        }
+
+    </div>
+    }
+
+</div>

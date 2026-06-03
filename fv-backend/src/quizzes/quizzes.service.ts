@@ -6,10 +6,7 @@ import { XpSource } from '@prisma/client';
 
 @Injectable()
 export class QuizzesService {
-  constructor(
-    private prisma: PrismaService,
-    private gamification: GamificationService,
-  ) {}
+  constructor(private prisma: PrismaService, private gamification: GamificationService) { }
 
   async getQuizzesByModule(moduleId: string) {
     return this.prisma.quiz.findMany({
@@ -21,21 +18,10 @@ export class QuizzesService {
   async getQuiz(quizId: string) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
-      include: {
-        questions: {
-          orderBy: { order: 'asc' },
-          include: { answers: true },
-        },
-      },
+      include: { questions: { orderBy: { order: 'asc' }, include: { answers: true } } },
     });
-
     if (!quiz) throw new NotFoundException('Quiz no encontrado');
-
-    quiz.questions = quiz.questions.map((q) => ({
-      ...q,
-      answers: q.answers.sort(() => Math.random() - 0.5),
-    }));
-
+    quiz.questions = quiz.questions.map(q => ({ ...q, answers: q.answers.sort(() => Math.random() - 0.5) }));
     return quiz;
   }
 
@@ -44,26 +30,33 @@ export class QuizzesService {
       where: { id: quizId },
       include: { questions: { include: { answers: true } } },
     });
-
     if (!quiz) throw new NotFoundException('Quiz no encontrado');
 
     let correct = 0;
-    const attemptAnswers = [];
+    const attemptAnswers: { questionId: string; answerId: string; isCorrect: boolean; timeTaken?: number }[] = [];
+    const results: { questionId: string; correct: boolean; correctAnswerId: string; selectedAnswerId: string; explanation: string }[] = [];
 
     for (const submitted of dto.answers) {
-      const answer = await this.prisma.answer.findUnique({
-        where: { id: submitted.answerId },
-      });
-
+      const answer = await this.prisma.answer.findUnique({ where: { id: submitted.answerId } });
       const isCorrect = answer?.isCorrect ?? false;
       if (isCorrect) correct++;
 
-const attemptAnswers: {
-  questionId: string;
-  answerId: string;
-  isCorrect: boolean;
-  timeTaken?: number;
-}[] = [];
+      attemptAnswers.push({
+        questionId: submitted.questionId,
+        answerId: submitted.answerId,
+        isCorrect,
+        timeTaken: submitted.timeTaken,
+      });
+
+      const question = quiz.questions.find(q => q.id === submitted.questionId);
+      const correctAnswer = question?.answers.find(a => a.isCorrect);
+      results.push({
+        questionId: submitted.questionId,
+        correct: isCorrect,
+        correctAnswerId: correctAnswer?.id ?? '',
+        selectedAnswerId: submitted.answerId,
+        explanation: correctAnswer?.explanation ?? '',
+      });
     }
 
     const totalQuestions = quiz.questions.length;
@@ -72,11 +65,7 @@ const attemptAnswers: {
 
     const attempt = await this.prisma.quizAttempt.create({
       data: {
-        userId,
-        quizId,
-        score,
-        passed,
-        timeTaken: dto.timeTaken,
+        userId, quizId, score, passed, timeTaken: dto.timeTaken,
         answers: { create: attemptAnswers },
       },
     });
@@ -98,20 +87,39 @@ const attemptAnswers: {
       });
     }
 
-    return {
-      attemptId: attempt.id,
-      score,
-      passed,
-      correct,
-      total: totalQuestions,
-      xpEarned: passed ? quiz.xpReward : 0,
-    };
+    return { attemptId: attempt.id, score, passed, correct, total: totalQuestions, xpEarned: passed ? quiz.xpReward : 0, results };
   }
 
   async getAttemptHistory(userId: string, quizId: string) {
-    return this.prisma.quizAttempt.findMany({
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: { questions: { include: { answers: true } } },
+    });
+
+    const attempts = await this.prisma.quizAttempt.findMany({
       where: { userId, quizId },
       orderBy: { completedAt: 'desc' },
+      include: { answers: { include: { question: true, answer: true } } },
     });
+
+    return attempts.map(attempt => ({
+      id: attempt.id,
+      quizId: attempt.quizId,
+      score: attempt.score,
+      passed: attempt.passed,
+      completedAt: attempt.completedAt,
+      answers: attempt.answers.map(a => {
+        const question = quiz?.questions.find(q => q.id === a.questionId);
+        const correctAnswer = question?.answers.find(ans => ans.isCorrect);
+        return {
+          questionId: a.questionId,
+          questionText: a.question.text,
+          selectedAnswerText: a.answer.text,
+          correctAnswerText: correctAnswer?.text ?? '',
+          isCorrect: a.isCorrect,
+          explanation: correctAnswer?.explanation ?? '',
+        };
+      }),
+    }));
   }
 }

@@ -12,10 +12,10 @@ import {
   providedIn: 'root'
 })
 export class QuizService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
-  getQuizByModule(moduleId: string): Observable<Quiz> {
-    return this.api.get<Quiz>(`/quizzes/module/${moduleId}`);
+  getQuizByModule(moduleId: string): Observable<Quiz[]> {
+    return this.api.get<Quiz[]>(`/quizzes/module/${moduleId}`);
   }
 
   getQuiz(id: string): Observable<Quiz> {

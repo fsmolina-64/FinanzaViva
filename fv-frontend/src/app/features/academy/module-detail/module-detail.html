@@ -1,0 +1,76 @@
+<div class="space-y-6 animate-slide-up">
+
+    <div class="flex items-center gap-3">
+        <a routerLink="/academy" class="text-slate-400 hover:text-white transition-colors text-sm no-underline">
+            &larr; Academia
+        </a>
+    </div>
+
+    @if (loading()) {
+    <div class="space-y-4">
+        <div class="bg-slate-800 rounded-2xl h-32 animate-pulse border border-slate-700"></div>
+        <div class="bg-slate-800 rounded-2xl h-20 animate-pulse border border-slate-700"></div>
+        <div class="bg-slate-800 rounded-2xl h-20 animate-pulse border border-slate-700"></div>
+    </div>
+    }
+
+    @if (!loading() && module()) {
+    <div class="animate-fade-in space-y-5">
+
+        <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <h1 class="text-white text-xl font-bold">{{ module()!.title }}</h1>
+                    <p class="text-slate-400 text-sm mt-1">{{ module()!.description }}</p>
+                </div>
+                <div
+                    class="bg-blue-500/10 border border-blue-500/30 rounded-xl px-3 py-2 text-center ml-4 flex-shrink-0">
+                    <div class="text-blue-400 font-bold text-lg">+{{ module()!.xpReward }}</div>
+                    <div class="text-slate-400 text-xs">XP</div>
+                </div>
+            </div>
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>{{ module()!.completedLessons }}/{{ module()!.totalLessons }} lecciones completadas</span>
+                    <span>{{ getProgress() }}%</span>
+                </div>
+                <div class="h-2.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-1000 bg-gradient-to-r from-blue-600 to-emerald-500"
+                        [style.width.%]="getProgress()"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            @for (lesson of module()!.lessons ?? []; track lesson.id) {
+            <div [class.cursor-not-allowed]="!canOpen(lesson)">
+                <a [routerLink]="canOpen(lesson) ? ['/academy/lesson', lesson.id] : null"
+                    class="lesson-row flex items-center gap-4 bg-[#1E293B] rounded-xl px-5 py-4 border border-slate-700 transition-all duration-200 no-underline block"
+                    [ngClass]="canOpen(lesson)
+                 ? 'hover:border-blue-500/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer'
+                 : 'opacity-50 cursor-not-allowed'">
+
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
+                        [ngClass]="lesson.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'">
+                        {{ lesson.status === 'COMPLETED' ? 'OK' : lesson.order }}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white text-sm font-medium">{{ lesson.title }}</p>
+                        <p class="text-slate-500 text-xs mt-0.5">{{ lesson.duration }} min &middot; +{{ lesson.xpReward
+                            }} XP</p>
+                    </div>
+
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0"
+                        [ngClass]="getLessonStatusColor(lesson.status)">
+                        {{ getLessonStatusLabel(lesson.status) }}
+                    </span>
+                </a>
+            </div>
+            }
+        </div>
+
+    </div>
+    }
+
+</div>

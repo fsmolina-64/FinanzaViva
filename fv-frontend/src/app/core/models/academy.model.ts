@@ -1,9 +1,22 @@
 export type LessonStatus = 'LOCKED' | 'AVAILABLE' | 'COMPLETED';
 
+export type ContentBlockType = 'heading' | 'text' | 'key_concept' | 'example' | 'tip' | 'warning' | 'video' | 'list' | 'exercise';
+
+export interface ContentBlock {
+  type: ContentBlockType;
+  text?: string;
+  title?: string;
+  items?: string[];
+  url?: string;
+  question?: string;
+  hint?: string;
+}
+
 export interface Lesson {
   id: string;
+  moduleId: string;
   title: string;
-  content: string;
+  content: ContentBlock[];
   duration: number;
   xpReward: number;
   status: LessonStatus;
@@ -25,5 +38,5 @@ export interface AcademyModule {
 export interface LessonCompleteResponse {
   xpEarned: number;
   moduleCompleted: boolean;
-  nextLesson?: Lesson;
+  nextLesson?: Lesson | null;
 }
