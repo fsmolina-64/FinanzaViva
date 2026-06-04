@@ -1,28 +1,34 @@
-export type AchievementStatus = 'LOCKED' | 'UNLOCKED';
-
-export type RewardType = 'AVATAR' | 'BORDER' | 'BADGE' | 'TITLE';
+export type RewardType = 'AVATAR' | 'THEME' | 'BADGE' | 'SIMULATOR_EVENT' | 'FRAME';
 
 export interface Achievement {
   id: string;
-  title: string;
+  key: string;
+  name: string;
   description: string;
   icon: string;
+  category: string;
   xpReward: number;
-  status: AchievementStatus;
-  unlockedAt?: string;
-  condition: string;
+  condition: { metric: string; threshold: number };
+  unlocked: boolean;
+  unlockedAt?: string | null;
 }
 
 export interface Reward {
   id: string;
   name: string;
+  description: string;
+  icon: string;
   type: RewardType;
-  imageUrl?: string;
-  equipped: boolean;
-  unlockedAt: string;
+  unlockType: string;
+  unlockValue: string;
+  unlocked: boolean;
+  isEquipped: boolean;
 }
 
 export interface EquipRewardResponse {
-  reward: Reward;
-  previousEquipped?: string;
+  id: string;
+  userId: string;
+  rewardId: string;
+  isEquipped: boolean;
+  unlockedAt: string;
 }
