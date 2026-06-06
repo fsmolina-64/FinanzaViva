@@ -103,7 +103,8 @@ enum EventCategory {
 
 enum RewardType {
   AVATAR
-  THEME
+  TITLE
+  AURA
   BADGE
   SIMULATOR_EVENT
   FRAME
