@@ -9,8 +9,8 @@
         @for (tab of tabs; track tab.key) {
         <button (click)="activeTab.set(tab.key)"
             class="flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300" [ngClass]="activeTab() === tab.key
-                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-                : 'text-slate-400 hover:text-slate-200'">
+        ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+        : 'text-slate-400 hover:text-slate-200'">
             {{ tab.label }}
         </button>
         }
@@ -25,25 +25,36 @@
     }
 
     @if (!loading() && activeTab() === 'logros') {
-    <div class="space-y-5 animate-fade-in">
+    <div class="space-y-6 animate-fade-in">
 
-        <div class="flex items-center gap-3 bg-[#1E293B] rounded-2xl px-5 py-4 border border-slate-700">
-            <div class="flex-1">
-                <p class="text-slate-400 text-xs">Logros desbloqueados</p>
+        <div class="flex items-center gap-4 bg-[#1E293B] rounded-2xl px-5 py-4 border border-slate-700">
+            <div>
+                <p class="text-slate-400 text-xs">Desbloqueados</p>
                 <p class="text-white font-bold text-xl">{{ unlocked().length }} / {{ achievements().length }}</p>
             </div>
-            <div class="w-16 h-2.5 bg-slate-700 rounded-full overflow-hidden flex-1 max-w-32">
+            <div class="flex-1 h-2.5 bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-1000"
                     [style.width.%]="achievements().length ? (unlocked().length / achievements().length) * 100 : 0">
                 </div>
             </div>
+            <p class="text-amber-400 font-bold text-sm">
+                {{ achievements().length ? ((unlocked().length / achievements().length) * 100 | number:'1.0-0') : 0 }}%
+            </p>
         </div>
 
-        @if (unlocked().length > 0) {
+        @for (cat of categories(); track cat) {
+        @if (groupLen(groupedUnlocked(), cat) > 0) {
         <div>
-            <p class="text-slate-400 text-xs mb-3">Desbloqueados</p>
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-lg">{{ getCategoryIcon(cat) }}</span>
+                <p class="text-slate-300 text-sm font-semibold">{{ getCategoryLabel(cat) }}</p>
+                <span
+                    class="text-xs text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    {{ groupedUnlocked()[cat].length }}
+                </span>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                @for (a of unlocked(); track a.id) {
+                @for (a of groupedUnlocked()[cat]; track a.id) {
                 <div
                     class="bg-[#1E293B] rounded-2xl p-4 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/10">
                     <div class="flex items-start gap-3">
@@ -68,21 +79,39 @@
             </div>
         </div>
         }
+        }
 
-        @if (locked().length > 0) {
+        @for (cat of categories(); track cat) {
+        @if (groupLen(groupedLocked(), cat) > 0) {
         <div>
-            <p class="text-slate-400 text-xs mb-3">Por desbloquear</p>
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-lg opacity-40">{{ getCategoryIcon(cat) }}</span>
+                <p class="text-slate-500 text-sm font-semibold">{{ getCategoryLabel(cat) }} — Por desbloquear</p>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                @for (a of locked(); track a.id) {
-                <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 opacity-60">
+                @for (a of groupedLocked()[cat]; track a.id) {
+                <div
+                    class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 hover:border-slate-600 transition-all duration-200">
                     <div class="flex items-start gap-3">
-                        <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <div
+                            class="w-12 h-12 bg-slate-700/60 rounded-xl flex items-center justify-center flex-shrink-0">
                             <span class="text-slate-500 font-bold text-lg">?</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-slate-400 font-semibold text-sm">{{ a.name }}</p>
-                            <p class="text-slate-500 text-xs mt-0.5">{{ a.condition }}</p>
-                            <span class="text-slate-500 text-xs mt-2 block">+{{ a.xpReward }} XP</span>
+                            <p class="text-slate-500 text-xs mt-0.5">{{ a.description }}</p>
+                            <div class="mt-2.5">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-slate-500 text-xs">{{ getProgress(a) }} / {{ a.condition.threshold
+                                        }}</span>
+                                    <span class="text-slate-500 text-xs">+{{ a.xpReward }} XP</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-700"
+                                        [style.width.%]="getProgressPct(a)">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -90,10 +119,8 @@
             </div>
         </div>
         }
-
-        @if (achievements().length === 0) {
-        <p class="text-slate-500 text-sm text-center py-10">Sin logros disponibles</p>
         }
+
     </div>
     }
 
@@ -101,13 +128,16 @@
     <div class="space-y-4 animate-fade-in">
 
         @if (rewards().length === 0) {
-        <p class="text-slate-500 text-sm text-center py-10">Sin recompensas desbloqueadas</p>
+        <p class="text-slate-500 text-sm text-center py-10">Sin recompensas disponibles</p>
         }
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             @for (r of rewards(); track r.id) {
-            <div class="bg-[#1E293B] rounded-2xl p-4 border transition-all duration-300"
-                [ngClass]="r.isEquipped ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : r.unlocked ? 'border-slate-700 hover:border-slate-600' : 'border-slate-700/50 opacity-40'">
+            <div class="bg-[#1E293B] rounded-2xl p-4 border transition-all duration-300" [ngClass]="r.isEquipped
+          ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+          : r.unlocked
+            ? 'border-slate-700 hover:border-slate-600'
+            : 'border-slate-700/50 opacity-40'">
                 <div class="flex items-start gap-3">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                         [ngClass]="r.isEquipped ? 'bg-emerald-500/20' : r.unlocked ? 'bg-slate-700' : 'bg-slate-800'">
@@ -118,7 +148,7 @@
                         }
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-0.5">
+                        <div class="flex items-center gap-2 mb-1">
                             <p class="text-white font-semibold text-sm">{{ r.unlocked ? r.name : '???' }}</p>
                             @if (r.isEquipped) {
                             <span
@@ -129,6 +159,9 @@
                             [ngClass]="getRewardTypeColor(r.type)">
                             {{ getRewardTypeLabel(r.type) }}
                         </span>
+                        @if (r.unlocked) {
+                        <p class="text-slate-500 text-xs mt-1.5">{{ r.description }}</p>
+                        }
                     </div>
                 </div>
                 @if (r.unlocked && !r.isEquipped) {

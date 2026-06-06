@@ -1,4 +1,4 @@
-export type RewardType = 'AVATAR' | 'THEME' | 'BADGE' | 'SIMULATOR_EVENT' | 'FRAME';
+export type RewardType = 'AVATAR' | 'TITLE' | 'AURA' | 'BADGE' | 'SIMULATOR_EVENT' | 'FRAME';
 
 export interface Achievement {
   id: string;

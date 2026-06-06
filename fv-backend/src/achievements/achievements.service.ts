@@ -12,27 +12,6 @@ export class AchievementsService {
     private gamification: GamificationService,
   ) { }
 
-  async evaluate(userId: string) {
-    const stats = await this.prisma.userStatistics.findUnique({ where: { userId } });
-    const gameStats = await this.prisma.userGameStats.findUnique({ where: { userId } });
-    if (!stats || !gameStats) return;
-
-    const achievements = await this.prisma.achievement.findMany({ where: { isActive: true } });
-    const unlocked = await this.prisma.userAchievement.findMany({ where: { userId } });
-    const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
-
-    for (const achievement of achievements) {
-      if (unlockedIds.has(achievement.id)) continue;
-
-      const condition = achievement.condition as { metric: string; threshold: number };
-      const value = this.getMetricValue(stats, gameStats, condition.metric);
-
-      if (value >= condition.threshold) {
-        await this.unlock(userId, achievement.id, achievement.xpReward);
-      }
-    }
-  }
-
   private getMetricValue(stats: any, gameStats: any, metric: string): number {
     const map: Record<string, number> = {
       quizzes_passed: stats.quizzesPassed,
@@ -68,7 +47,6 @@ export class AchievementsService {
       });
     }
 
-    await this.checkRewards(userId);
   }
 
   async checkRewards(userId: string) {
@@ -157,5 +135,25 @@ export class AchievementsService {
   @OnEvent('user.action')
   async handleUserAction(event: UserActionEvent) {
     await this.evaluate(event.userId);
+  }
+  async evaluate(userId: string) {
+    const stats = await this.prisma.userStatistics.findUnique({ where: { userId } });
+    const gameStats = await this.prisma.userGameStats.findUnique({ where: { userId } });
+    if (!stats || !gameStats) return;
+
+    const achievements = await this.prisma.achievement.findMany({ where: { isActive: true } });
+    const unlocked = await this.prisma.userAchievement.findMany({ where: { userId } });
+    const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
+
+    for (const achievement of achievements) {
+      if (unlockedIds.has(achievement.id)) continue;
+      const condition = achievement.condition as { metric: string; threshold: number };
+      const value = this.getMetricValue(stats, gameStats, condition.metric);
+      if (value >= condition.threshold) {
+        await this.unlock(userId, achievement.id, achievement.xpReward);
+      }
+    }
+
+    await this.checkRewards(userId);
   }
 }
