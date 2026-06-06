@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model';
+import { AchievementService } from '../../core/services/achievement.service';
+import { Reward } from '../../core/models/achievement.model';
+import { computed } from '@angular/core';
 
 @Component({
   selector: 'app-profile',
@@ -18,17 +21,26 @@ export class Profile implements OnInit {
   saved = signal(false);
   editing = signal(false);
 
+  rewards = signal<Reward[]>([]);
+  equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
+  equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
+  equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
+
   form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
 
   constructor(
     private userService: UserService,
-    private authService: AuthService
+    private authService: AuthService,
+    private achievementService: AchievementService
   ) { }
 
   ngOnInit(): void {
     this.userService.getProfile().subscribe({
       next: d => { this.user.set(d); this.loading.set(false); this.syncForm(d); },
       error: () => this.loading.set(false)
+    });
+    this.achievementService.getRewards().subscribe({
+      next: d => this.rewards.set(d)
     });
   }
 
@@ -106,6 +118,12 @@ export class Profile implements OnInit {
     const s = this.user()?.statistics;
     if (!s || !s.gamesPlayed) return 0;
     return Math.round((s.gamesWon / s.gamesPlayed) * 100);
+  }
+
+  getFrameClass(): string {
+    const f = this.equippedFrame();
+    if (!f) return 'border-slate-600';
+    return f.icon === '🥇' ? 'border-yellow-400 shadow-yellow-400/30 shadow-md' : 'border-slate-400 shadow-slate-400/30 shadow-md';
   }
 
   logout(): void {

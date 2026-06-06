@@ -42,7 +42,6 @@ export class Simulator implements OnInit {
     const names = this.playerNames.map((n, i) => n.trim() || `Jugador ${i + 1}`);
     const creates = names.map(() => this.simulatorService.createGame());
 
-    // Crear partidas secuencialmente
     const players: { name: string; gameId: string }[] = [];
     let idx = 0;
 
