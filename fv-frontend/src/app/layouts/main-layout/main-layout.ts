@@ -18,7 +18,7 @@ export class MainLayout {
     { path: '/finances',     icon: 'billetera-premium.png',  label: 'Finanzas'    },
     { path: '/academy',      icon: 'academia.png', label: 'Academia' },
     { path: '/quizzes',      icon: '🎯', label: 'Quizzes'     },
-    { path: '/simulator',    icon: '🎮', label: 'Simulador'   },
+    { path: '/simulator',    icon: 'simulador.png', label: 'Simulador'   },
     { path: '/achievements', icon: '🏆', label: 'Logros'      },
     { path: '/profile',      icon: '👤', label: 'Perfil'      },
   ];
