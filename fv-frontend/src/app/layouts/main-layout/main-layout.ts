@@ -15,8 +15,8 @@ export class MainLayout {
 
   navItems = [
     { path: '/dashboard',    icon: '⚡', label: 'Dashboard'   },
-    { path: '/finances',      icon: 'billetera-premium.png',  label: 'Finanzas'    },
-    { path: '/academy',      icon: '📚', label: 'Academia'    },
+    { path: '/finances',     icon: 'billetera-premium.png',  label: 'Finanzas'    },
+    { path: '/academy',      icon: 'academia.png', label: 'Academia' },
     { path: '/quizzes',      icon: '🎯', label: 'Quizzes'     },
     { path: '/simulator',    icon: '🎮', label: 'Simulador'   },
     { path: '/achievements', icon: '🏆', label: 'Logros'      },
