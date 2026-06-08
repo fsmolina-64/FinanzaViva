@@ -1,15 +1,210 @@
+/* ─── Animations ────────────────────────────────────────────────────────────── */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 @keyframes formSlide {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.animate-slide-up { animation: slideUp 0.4s ease both; }
-.animate-fade-in  { animation: fadeIn 0.3s ease both; }
-.form-slide       { animation: formSlide 0.3s ease both; }
+
+@keyframes tabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.93) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.form-slide {
+  animation: formSlide 0.3s ease both;
+}
+
+.animate-tab-in {
+  animation: tabIn 0.22s ease both;
+}
+
+/* ─── Profile Hero ───────────────────────────────────────────────────────────── */
+.profile-hero {
+  position: relative;
+  background: linear-gradient(145deg, #1E293B 0%, #0f1e32 100%);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.profile-hero-glow {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.xp-bar-glow {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.45), 0 0 4px rgba(16, 185, 129, 0.3);
+}
+
+/* ─── Tab Navigation ─────────────────────────────────────────────────────────── */
+.profile-tabs {
+  display: flex;
+  background: #1E293B;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 1rem;
+  padding: 0.25rem;
+  gap: 0.2rem;
+}
+
+.profile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: none;
+  border: none;
+  white-space: nowrap;
+}
+
+.profile-tab-btn:hover:not(.tab-active) {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.07);
+}
+
+.profile-tab-btn.tab-active {
+  background: linear-gradient(135deg, #2563EB, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 2px 14px rgba(37, 99, 235, 0.35);
+}
+
+/* ─── Stat Cards ─────────────────────────────────────────────────────────────── */
+.stat-card {
+  background: rgba(148, 163, 184, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.09);
+  border-radius: 0.875rem;
+  padding: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+/* ─── Section Cards ──────────────────────────────────────────────────────────── */
+.section-card {
+  background: #1E293B;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+}
+
+.section-title {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 1rem;
+}
+
+/* ─── Danger Zone ────────────────────────────────────────────────────────────── */
+.danger-zone {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06), rgba(239, 68, 68, 0.02));
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+}
+
+.danger-zone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.12);
+  border-radius: 0.875rem;
+  padding: 0.875rem 1rem;
+}
+
+/* ─── Modal ──────────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: #1E293B;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
