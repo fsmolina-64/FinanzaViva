@@ -1,6 +1,15 @@
 export type LessonStatus = 'LOCKED' | 'AVAILABLE' | 'COMPLETED';
 
-export type ContentBlockType = 'heading' | 'text' | 'key_concept' | 'example' | 'tip' | 'warning' | 'video' | 'list' | 'exercise';
+export type ContentBlockType =
+  | 'heading'
+  | 'text'
+  | 'key_concept'
+  | 'example'
+  | 'tip'
+  | 'warning'
+  | 'video'
+  | 'list'
+  | 'exercise';
 
 export interface ContentBlock {
   type: ContentBlockType;
@@ -36,7 +45,14 @@ export interface AcademyModule {
 }
 
 export interface LessonCompleteResponse {
-  xpEarned: number;
+  lessonXpEarned: number;
+  moduleXpEarned: number;
+  totalXpEarned: number;
   moduleCompleted: boolean;
+  leveledUp: boolean;
   nextLesson?: Lesson | null;
+}
+
+export interface LessonResetResponse {
+  success: boolean;
 }

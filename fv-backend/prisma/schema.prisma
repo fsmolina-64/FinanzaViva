@@ -212,6 +212,7 @@ model XpTransaction {
 
   @@index([userId])
   @@index([createdAt])
+  @@unique([userId, source, referenceId])   // ← añade esta línea exactamente aquí
   @@map("xp_transactions")
 }
 

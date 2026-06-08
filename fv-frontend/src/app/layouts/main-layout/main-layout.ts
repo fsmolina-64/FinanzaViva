@@ -14,19 +14,18 @@ export class MainLayout {
   sidebarOpen = signal(true);
 
   navItems = [
-    { path: '/dashboard',    icon: '⚡', label: 'Dashboard'   },
-    { path: '/finances',     icon: '💰', label: 'Finanzas'    },
-    { path: '/academy',      icon: '📚', label: 'Academia'    },
-    { path: '/quizzes',      icon: '🎯', label: 'Quizzes'     },
-    { path: '/simulator',    icon: '🎮', label: 'Simulador'   },
-    { path: '/achievements', icon: '🏆', label: 'Logros'      },
-    { path: '/profile',      icon: '👤', label: 'Perfil'      },
+    { path: '/dashboard', icon: '⚡', label: 'Dashboard' },
+    { path: '/finances', icon: '💰', label: 'Finanzas' },
+    { path: '/academy', icon: '📚', label: 'Academia' },
+    { path: '/simulator', icon: '🎮', label: 'Simulador' },
+    { path: '/achievements', icon: '🏆', label: 'Logros' },
+    { path: '/profile', icon: '👤', label: 'Perfil' },
   ];
 
   constructor(
     public authService: AuthService,
     public gamificationService: GamificationService
-  ) {}
+  ) { }
 
   toggleSidebar(): void {
     this.sidebarOpen.update(v => !v);

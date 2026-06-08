@@ -13,6 +13,7 @@ export class LessonComponent implements OnInit {
   lesson = signal<Lesson | null>(null);
   loading = signal(true);
   completing = signal(false);
+  resetting = signal(false);
   result = signal<LessonCompleteResponse | null>(null);
 
   constructor(
@@ -29,15 +30,38 @@ export class LessonComponent implements OnInit {
     });
   }
 
+  get isCompleted(): boolean {
+    return this.lesson()?.status === 'COMPLETED';
+  }
+
+  get backLink(): string {
+    const moduleId = this.lesson()?.moduleId;
+    return moduleId ? `/academy/${moduleId}` : '/academy';
+  }
+
   complete(): void {
-    if (this.completing()) return;
+    if (this.completing() || this.isCompleted) return;
     this.completing.set(true);
     this.academyService.completeLesson(this.lesson()!.id).subscribe({
       next: res => {
         this.result.set(res);
+        this.lesson.update(l => l ? { ...l, status: 'COMPLETED' as const } : l);
         this.completing.set(false);
       },
-      error: () => this.completing.set(false)
+      error: () => this.completing.set(false),
+    });
+  }
+
+  reset(): void {
+    if (this.resetting() || !this.isCompleted) return;
+    this.resetting.set(true);
+    this.academyService.resetLesson(this.lesson()!.id).subscribe({
+      next: () => {
+        this.lesson.update(l => l ? { ...l, status: 'AVAILABLE' as const } : l);
+        this.result.set(null);
+        this.resetting.set(false);
+      },
+      error: () => this.resetting.set(false),
     });
   }
 
@@ -48,7 +72,7 @@ export class LessonComponent implements OnInit {
       this.result.set(null);
       this.lesson.set(next);
     } else {
-      this.router.navigate(['/academy']);
+      this.router.navigate([this.backLink]);
     }
   }
 }
