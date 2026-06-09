@@ -208,3 +208,27 @@
   max-width: 420px;
   animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+
+.aura-blue {
+  box-shadow: 0 0 18px 4px rgba(59, 130, 246, 0.55), 0 0 36px 8px rgba(59, 130, 246, 0.25);
+}
+
+.aura-gold {
+  box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.55), 0 0 36px 8px rgba(245, 158, 11, 0.25);
+}
+
+@keyframes aura-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 18px 4px rgba(139, 92, 246, 0.55), 0 0 36px 8px rgba(139, 92, 246, 0.25);
+  }
+
+  50% {
+    box-shadow: 0 0 30px 8px rgba(139, 92, 246, 0.75), 0 0 60px 16px rgba(139, 92, 246, 0.4);
+  }
+}
+
+.aura-legendary {
+  animation: aura-pulse 2s ease-in-out infinite;
+}

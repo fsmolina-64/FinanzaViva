@@ -27,6 +27,8 @@ export class Profile implements OnInit {
   equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
   equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
   equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
+  equippedTitle = computed(() => this.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
+  equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
 
   activeTab = signal<Tab>('perfil');
   showDeleteModal = signal(false);
@@ -188,9 +190,21 @@ export class Profile implements OnInit {
   getFrameClass(): string {
     const f = this.equippedFrame();
     if (!f) return 'border-slate-600';
-    return f.icon === '🥇'
-      ? 'border-yellow-400 shadow-yellow-400/30 shadow-md'
-      : 'border-slate-400 shadow-slate-400/30 shadow-md';
+    const map: Record<string, string> = {
+      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
+      '🥈': 'border-slate-300 shadow-slate-300/40 shadow-md',
+      '🥇': 'border-yellow-400 shadow-yellow-400/50 shadow-lg',
+      '💠': 'border-cyan-400 shadow-cyan-400/50 shadow-lg',
+    };
+    return map[f.icon] ?? 'border-slate-600';
+  }
+  getAuraClass(): string {
+    const a = this.equippedAura();
+    if (!a) return '';
+    if (a.icon === '💙') return 'aura-blue';
+    if (a.icon === '✨') return 'aura-gold';
+    if (a.icon === '🔮') return 'aura-legendary';
+    return '';
   }
 
   logout(): void {
