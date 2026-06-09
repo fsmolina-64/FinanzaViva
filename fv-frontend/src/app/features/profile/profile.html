@@ -250,8 +250,76 @@
           </div>
         </div>
       </div>
+      <!-- Cambiar contraseña -->
+      <div class="section-card">
+        <button (click)="togglePasswordSection()" class="w-full flex items-center justify-between text-left">
+          <h3 class="section-title mb-0">Cambiar contraseña</h3>
+          <span class="text-slate-400 text-lg transition-transform duration-200"
+            [class.rotate-180]="showPasswordSection()">▾</span>
+        </button>
 
-      <!-- Danger Zone -->
+        @if (showPasswordSection()) {
+        <div class="form-slide mt-4 space-y-3">
+
+          <!-- Contraseña actual -->
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Contraseña actual</label>
+            <div class="relative">
+              <input [(ngModel)]="passwordForm.currentPassword" [type]="showCurrentPwd() ? 'text' : 'password'"
+                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().current ? 'border-red-500' : 'border-slate-600'" />
+              <button type="button" (click)="showCurrentPwd.update(v => !v)"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                {{ showCurrentPwd() ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (passwordErrors().current) {
+            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().current }}</p>
+            }
+          </div>
+
+          <!-- Nueva contraseña -->
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Nueva contraseña</label>
+            <div class="relative">
+              <input [(ngModel)]="passwordForm.newPassword" [type]="showNewPwd() ? 'text' : 'password'"
+                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().new ? 'border-red-500' : 'border-slate-600'" />
+              <button type="button" (click)="showNewPwd.update(v => !v)"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                {{ showNewPwd() ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (passwordErrors().new) {
+            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().new }}</p>
+            }
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Confirmar nueva contraseña</label>
+            <div class="relative">
+              <input [(ngModel)]="passwordForm.confirmPassword" [type]="showConfirmPwd() ? 'text' : 'password'"
+                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().confirm ? 'border-red-500' : 'border-slate-600'" />
+              <button type="button" (click)="showConfirmPwd.update(v => !v)"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                {{ showConfirmPwd() ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            @if (passwordErrors().confirm) {
+            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().confirm }}</p>
+            }
+          </div>
+
+          <button (click)="changePassword()" [disabled]="changingPassword()"
+            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+            {{ changingPassword() ? 'Guardando...' : 'Actualizar contraseña' }}
+          </button>
+
+        </div>
+        }
+      </div>
       <div class="danger-zone">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-base">⚠️</span>
@@ -270,6 +338,7 @@
             Eliminar
           </button>
         </div>
+
       </div>
 
     </div>
@@ -280,7 +349,6 @@
 
 </div>
 
-<!-- ─── Delete confirmation modal ──────────────────────────────────────────── -->
 @if (showDeleteModal()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
   <div class="modal-card" (click)="$event.stopPropagation()">

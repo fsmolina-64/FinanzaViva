@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AcademyService } from '../../../core/services/academy.service';
+import { GamificationService } from '../../../core/services/gamification.service';
 import { Lesson, LessonCompleteResponse } from '../../../core/models/academy.model';
 
 @Component({
@@ -19,7 +20,8 @@ export class LessonComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private academyService: AcademyService
+    private academyService: AcademyService,
+    private gamificationService: GamificationService
   ) { }
 
   ngOnInit(): void {
@@ -47,6 +49,10 @@ export class LessonComponent implements OnInit {
         this.result.set(res);
         this.lesson.update(l => l ? { ...l, status: 'COMPLETED' as const } : l);
         this.completing.set(false);
+
+        if (res.totalXpEarned > 0) {
+          this.gamificationService.loadStats().subscribe();
+        }
       },
       error: () => this.completing.set(false),
     });

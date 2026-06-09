@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { UserProfile, UpdateProfileRequest } from '../models/user.model';
+import { ChangePasswordRequest } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -19,5 +20,8 @@ export class UserService {
 
   deleteAccount(): Observable<void> {
     return this.api.delete<void>('/users/me');
+  }
+  changePassword(data: ChangePasswordRequest): Observable<{ message: string }> {
+    return this.api.patch<{ message: string }>('/users/password', data);
   }
 }

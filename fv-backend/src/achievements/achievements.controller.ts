@@ -5,10 +5,11 @@ import { JwtGuard } from '../auth/guards/jwt.guard';
 @UseGuards(JwtGuard)
 @Controller('achievements')
 export class AchievementsController {
-  constructor(private achievementsService: AchievementsService) {}
+  constructor(private achievementsService: AchievementsService) { }
 
   @Get()
-  getUserAchievements(@Request() req: any) {
+  async getUserAchievements(@Request() req: any) {
+    await this.achievementsService.evaluate(req.user.id);
     return this.achievementsService.getUserAchievements(req.user.id);
   }
 

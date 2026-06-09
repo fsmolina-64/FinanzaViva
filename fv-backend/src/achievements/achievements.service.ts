@@ -29,9 +29,12 @@ export class AchievementsService {
   }
 
   private async unlock(userId: string, achievementId: string, xpReward: number) {
-    await this.prisma.userAchievement.create({
-      data: { userId, achievementId },
+    const existing = await this.prisma.userAchievement.findUnique({
+      where: { userId_achievementId: { userId, achievementId } },
     });
+    if (existing) return;
+
+    await this.prisma.userAchievement.create({ data: { userId, achievementId } });
 
     await this.prisma.userStatistics.update({
       where: { userId },
@@ -46,7 +49,6 @@ export class AchievementsService {
         description: 'Logro desbloqueado',
       });
     }
-
   }
 
   async checkRewards(userId: string) {

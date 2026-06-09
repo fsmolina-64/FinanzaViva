@@ -57,7 +57,6 @@ export class Profile implements OnInit {
     });
   }
 
-  // ─── Tabs ───────────────────────────────────────────────────────────────────
 
   setTab(tab: Tab): void {
     this.activeTab.set(tab);
@@ -65,11 +64,11 @@ export class Profile implements OnInit {
   }
 
   startEdit(): void {
+    if (this.editing()) { this.cancelEdit(); return; }
     this.activeTab.set('perfil');
     this.editing.set(true);
   }
 
-  // ─── Perfil ─────────────────────────────────────────────────────────────────
 
   private syncForm(u: UserProfile): void {
     this.form = {
@@ -111,7 +110,6 @@ export class Profile implements OnInit {
     this.editing.set(false);
   }
 
-  // ─── Danger Zone ────────────────────────────────────────────────────────────
 
   openDeleteModal(): void {
     this.deleteConfirmText.set('');
@@ -122,7 +120,13 @@ export class Profile implements OnInit {
     this.showDeleteModal.set(false);
     this.deleteConfirmText.set('');
   }
-
+  showPasswordSection = signal(false);
+  changingPassword = signal(false);
+  showCurrentPwd = signal(false);
+  showNewPwd = signal(false);
+  showConfirmPwd = signal(false);
+  passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
+  passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
   confirmDelete(): void {
     if (this.deleteConfirmText() !== 'ELIMINAR' || this.deleting()) return;
     this.deleting.set(true);
@@ -138,7 +142,6 @@ export class Profile implements OnInit {
     });
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   getXpProgress(): number {
     return (this.user()?.gameStats.xp ?? 0) % 100;
@@ -192,5 +195,36 @@ export class Profile implements OnInit {
 
   logout(): void {
     this.authService.logout();
+  }
+  togglePasswordSection(): void {
+    this.showPasswordSection.update(v => !v);
+    if (!this.showPasswordSection()) {
+      this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+      this.passwordErrors.set({});
+    }
+  }
+
+  changePassword(): void {
+    const e: { current?: string; new?: string; confirm?: string } = {};
+    if (!this.passwordForm.currentPassword) e.current = 'Contraseña actual requerida';
+    if (this.passwordForm.newPassword.length < 8) e.new = 'Mínimo 8 caracteres';
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) e.confirm = 'Las contraseñas no coinciden';
+
+    this.passwordErrors.set(e);
+    if (Object.keys(e).length) return;
+
+    this.changingPassword.set(true);
+    this.userService.changePassword(this.passwordForm).subscribe({
+      next: () => {
+        this.changingPassword.set(false);
+        this.showPasswordSection.set(false);
+        this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.toastService.success('Contraseña actualizada correctamente');
+      },
+      error: (err) => {
+        this.changingPassword.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al cambiar la contraseña');
+      }
+    });
   }
 }
