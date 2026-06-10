@@ -530,17 +530,28 @@ async function main() {
   console.log('✅ Eventos del simulador creados');
 
   const achievements = [
-    { key: 'first_quiz_passed', name: 'Primer Quiz', description: 'Aprueba tu primer quiz.', icon: '🎯', category: 'LEARNING', xpReward: 50, condition: { metric: 'quizzes_passed', threshold: 1 } },
-    { key: 'quiz_master', name: 'Quiz Master', description: 'Aprueba 10 quizzes.', icon: '🏆', category: 'LEARNING', xpReward: 150, condition: { metric: 'quizzes_passed', threshold: 10 } },
     { key: 'first_lesson', name: 'Primer Paso', description: 'Completa tu primera lección.', icon: '📘', category: 'LEARNING', xpReward: 30, condition: { metric: 'lessons_completed', threshold: 1 } },
-    { key: 'module_master', name: 'Módulo Completo', description: 'Completa un módulo entero.', icon: '📗', category: 'LEARNING', xpReward: 100, condition: { metric: 'modules_completed', threshold: 1 } },
-    { key: 'first_transaction', name: 'Registro Financiero', description: 'Registra tu primera transacción.', icon: '💰', category: 'FINANCES', xpReward: 30, condition: { metric: 'total_transactions', threshold: 1 } },
-    { key: 'transaction_master', name: 'Contador', description: 'Registra 50 transacciones.', icon: '📊', category: 'FINANCES', xpReward: 100, condition: { metric: 'total_transactions', threshold: 50 } },
-    { key: 'first_game', name: 'Primer Juego', description: 'Completa tu primera partida.', icon: '🎮', category: 'SIMULATOR', xpReward: 50, condition: { metric: 'games_played', threshold: 1 } },
-    { key: 'streak_7', name: 'Semana Constante', description: 'Mantén una racha de 7 días.', icon: '🔥', category: 'STREAK', xpReward: 100, condition: { metric: 'current_streak', threshold: 7 } },
-    { key: 'streak_30', name: 'Mes Constante', description: 'Mantén una racha de 30 días.', icon: '⚡', category: 'STREAK', xpReward: 300, condition: { metric: 'current_streak', threshold: 30 } },
-    { key: 'level_5', name: 'Nivel 5', description: 'Alcanza el nivel 5.', icon: '⭐', category: 'GENERAL', xpReward: 100, condition: { metric: 'level', threshold: 5 } },
-    { key: 'level_10', name: 'Leyenda', description: 'Alcanza el nivel máximo.', icon: '👑', category: 'GENERAL', xpReward: 500, condition: { metric: 'level', threshold: 10 } },
+    { key: 'student', name: 'Estudiante', description: 'Completa 10 lecciones.', icon: '📖', category: 'LEARNING', xpReward: 60, condition: { metric: 'lessons_completed', threshold: 10 } },
+    { key: 'avid_reader', name: 'Lector Voraz', description: 'Completa 20 lecciones.', icon: '📚', category: 'LEARNING', xpReward: 100, condition: { metric: 'lessons_completed', threshold: 20 } },
+    { key: 'graduated', name: 'Graduado', description: 'Completa las 28 lecciones.', icon: '🎓', category: 'LEARNING', xpReward: 200, condition: { metric: 'lessons_completed', threshold: 28 } },
+    { key: 'academic', name: 'Académico', description: 'Completa 3 módulos.', icon: '🏫', category: 'LEARNING', xpReward: 80, condition: { metric: 'modules_completed', threshold: 3 } },
+    { key: 'scholar', name: 'Scholar', description: 'Completa 5 módulos.', icon: '🔬', category: 'LEARNING', xpReward: 120, condition: { metric: 'modules_completed', threshold: 5 } },
+    { key: 'master_total', name: 'Maestro Total', description: 'Completa los 7 módulos.', icon: '🧠', category: 'LEARNING', xpReward: 300, condition: { metric: 'modules_completed', threshold: 7 } },
+    { key: 'quiz_perfect', name: 'Quiz Perfecto', description: 'Aprueba 5 quizzes.', icon: '🎯', category: 'LEARNING', xpReward: 100, condition: { metric: 'quizzes_passed', threshold: 5 } },
+    { key: 'organizer', name: 'Organizador', description: 'Registra 10 transacciones.', icon: '📋', category: 'FINANCES', xpReward: 40, condition: { metric: 'total_transactions', threshold: 10 } },
+    { key: 'active_counter', name: 'Contador Activo', description: 'Registra 25 transacciones.', icon: '📊', category: 'FINANCES', xpReward: 80, condition: { metric: 'total_transactions', threshold: 25 } },
+    { key: 'personal_cfo', name: 'CFO Personal', description: 'Registra 100 transacciones.', icon: '💼', category: 'FINANCES', xpReward: 150, condition: { metric: 'total_transactions', threshold: 100 } },
+    { key: 'data_millionaire', name: 'Millonario de Datos', description: 'Registra 200 transacciones.', icon: '💎', category: 'FINANCES', xpReward: 300, condition: { metric: 'total_transactions', threshold: 200 } },
+    { key: 'first_game', name: 'Primera Decisión', description: 'Completa tu primera partida.', icon: '🎮', category: 'SIMULATOR', xpReward: 50, condition: { metric: 'games_played', threshold: 1 } },
+    { key: 'active_player', name: 'Jugador Activo', description: 'Completa 5 partidas.', icon: '🕹️', category: 'SIMULATOR', xpReward: 80, condition: { metric: 'games_played', threshold: 5 } },
+    { key: 'veteran', name: 'Veterano', description: 'Completa 10 partidas.', icon: '⚔️', category: 'SIMULATOR', xpReward: 150, condition: { metric: 'games_played', threshold: 10 } },
+    { key: 'first_win', name: 'Primera Victoria', description: 'Gana tu primera partida.', icon: '🥇', category: 'SIMULATOR', xpReward: 80, condition: { metric: 'games_won', threshold: 1 } },
+    { key: 'champion', name: 'Campeón', description: 'Gana 5 partidas.', icon: '🏆', category: 'SIMULATOR', xpReward: 200, condition: { metric: 'games_won', threshold: 5 } },
+    { key: 'first_habit', name: 'Primer Hábito', description: 'Mantén una racha de 3 días.', icon: '🌱', category: 'STREAK', xpReward: 40, condition: { metric: 'current_streak', threshold: 3 } },
+    { key: 'disciplined', name: 'Disciplinado', description: 'Mantén una racha de 14 días.', icon: '🔥', category: 'STREAK', xpReward: 150, condition: { metric: 'current_streak', threshold: 14 } },
+    { key: 'unstoppable', name: 'Imparable', description: 'Alcanza una racha máxima de 30 días.', icon: '⚡', category: 'STREAK', xpReward: 300, condition: { metric: 'longest_streak', threshold: 30 } },
+    { key: 'accumulator', name: 'Acumulador', description: 'Gana 500 XP en total.', icon: '⭐', category: 'GENERAL', xpReward: 50, condition: { metric: 'total_xp', threshold: 500 } },
+    { key: 'knowledge_investor', name: 'Inversor de Conocimiento', description: 'Gana 2000 XP en total.', icon: '👑', category: 'GENERAL', xpReward: 200, condition: { metric: 'total_xp', threshold: 2000 } },
   ];
 
   for (const achievement of achievements) {
@@ -554,14 +565,26 @@ async function main() {
   console.log('✅ Logros creados');
 
   const rewards = [
-    { name: 'Avatar Inversor', description: 'Desbloquea el avatar de inversor.', icon: '👔', type: 'AVATAR', unlockType: 'LEVEL', unlockValue: '5' },
-    { name: 'Avatar Maestro', description: 'Desbloquea el avatar de maestro.', icon: '🎓', type: 'AVATAR', unlockType: 'LEVEL', unlockValue: '10' },
-    { name: 'Tema Oscuro Premium', description: 'Desbloquea el tema oscuro premium.', icon: '🌙', type: 'THEME', unlockType: 'RANK', unlockValue: 'INTERMEDIATE' },
-    { name: 'Tema Dorado', description: 'Desbloquea el tema dorado.', icon: '✨', type: 'THEME', unlockType: 'RANK', unlockValue: 'EXPERT' },
+    { name: 'Novato Financiero', description: 'Título inicial de bienvenida.', icon: '🌱', type: 'TITLE', unlockType: 'LEVEL', unlockValue: '2' },
+    { name: 'Analista', description: 'Título por completar 3 módulos.', icon: '🔍', type: 'TITLE', unlockType: 'ACHIEVEMENT', unlockValue: 'academic' },
+    { name: 'Inversor', description: 'Título por aprobar 5 quizzes.', icon: '📈', type: 'TITLE', unlockType: 'ACHIEVEMENT', unlockValue: 'quiz_perfect' },
+    { name: 'Estratega', description: 'Título por ganar 3 partidas.', icon: '♟️', type: 'TITLE', unlockType: 'ACHIEVEMENT', unlockValue: 'first_win' },
+    { name: 'Magnate', description: 'Título por alcanzar nivel 10.', icon: '💰', type: 'TITLE', unlockType: 'LEVEL', unlockValue: '10' },
+    { name: 'Aura Azul', description: 'Brillo azul en tu avatar.', icon: '💙', type: 'AURA', unlockType: 'RANK', unlockValue: 'INTERMEDIATE' },
+    { name: 'Aura Dorada', description: 'Brillo dorado en tu avatar.', icon: '✨', type: 'AURA', unlockType: 'RANK', unlockValue: 'EXPERT' },
+    { name: 'Aura Legendaria', description: 'Brillo morado animado en tu avatar.', icon: '🔮', type: 'AURA', unlockType: 'RANK', unlockValue: 'MASTER' },
+    { name: 'Marco Bronce', description: 'Marco de perfil bronce.', icon: '🥉', type: 'FRAME', unlockType: 'LEVEL', unlockValue: '2' },
     { name: 'Marco Plata', description: 'Marco de perfil plateado.', icon: '🥈', type: 'FRAME', unlockType: 'LEVEL', unlockValue: '3' },
     { name: 'Marco Oro', description: 'Marco de perfil dorado.', icon: '🥇', type: 'FRAME', unlockType: 'RANK', unlockValue: 'ADVANCED' },
-    { name: 'Insignia Quiz Master', description: 'Insignia exclusiva de Quiz Master.', icon: '🏆', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'quiz_master' },
-    { name: 'Insignia Constante', description: 'Insignia por racha de 30 días.', icon: '🔥', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'streak_30' },
+    { name: 'Marco Diamante', description: 'Marco de perfil cyan brillante.', icon: '💠', type: 'FRAME', unlockType: 'ACHIEVEMENT', unlockValue: 'master_total' },
+    { name: 'Avatar Inversor', description: 'Avatar de inversor profesional.', icon: '👔', type: 'AVATAR', unlockType: 'LEVEL', unlockValue: '5' },
+    { name: 'Avatar Pro', description: 'Avatar exclusivo por aprobar 7 quizzes.', icon: '💼', type: 'AVATAR', unlockType: 'ACHIEVEMENT', unlockValue: 'quiz_perfect' },
+    { name: 'Avatar Maestro', description: 'Avatar de maestro financiero.', icon: '🎓', type: 'AVATAR', unlockType: 'LEVEL', unlockValue: '10' },
+    { name: 'Avatar Leyenda', description: 'Avatar legendario.', icon: '👑', type: 'AVATAR', unlockType: 'ACHIEVEMENT', unlockValue: 'knowledge_investor' },
+    { name: 'Insignia Quiz Master', description: 'Insignia exclusiva de Quiz Master.', icon: '🏆', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'quiz_perfect' },
+    { name: 'Insignia Constante', description: 'Insignia por racha de 30 días.', icon: '🔥', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'unstoppable' },
+    { name: 'Insignia Graduado', description: 'Insignia por completar todas las lecciones.', icon: '🎓', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'graduated' },
+    { name: 'Insignia Campeón', description: 'Insignia por ganar 5 partidas.', icon: '⚔️', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'champion' },
   ];
 
   for (const reward of rewards) {

@@ -28,14 +28,20 @@
       <div class="flex items-start gap-4">
 
         <div class="relative flex-shrink-0">
-          @if (user()!.profile?.avatarUrl) {
-          <img [src]="user()!.profile.avatarUrl" alt="avatar"
-            class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600" />
+          @if (equippedAvatar()) {
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center border-2 text-4xl"
+            [ngClass]="getFrameClass()">
+            {{ equippedAvatar()!.icon }}
+          </div>
+          } @else if (user()!.profile.avatarUrl) {
+          <img [src]="user()!.profile.avatarUrl" alt="avatar" class="w-20 h-20 rounded-2xl object-cover border-2"
+            [ngClass]="getFrameClass()" />
           } @else {
           <div
-            class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2 border-blue-500/50">
+            class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2"
+            [ngClass]="getFrameClass()">
             <span class="text-white font-bold text-2xl">
-              {{ getInitials(user()!.profile?.displayName ?? '') }}
+              {{ getInitials(user()!.profile.displayName) }}
             </span>
           </div>
           }
@@ -44,6 +50,9 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <h2 class="text-white font-bold text-xl">{{ user()!.profile.displayName }}</h2>
+            @if (equippedBadge()) {
+            <span class="text-xl" [title]="equippedBadge()!.name">{{ equippedBadge()!.icon }}</span>
+            }
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
               [ngClass]="getRankColor(user()!.gameStats.rank)">
               {{ getRankLabel(user()!.gameStats.rank) }}
