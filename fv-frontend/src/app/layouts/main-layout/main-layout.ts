@@ -15,13 +15,12 @@ export class MainLayout {
   sidebarOpen = signal(true);
 
   navItems = [
-    { path: '/dashboard',    icon: 'dashboard.png', label: 'Dashboard'   },
-    { path: '/finances',     icon: 'billetera-premium.png',  label: 'Finanzas'    },
-    { path: '/academy',      icon: 'academia.png', label: 'Academia' },
-    { path: '/quizzes',      icon: '🎯', label: 'Quizzes'     },
-    { path: '/simulator',    icon: 'simulador.png', label: 'Simulador'   },
-    { path: '/achievements', icon: 'logro.png', label: 'Logros'      },
-    { path: '/profile',      icon: 'perfil.png', label: 'Perfil'      },
+    { path: '/dashboard', icon: 'dashboard.png', label: 'Dashboard' },
+    { path: '/finances', icon: 'billetera-premium.png', label: 'Finanzas' },
+    { path: '/academy', icon: 'academia.png', label: 'Academia' },
+    { path: '/simulator', icon: 'simulador.png', label: 'Simulador' },
+    { path: '/achievements', icon: 'logro.png', label: 'Logros' },
+    { path: '/profile', icon: 'perfil.png', label: 'Perfil' },
   ];
 
   constructor(
