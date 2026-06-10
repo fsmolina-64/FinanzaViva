@@ -1,16 +1,16 @@
 <div class="min-h-screen w-full flex flex-col md:flex-row items-center justify-center md:justify-end relative overflow-hidden transition-all duration-300 bg-[#060913]">
 
   <video 
-    autoplay 
-    loop 
-    muted
-    [muted]="true"
-    playsinline
-    oncanplay="this.play()"
-    onloadedmetadata="this.muted = true"
-    class="absolute inset-0 w-full h-full object-cover z-10 opacity-100 pointer-events-none">
-    <source src="video.mp4" type="video/mp4">
-  </video>
+  autoplay 
+  loop 
+  muted
+  [muted]="true"
+  playsinline
+  oncanplay="this.play()"
+  onloadedmetadata="this.muted = true"
+  class="absolute inset-0 w-[105%] h-[105%] max-w-none object-cover z-0 pointer-events-none scale-105 translate-x-2 translate-y-2">
+  <source src="video.mp4" type="video/mp4">
+</video>
 
   <div class="absolute inset-0 bg-gradient-to-r from-[#060913]/20 via-[#0a0f24]/40 to-[#060913]/80 z-20"></div>
 
