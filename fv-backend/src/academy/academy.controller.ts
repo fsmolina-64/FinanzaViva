@@ -5,7 +5,7 @@ import { JwtGuard } from '../auth/guards/jwt.guard';
 @UseGuards(JwtGuard)
 @Controller('academy')
 export class AcademyController {
-  constructor(private academyService: AcademyService) {}
+  constructor(private academyService: AcademyService) { }
 
   @Get('modules')
   getModules(@Request() req: any) {
@@ -25,5 +25,10 @@ export class AcademyController {
   @Post('lessons/:id/complete')
   completeLesson(@Request() req: any, @Param('id') id: string) {
     return this.academyService.completeLesson(req.user.id, id);
+  }
+
+  @Post('lessons/:id/reset')
+  resetLesson(@Request() req: any, @Param('id') id: string) {
+    return this.academyService.resetLesson(req.user.id, id);
   }
 }

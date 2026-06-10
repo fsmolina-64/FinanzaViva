@@ -3,10 +3,11 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { GamificationService } from '../../core/services/gamification.service';
+import { ToastComponent } from '../../shared/components/toast/toast';
 
 @Component({
   selector: 'app-main-layout',
-  imports: [RouterModule, CommonModule],
+  imports: [RouterModule, CommonModule, ToastComponent],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css'
 })
@@ -26,7 +27,7 @@ export class MainLayout {
   constructor(
     public authService: AuthService,
     public gamificationService: GamificationService
-  ) {}
+  ) { }
 
   toggleSidebar(): void {
     this.sidebarOpen.update(v => !v);
