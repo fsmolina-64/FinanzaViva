@@ -36,7 +36,6 @@
             </div>
         </div>
 
-        <!-- Contenido de la lección -->
         <div class="bg-[#1E293B] rounded-2xl p-6 border border-slate-700 space-y-4">
             @for (block of lesson()!.content; track $index) {
             @switch (block.type) {
@@ -112,7 +111,6 @@
             }
         </div>
 
-        <!-- Banner de resultado (al completar) -->
         @if (result()) {
         <div
             class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-5 text-center space-y-2">
@@ -140,16 +138,13 @@
         </div>
         }
 
-        <!-- Botones de acción -->
         @if (!result()) {
         @if (!isCompleted) {
-        <!-- Botón principal: marcar como completada -->
         <button (click)="complete()" [disabled]="completing()"
             class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
             {{ completing() ? 'Completando...' : 'Marcar como completada' }}
         </button>
         } @else {
-        <!-- Estado completado + opción de marcar pendiente -->
         <div class="flex flex-col sm:flex-row items-stretch gap-3">
             <div
                 class="flex-1 flex items-center justify-center py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-sm">
