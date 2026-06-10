@@ -9,7 +9,9 @@ export type ContentBlockType =
   | 'warning'
   | 'video'
   | 'list'
-  | 'exercise';
+  | 'exercise'
+  | 'comparison'
+  | 'formula';
 
 export interface ContentBlock {
   type: ContentBlockType;
@@ -19,6 +21,12 @@ export interface ContentBlock {
   url?: string;
   question?: string;
   hint?: string;
+  leftLabel?: string;
+  rightLabel?: string;
+  leftItems?: string[];
+  rightItems?: string[];
+  formula?: string;
+  variables?: string[];
 }
 
 export interface Lesson {
