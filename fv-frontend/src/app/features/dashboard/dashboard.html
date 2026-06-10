@@ -110,16 +110,37 @@
   }
 
   <div>
-    <h3 class="text-white font-semibold mb-3">Accesos rapidos</h3>
+    <h3 class="text-white font-semibold mb-3">Accesos rápidos</h3>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      @for (action of quickActions; track action.path) {
-        <a [routerLink]="action.path" class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 flex flex-col items-center gap-2 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br" [ngClass]="action.color">
-            {{ action.icon }}
-          </div>
-          <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">{{ action.label }}</span>
-        </a>
-      }
+      
+      <a routerLink="/dashboard/academy" class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="academia.png" alt="Academia" class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Academia</span>
+      </a>
+
+      <a routerLink="/dashboard/quizzes" class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="logro.png" alt="Quizzes" class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Quizzes</span>
+      </a>
+
+      <a routerLink="/dashboard/simulator" class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="simulador.png" alt="Simulador" class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Simulador</span>
+      </a>
+
+      <a routerLink="/dashboard/achievements" class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="logro.png" alt="Logros" class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Logros</span>
+      </a>
+
     </div>
   </div>
 </div>
