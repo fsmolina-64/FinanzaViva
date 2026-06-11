@@ -41,7 +41,6 @@ export class QuizDetail implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Ruta: /academy/:moduleId/quiz
     const moduleId = this.route.snapshot.paramMap.get('moduleId')!;
     this.backLink = `/academy/${moduleId}`;
 

@@ -1,15 +1,17 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { FinancesService } from './finances.service';
+import { Controller, Get, Post, Delete, Patch, Body, Param, UseGuards, Request } from '@nestjs/common'; import { FinancesService } from './finances.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { CreateGoalDto } from './dto/create-goal.dto';
+import { UpdateBudgetDto } from './dto/update-budget.dto';
+import { UpdateGoalDto } from './dto/update-goal.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @UseGuards(JwtGuard)
 @Controller('finances')
 export class FinancesController {
-  constructor(private financesService: FinancesService) {}
+  constructor(private financesService: FinancesService) { }
 
   @Get('summary')
   getSummary(@Request() req: any) {
@@ -66,11 +68,35 @@ export class FinancesController {
     return this.financesService.getGoals(req.user.id);
   }
   @Delete('transactions/:id')
-deleteTransaction(@Request() req: any, @Param('id') id: string) {
-  return this.financesService.deleteTransaction(req.user.id, id);
-}
-@Get('budget-health')
-getBudgetHealth(@Request() req: any) {
-  return this.financesService.getBudgetHealth(req.user.id);
-}
+  deleteTransaction(@Request() req: any, @Param('id') id: string) {
+    return this.financesService.deleteTransaction(req.user.id, id);
+  }
+  @Get('budget-health')
+  getBudgetHealth(@Request() req: any) {
+    return this.financesService.getBudgetHealth(req.user.id);
+  }
+  @Patch('budgets/:id')
+  updateBudget(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateBudgetDto) {
+    return this.financesService.updateBudget(req.user.id, id, dto);
+  }
+
+  @Delete('budgets/:id')
+  deleteBudget(@Request() req: any, @Param('id') id: string) {
+    return this.financesService.deleteBudget(req.user.id, id);
+  }
+
+  @Patch('goals/:id')
+  updateGoal(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateGoalDto) {
+    return this.financesService.updateGoal(req.user.id, id, dto);
+  }
+
+  @Delete('goals/:id')
+  deleteGoal(@Request() req: any, @Param('id') id: string) {
+    return this.financesService.deleteGoal(req.user.id, id);
+  }
+
+  @Patch('transactions/:id')
+  updateTransaction(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateTransactionDto) {
+    return this.financesService.updateTransaction(req.user.id, id, dto);
+  }
 }

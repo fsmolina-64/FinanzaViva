@@ -53,7 +53,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/academy/academy').then(m => m.Academy)
       },
-      // ORDEN CRÍTICO: rutas más específicas primero
       {
         path: 'academy/lesson/:lessonId',
         loadComponent: () =>

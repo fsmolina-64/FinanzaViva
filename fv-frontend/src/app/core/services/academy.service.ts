@@ -30,7 +30,6 @@ export class AcademyService {
     return this.api.post<LessonCompleteResponse>(`/academy/lessons/${id}/complete`, {});
   }
 
-  // NUEVO: marca la lección como pendiente sin devolver XP
   resetLesson(id: string): Observable<LessonResetResponse> {
     return this.api.post<LessonResetResponse>(`/academy/lessons/${id}/reset`, {});
   }

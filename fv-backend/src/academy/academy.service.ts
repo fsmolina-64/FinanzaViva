@@ -76,7 +76,6 @@ export class AcademyService {
     };
   }
 
-  // FIX: ahora calcula y devuelve `status` correctamente
   async getLesson(userId: string, lessonId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -95,7 +94,6 @@ export class AcademyService {
     if (progress?.status === 'COMPLETED') {
       status = 'COMPLETED';
     } else {
-      // Determinar si la lección anterior está completada (o es la primera)
       const idx = lesson.module.lessons.findIndex(l => l.id === lessonId);
       if (idx === 0) {
         status = 'AVAILABLE';

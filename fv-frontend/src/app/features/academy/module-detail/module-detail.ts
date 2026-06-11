@@ -56,7 +56,6 @@ export class ModuleDetail implements OnInit {
     });
   }
 
-  // 'locked' = no ha completado lecciones | 'available' = puede tomar | 'passed' = aprobó
   quizState(): 'locked' | 'available' | 'passed' {
     if (this.quizPassed()) return 'passed';
     const m = this.module();
