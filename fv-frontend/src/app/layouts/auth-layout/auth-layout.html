@@ -1,16 +1,26 @@
-<div class="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center relative px-4" style="background-image: url('portada.png');">
+<div class="min-h-screen w-full flex flex-col md:flex-row items-center justify-center md:justify-end relative overflow-hidden transition-all duration-300 bg-[#060913]">
+ <video 
+  autoplay 
+  loop 
+  muted
+  [muted]="true"
+  playsinline
+  oncanplay="this.play()"
+  onloadedmetadata="this.muted = true"
+  class="absolute inset-0 w-[105%] h-[105%] max-w-none object-cover z-0 pointer-events-none scale-105 translate-x-2 translate-y-2">
+  <source src="video.mp4" type="video/mp4">
+</video>
 
-  <div class="absolute inset-0 bg-[#0f172a]/80"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-[#060913]/50 via-[#0a0f24]/80 to-[#060913]/95 z-20"></div>
 
-  <div class="relative z-10 flex flex-col items-center w-full">
+  <div class="relative z-30 flex flex-col items-center justify-center w-full md:max-w-md p-4 md:p-0 md:mr-12 lg:mr-20 xl:mr-32 my-8">
 
-
-    <div class="w-full max-w-md bg-[#1E293B]/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-slate-600">
+    <div class="w-full bg-[#0f172a]/90 backdrop-blur-xl rounded-2xl p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border border-slate-800/80">
       <router-outlet />
     </div>
 
-    <p class="text-slate-400 text-xs mt-6 font-medium drop-shadow-md">
-      © 2026 FinanzaViva · Hecho para jóvenes ecuatorianos
+    <p class="text-slate-500 text-xs mt-6 font-medium tracking-wide drop-shadow-sm select-none text-center">
+      &copy; 2026 FinanzaViva &bull; Hecho para jóvenes ecuatorianos
     </p>
 
   </div>
