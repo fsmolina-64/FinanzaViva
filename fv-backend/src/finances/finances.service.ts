@@ -41,11 +41,18 @@ export class FinancesService {
   async deleteAccount(userId: string, accountId: string) {
     const account = await this.prisma.financialAccount.findUnique({
       where: { id: accountId },
+      include: { _count: { select: { transactions: true } } },
     });
     if (!account) throw new NotFoundException('Cuenta no encontrada');
     if (account.userId !== userId) throw new ForbiddenException();
+    if (account._count.transactions > 0) {
+      throw new BadRequestException(
+        `No puedes eliminar esta cuenta porque tiene ${account._count.transactions} transacciones registradas. Elimina las transacciones primero o transfiere el saldo a otra cuenta.`
+      );
+    }
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
+
 
 
   async createTransaction(userId: string, dto: CreateTransactionDto) {
@@ -335,18 +342,43 @@ export class FinancesService {
     if (!goal) throw new NotFoundException('Meta no encontrada');
     if (goal.userId !== userId) throw new ForbiddenException();
 
-    const newCurrent = dto.currentAmount !== undefined
-      ? dto.currentAmount
-      : Number(goal.currentAmount);
-    const newTarget = dto.targetAmount !== undefined
-      ? dto.targetAmount
-      : Number(goal.targetAmount);
-
+    const newCurrent = dto.currentAmount !== undefined ? dto.currentAmount : Number(goal.currentAmount);
+    const newTarget = dto.targetAmount !== undefined ? dto.targetAmount : Number(goal.targetAmount);
     let resolvedStatus = dto.status;
-    if (newCurrent >= newTarget) {
-      resolvedStatus = 'COMPLETED';
-    } else if (!resolvedStatus) {
-      resolvedStatus = 'ACTIVE';
+    if (newCurrent >= newTarget) resolvedStatus = 'COMPLETED';
+    else if (!resolvedStatus) resolvedStatus = 'ACTIVE';
+
+    // Si se envía fromAccountId, descontar de la cuenta
+    if (dto.fromAccountId && dto.currentAmount !== undefined) {
+      const account = await this.prisma.financialAccount.findUnique({ where: { id: dto.fromAccountId } });
+      if (!account || account.userId !== userId)
+        throw new ForbiddenException('Cuenta no encontrada');
+
+      const addedAmount = dto.currentAmount - Number(goal.currentAmount);
+      if (addedAmount > 0) {
+        if (Number(account.balance) < addedAmount) {
+          throw new BadRequestException(
+            `Saldo insuficiente en ${account.name}. Disponible: $${Number(account.balance).toFixed(2)}, necesitas: $${addedAmount.toFixed(2)}`
+          );
+        }
+        const [updatedGoal] = await this.prisma.$transaction([
+          this.prisma.financialGoal.update({
+            where: { id: goalId },
+            data: {
+              ...(dto.name !== undefined && { name: dto.name }),
+              ...(dto.targetAmount !== undefined && { targetAmount: dto.targetAmount }),
+              currentAmount: dto.currentAmount,
+              ...(dto.deadline !== undefined && { deadline: new Date(dto.deadline) }),
+              status: resolvedStatus,
+            },
+          }),
+          this.prisma.financialAccount.update({
+            where: { id: dto.fromAccountId },
+            data: { balance: { decrement: addedAmount } },
+          }),
+        ]);
+        return updatedGoal;
+      }
     }
 
     return this.prisma.financialGoal.update({

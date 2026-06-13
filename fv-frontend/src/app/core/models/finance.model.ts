@@ -141,6 +141,7 @@ export interface UpdateGoalPayload {
   currentAmount?: number;
   deadline?: string;
   status?: GoalStatus;
+  fromAccountId?: string;
 }
 export interface CreateTransferPayload {
   fromAccountId: string;
