@@ -25,7 +25,6 @@
     @if (!loading() && quiz()) {
     <div class="space-y-5 animate-fade-in">
 
-        <!-- Header -->
         <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
             <div class="flex items-start justify-between">
                 <div>
@@ -53,7 +52,6 @@
             }
         </div>
 
-        <!-- Resultado -->
         @if (result()) {
         <div class="rounded-2xl p-6 border text-center space-y-3"
             [ngClass]="result()!.passed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'">
@@ -79,7 +77,6 @@
             </div>
         </div>
 
-        <!-- Revisión de respuestas -->
         <div class="space-y-4">
             <h3 class="text-white font-semibold text-sm">Revisión de respuestas</h3>
             @for (q of quiz()!.questions; track q.id) {
@@ -111,7 +108,6 @@
         </div>
         }
 
-        <!-- Pregunta activa -->
         @if (!result() && currentQuestion()) {
         <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-4">
             <p class="text-white font-semibold">{{ currentQuestion()!.text }}</p>
@@ -144,7 +140,6 @@
         </div>
         }
 
-        <!-- Historial de intentos -->
         @if (history().length > 0) {
         <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
             <h3 class="text-white font-semibold mb-3 text-sm">Historial de intentos</h3>

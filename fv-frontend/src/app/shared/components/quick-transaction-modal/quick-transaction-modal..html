@@ -1,0 +1,130 @@
+<div class="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6">
+
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" (click)="close()"></div>
+
+    <div class="modal-sheet relative w-full md:max-w-sm bg-[#0D1526] border border-slate-700/50
+              rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden" style="max-height:95vh; overflow-y:auto">
+
+        <div class="flex justify-center pt-3 pb-1 md:hidden">
+            <div class="w-10 h-1 bg-slate-700 rounded-full"></div>
+        </div>
+
+        @if (loading()) {
+        <div class="flex flex-col items-center justify-center py-24 gap-3">
+            <div class="w-7 h-7 border-2 border-blue-500/40 border-t-blue-500 rounded-full animate-spin"></div>
+            <p class="text-slate-500 text-sm">Cargando...</p>
+        </div>
+        } @else {
+
+        <div class="flex border-b border-slate-800/80 mt-1">
+            @for (opt of typeOptions; track opt.key) {
+            <button (click)="setType(opt.key)"
+                class="flex-1 py-3.5 text-sm font-semibold transition-all duration-200 border-b-2 -mb-px" [ngClass]="selectedType() === opt.key
+          ? (opt.key === 'EXPENSE'  ? 'text-red-400 border-red-500 bg-red-500/5'
+            : opt.key === 'INCOME'  ? 'text-emerald-400 border-emerald-500 bg-emerald-500/5'
+            :                         'text-blue-400 border-blue-500 bg-blue-500/5')
+          : 'text-slate-500 border-transparent hover:text-slate-400'">
+                {{ opt.label }}
+            </button>
+            }
+        </div>
+
+        <div class="px-6 py-5 text-center select-none">
+            <p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-widest">Monto</p>
+            <div class="text-5xl font-bold tracking-tight tabular-nums transition-colors duration-200" [ngClass]="selectedType() === 'EXPENSE'  ? 'text-red-400'
+                 : selectedType() === 'INCOME'    ? 'text-emerald-400'
+                 :                                  'text-blue-400'">
+                {{ formatAmount() }}
+            </div>
+        </div>
+
+        <div class="px-4 pb-4">
+            <div class="grid grid-cols-3 gap-2">
+                @for (key of numpadKeys; track key) {
+                <button (click)="pad(key)"
+                    class="h-12 rounded-xl font-bold text-xl transition-all duration-100 active:scale-95 select-none"
+                    [ngClass]="key === '<'
+            ? 'bg-slate-700/80 hover:bg-slate-700 text-slate-300 border border-slate-600'
+            : 'bg-slate-800 hover:bg-slate-700/80 text-white border border-slate-700/50'">
+                    @if (key === '<') { &#8592; } @else { {{ key }} } </button>
+                        }
+            </div>
+        </div>
+
+        <div class="px-4 pb-3">
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">Categoria</p>
+            @if (topCategories().length === 0) {
+            <p class="text-slate-600 text-xs">Sin categorias disponibles</p>
+            } @else {
+            <div class="flex flex-wrap gap-1.5">
+                @for (cat of topCategories(); track cat.id) {
+                <button (click)="selectedCategoryId = cat.id"
+                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150" [ngClass]="selectedCategoryId === cat.id
+            ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-500/30'
+            : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'">
+                    {{ cat.name }}
+                </button>
+                }
+            </div>
+            }
+        </div>
+
+        <div class="px-4 pb-4 space-y-2.5">
+            @if (accounts().length === 0) {
+            <p
+                class="text-amber-400 text-xs text-center py-2 bg-amber-500/10 rounded-xl border border-amber-500/20 px-3">
+                Crea una cuenta primero en la tab Resumen
+            </p>
+            } @else {
+            <div>
+                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1.5">Cuenta</p>
+                <select [(ngModel)]="selectedAccountId"
+                    class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+                    @for (acc of accounts(); track acc.id) {
+                    <option [value]="acc.id">{{ acc.name }}</option>
+                    }
+                </select>
+            </div>
+            }
+
+            <button (click)="showExtras = !showExtras"
+                class="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5">
+                <span class="font-bold text-sm leading-none">{{ showExtras ? '-' : '+' }}</span>
+                {{ showExtras ? 'Ocultar opciones' : 'Fecha y nota (opcionales)' }}
+            </button>
+
+            @if (showExtras) {
+            <div class="grid grid-cols-2 gap-2 animate-fade-in">
+                <div>
+                    <p class="text-xs text-slate-500 mb-1">Fecha</p>
+                    <input type="date" [(ngModel)]="selectedDate"
+                        class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 mb-1">Nota</p>
+                    <input type="text" [(ngModel)]="description" placeholder="Opcional..."
+                        class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
+                </div>
+            </div>
+            }
+        </div>
+
+        <div class="px-4 pb-6">
+            <button (click)="submit()" [disabled]="submitting()"
+                class="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                [ngClass]="submitting() ? 'bg-slate-600'
+          : selectedType() === 'EXPENSE'  ? 'bg-red-600 hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/25'
+          : selectedType() === 'INCOME'   ? 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25'
+          :                                  'bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25'">
+                @if (submitting()) {
+                Guardando...
+                } @else {
+                Registrar {{ selectedType() === 'EXPENSE' ? 'gasto' : selectedType() === 'INCOME' ? 'ingreso' :
+                'transferencia' }}
+                }
+            </button>
+        </div>
+
+        }
+    </div>
+</div>

@@ -1,9 +1,10 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../core/services/finance.service';
 import { ToastService } from '../../core/services/toast.service';
+import { QuickTransactionService, QuickTransactionResult } from '../../core/services/quick-transaction.service';
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType
@@ -64,6 +65,8 @@ export class Finances implements OnInit {
   confirmDeleteBudgetId = signal<string | null>(null);
   confirmDeleteGoalId = signal<string | null>(null);
 
+  txFilter = signal<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
+
   expenseCategories = computed(() =>
     this.categories().filter(c => c.type === 'EXPENSE')
   );
@@ -82,6 +85,28 @@ export class Finances implements OnInit {
     return this.categories();
   });
 
+
+  filteredTransactions = computed(() => {
+    const f = this.txFilter();
+    return f === 'ALL'
+      ? this.transactions()
+      : this.transactions().filter(t => t.type === f);
+  });
+
+  recentTransactions = computed(() => this.transactions().slice(0, 5));
+
+  groupedTransactions = computed(() => {
+    const map = new Map<string, Transaction[]>();
+    for (const tx of this.filteredTransactions()) {
+      const key = tx.date.substring(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(tx);
+    }
+    return Array.from(map.entries()).map(([date, items]) => ({
+      date, label: this.formatDateLabel(date), items
+    }));
+  });
+
   tabs: { key: Tab; label: string }[] = [
     { key: 'resumen', label: 'Resumen' },
     { key: 'transacciones', label: 'Transacciones' },
@@ -91,8 +116,21 @@ export class Finances implements OnInit {
 
   constructor(
     private financeService: FinanceService,
-    private toast: ToastService
-  ) { }
+    private toast: ToastService,
+    private quickTxService: QuickTransactionService
+  ) {
+    // Escucha transacciones registradas desde el FAB global
+    effect(() => {
+      const res = this.quickTxService.lastCreated();
+      if (!res) return;
+      // Dedup: solo agregar si no existe ya en la lista
+      const exists = this.transactions().some(t => t.id === res.transaction.id);
+      if (exists) return;
+      this.transactions.update(l => [res.transaction, ...l]);
+      if (res.alert) this.lastAlert.set(res.alert);
+      this.refreshSummary();
+    });
+  }
 
   ngOnInit(): void {
     let loaded = 0;
@@ -436,5 +474,18 @@ export class Finances implements OnInit {
   private extractError(err: any, fallback: string): string {
     const msg = err?.error?.message ?? fallback;
     return Array.isArray(msg) ? msg[0] : msg;
+  }
+  openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE'): void {
+    this.quickTxService.open(type);
+  }
+
+  private formatDateLabel(dateStr: string): string {
+    const todayKey = new Date().toISOString().split('T')[0];
+    const yestKey = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (dateStr === todayKey) return 'Hoy';
+    if (dateStr === yestKey) return 'Ayer';
+    const d = new Date(dateStr + 'T12:00:00');
+    const label = d.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
+    return label.charAt(0).toUpperCase() + label.slice(1);
   }
 }

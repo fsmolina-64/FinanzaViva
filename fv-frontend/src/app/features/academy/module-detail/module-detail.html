@@ -17,7 +17,6 @@
     @if (!loading() && module()) {
     <div class="animate-fade-in space-y-5">
 
-        <!-- Header del módulo -->
         <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
@@ -42,7 +41,6 @@
             </div>
         </div>
 
-        <!-- Lista de lecciones -->
         <div>
             <h2 class="text-slate-300 text-xs font-semibold uppercase tracking-widest mb-3 px-1">Lecciones</h2>
             <div class="space-y-2">
@@ -75,7 +73,6 @@
             </div>
         </div>
 
-        <!-- Sección Quiz del módulo -->
         @if (!quizLoading() && quiz()) {
         <div>
             <h2 class="text-slate-300 text-xs font-semibold uppercase tracking-widest mb-3 px-1">Evaluación</h2>

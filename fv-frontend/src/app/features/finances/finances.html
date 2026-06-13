@@ -1,6 +1,6 @@
 <div class="space-y-6 animate-slide-up">
 
-  <!-- HEADER -->
+  -- HEADER -->
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold text-white">Mis Finanzas</h1>
@@ -14,7 +14,7 @@
     }
   </div>
 
-  <!-- ALERTA DE PRESUPUESTO -->
+  -- ALERTA DE PRESUPUESTO -->
   @if (lastAlert()) {
   <div class="alert-banner rounded-2xl p-4 border flex items-start gap-3"
     [ngClass]="lastAlert()!.type === 'BUDGET_EXCEEDED' ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'">
@@ -30,7 +30,6 @@
   </div>
   }
 
-  <!-- TABS -->
   <div class="flex gap-1 bg-slate-800/60 p-1 rounded-2xl border border-slate-700">
     @for (tab of tabs; track tab.key) {
     <button (click)="setTab(tab.key)"
@@ -42,7 +41,6 @@
     }
   </div>
 
-  <!-- SKELETON -->
   @if (loading()) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
@@ -51,10 +49,36 @@
   </div>
   }
 
-  <!-- ─────────────── TAB: RESUMEN ─────────────── -->
+  -- ══════════════ TAB: RESUMEN ══════════════ -->
   @if (!loading() && activeTab() === 'resumen') {
   <div class="space-y-5 animate-fade-in">
 
+    -- ACCIONES RÁPIDAS -->
+    <div class="grid grid-cols-3 gap-3">
+      <button (click)="openQuickModal('EXPENSE')"
+        class="bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 hover:border-red-500/50 rounded-2xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/10 group">
+        <div
+          class="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center text-red-400 font-bold mx-auto mb-2 group-hover:scale-110 transition-transform text-xl">
+          -</div>
+        <p class="text-white text-sm font-semibold">Gasto</p>
+      </button>
+      <button (click)="openQuickModal('INCOME')"
+        class="bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 hover:border-emerald-500/50 rounded-2xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/10 group">
+        <div
+          class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 font-bold mx-auto mb-2 group-hover:scale-110 transition-transform text-xl">
+          +</div>
+        <p class="text-white text-sm font-semibold">Ingreso</p>
+      </button>
+      <button (click)="openQuickModal('TRANSFER')"
+        class="bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 hover:border-blue-500/50 rounded-2xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10 group">
+        <div
+          class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 font-bold mx-auto mb-2 group-hover:scale-110 transition-transform">
+          &harr;</div>
+        <p class="text-white text-sm font-semibold">Transferir</p>
+      </button>
+    </div>
+
+    -- KPIs -->
     @if (summary()) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div
@@ -89,6 +113,7 @@
     </div>
     }
 
+    -- SALUD FINANCIERA -->
     @if (health()) {
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
       <div class="flex items-center justify-between mb-4">
@@ -129,15 +154,54 @@
     </div>
     }
 
-    <!-- CUENTAS -->
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-white font-semibold">Ultimas transacciones</h3>
+        <button (click)="setTab('transacciones')"
+          class="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
+          Ver todas
+        </button>
+      </div>
+      @if (recentTransactions().length === 0) {
+      <div class="text-center py-6">
+        <p class="text-slate-500 text-sm">Sin transacciones aun</p>
+        <button (click)="openQuickModal('EXPENSE')"
+          class="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+          Registrar la primera
+        </button>
+      </div>
+      } @else {
+      <div class="space-y-1">
+        @for (tx of recentTransactions(); track tx.id) {
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800/60 transition-colors">
+          <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold"
+            [ngClass]="tx.type === 'INCOME' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'">
+            {{ tx.type === 'INCOME' ? '+' : '-' }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-white text-sm font-medium truncate">{{ tx.description || getCategoryName(tx.categoryId) }}
+            </p>
+            <p class="text-slate-500 text-xs">{{ getCategoryName(tx.categoryId) }} &middot; {{ tx.date | date:'dd MMM'
+              }}</p>
+          </div>
+          <span class="text-sm font-semibold flex-shrink-0" [ngClass]="getTransactionColor(tx.type)">
+            {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
+          </span>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-white font-semibold">Mis cuentas</h3>
-        <button (click)="showAccountForm.set(!showAccountForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showAccountForm() ? 'Cancelar' : '+ Nueva cuenta' }}
-        </button>
+        @if (showAccountForm()) {
+        <button (click)="showAccountForm.set(false)"
+          class="text-sm text-slate-400 hover:text-white transition-colors">Cancelar</button>
+        }
       </div>
+
       @if (showAccountForm()) {
       <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
         <div class="grid grid-cols-2 gap-3">
@@ -167,47 +231,67 @@
         </button>
       </div>
       }
-      @if (accounts().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-6">Sin cuentas registradas</p>
-      }
-      <div class="space-y-2">
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
         @for (acc of accounts(); track acc.id) {
         <div
-          class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
-          <div class="flex items-center gap-3">
+          class="bg-slate-800 rounded-2xl p-4 border border-slate-700 hover:border-slate-600 transition-all duration-200 group">
+          <div class="flex justify-between items-start mb-3">
             <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
               [ngClass]="getAccountTypeColor(acc.type)">
               {{ getAccountTypeLabel(acc.type) }}
             </span>
-            <span class="text-white text-sm font-medium">{{ acc.name }}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-white font-bold">{{ formatCurrency(acc.balance) }}</span>
             <button (click)="deleteAccount(acc.id)"
-              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 font-bold transition-all duration-200">&times;</button>
+              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-lg leading-none transition-all">&times;</button>
           </div>
+          <div class="text-white font-bold text-lg">{{ formatCurrency(acc.balance) }}</div>
+          <div class="text-slate-400 text-xs mt-0.5 truncate">{{ acc.name }}</div>
         </div>
         }
+        <button (click)="showAccountForm.set(!showAccountForm())"
+          class="bg-slate-800/40 rounded-2xl p-4 border border-dashed border-slate-700 hover:border-blue-500/50 hover:bg-slate-800 transition-all duration-200 flex flex-col items-center justify-center gap-1.5 min-h-[100px]">
+          <span class="text-2xl text-slate-600 font-light">+</span>
+          <span class="text-xs text-slate-500">Nueva cuenta</span>
+        </button>
       </div>
     </div>
 
   </div>
   }
 
-  <!-- ─────────────── TAB: TRANSACCIONES ─────────────── -->
   @if (!loading() && activeTab() === 'transacciones') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-white font-semibold">Transacciones</h3>
-        <button (click)="showTransactionForm.set(!showTransactionForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showTransactionForm() ? 'Cancelar' : '+ Nueva transaccion' }}
-        </button>
+
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div class="flex gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+          <button (click)="txFilter.set('ALL')"
+            class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+            [ngClass]="txFilter() === 'ALL' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'">
+            Todos
+          </button>
+          <button (click)="txFilter.set('INCOME')"
+            class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+            [ngClass]="txFilter() === 'INCOME' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'">
+            Ingresos
+          </button>
+          <button (click)="txFilter.set('EXPENSE')"
+            class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+            [ngClass]="txFilter() === 'EXPENSE' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'">
+            Gastos
+          </button>
+        </div>
+        <div class="flex-1 flex justify-end">
+          <button (click)="showTransactionForm.set(!showTransactionForm())"
+            class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
+            {{ showTransactionForm() ? 'Cancelar' : '+ Nueva transaccion' }}
+          </button>
+        </div>
       </div>
 
+      -- Formulario nueva transacción -->
       @if (showTransactionForm()) {
-      <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
+      <div class="form-slide mb-5 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
@@ -265,122 +349,137 @@
       </div>
       }
 
-      @if (transactions().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-8">Sin transacciones registradas</p>
-      }
-
-      <div class="space-y-2">
-        @for (tx of transactions(); track tx.id) {
-
-        @if (confirmDeleteTxId() === tx.id) {
-        <div
-          class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
-          <span class="text-red-300 text-sm">Eliminar "{{ tx.description || getCategoryName(tx.categoryId) }}"?</span>
-          <div class="flex gap-2">
-            <button (click)="deleteTransaction(tx.id)"
-              class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-              Eliminar
-            </button>
-            <button (click)="cancelDeleteTx()"
-              class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-              Cancelar
-            </button>
-          </div>
-        </div>
-        }
-
-        @else if (editingTxId() === tx.id) {
-        <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
-              <select [(ngModel)]="editTx.type"
-                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
-                <option value="INCOME">Ingreso</option>
-                <option value="EXPENSE">Gasto</option>
-                <option value="TRANSFER">Transferencia</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-              <input [(ngModel)]="editTx.amount" type="number"
-                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
-              <select [(ngModel)]="editTx.categoryId"
-                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
-                @for (cat of editTxCategories(); track cat.id) {
-                <option [value]="cat.id">{{ cat.name }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
-              <input [(ngModel)]="editTx.date" type="date"
-                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-            </div>
-          </div>
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Descripcion</label>
-            <input [(ngModel)]="editTx.description" type="text" placeholder="Opcional"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-          </div>
-          <div class="flex gap-2">
-            <button (click)="saveEditTx(tx.id)"
-              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
-              Guardar
-            </button>
-            <button (click)="cancelEditTx()"
-              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
-              Cancelar
-            </button>
-          </div>
-        </div>
-        }
-
-        @else {
-        <div
-          class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-              [ngClass]="tx.type === 'INCOME' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'">
-              {{ tx.type === 'INCOME' ? '+' : '-' }}
-            </div>
-            <div class="min-w-0">
-              <p class="text-white text-sm font-medium truncate">{{ tx.description || getCategoryName(tx.categoryId) }}
-              </p>
-              <p class="text-slate-500 text-xs">{{ getCategoryName(tx.categoryId) }} &middot; {{
-                getAccountName(tx.accountId) }} &middot; {{ tx.date | date:'dd/MM/yyyy' }}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="font-bold text-sm" [ngClass]="getTransactionColor(tx.type)">
-              {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
-            </span>
-            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-              <button (click)="startEditTx(tx)"
-                class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
-                editar
-              </button>
-              <button (click)="confirmDeleteTx(tx.id)"
-                class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
-                &times;
-              </button>
-            </div>
-          </div>
-        </div>
-        }
-
+      -- Lista agrupada por fecha -->
+      @if (groupedTransactions().length === 0) {
+      <div class="text-center py-10">
+        <p class="text-slate-500 text-sm">Sin transacciones</p>
+        @if (txFilter() !== 'ALL') {
+        <button (click)="txFilter.set('ALL')" class="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+          Ver todas
+        </button>
         }
       </div>
+      } @else {
+      <div class="space-y-5">
+        @for (group of groupedTransactions(); track group.date) {
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 px-1">
+            {{ group.label }}
+          </p>
+          <div class="space-y-2">
+            @for (tx of group.items; track tx.id) {
+
+            @if (confirmDeleteTxId() === tx.id) {
+            <div
+              class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-red-300 text-sm">Eliminar "{{ tx.description || getCategoryName(tx.categoryId)
+                }}"?</span>
+              <div class="flex gap-2">
+                <button (click)="deleteTransaction(tx.id)"
+                  class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                  Eliminar
+                </button>
+                <button (click)="cancelDeleteTx()"
+                  class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+            }
+
+            @else if (editingTxId() === tx.id) {
+            <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
+                  <select [(ngModel)]="editTx.type"
+                    class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                    <option value="INCOME">Ingreso</option>
+                    <option value="EXPENSE">Gasto</option>
+                    <option value="TRANSFER">Transferencia</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+                  <input [(ngModel)]="editTx.amount" type="number"
+                    class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+                  <select [(ngModel)]="editTx.categoryId"
+                    class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                    @for (cat of editTxCategories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
+                  <input [(ngModel)]="editTx.date" type="date"
+                    class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+                </div>
+              </div>
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Descripcion</label>
+                <input [(ngModel)]="editTx.description" type="text" placeholder="Opcional"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              </div>
+              <div class="flex gap-2">
+                <button (click)="saveEditTx(tx.id)"
+                  class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
+                <button (click)="cancelEditTx()"
+                  class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
+              </div>
+            </div>
+            }
+
+            @else {
+            <div
+              class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                  [ngClass]="tx.type === 'INCOME' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'">
+                  {{ tx.type === 'INCOME' ? '+' : '-' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-white text-sm font-medium truncate">{{ tx.description || getCategoryName(tx.categoryId)
+                    }}</p>
+                  <p class="text-slate-500 text-xs">{{ getCategoryName(tx.categoryId) }} &middot; {{
+                    getAccountName(tx.accountId) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="font-bold text-sm" [ngClass]="getTransactionColor(tx.type)">
+                  {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
+                </span>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                  <button (click)="startEditTx(tx)"
+                    class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
+                    editar
+                  </button>
+                  <button (click)="confirmDeleteTx(tx.id)"
+                    class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </div>
+            }
+
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+
     </div>
   </div>
   }
 
-  <!-- ─────────────── TAB: PRESUPUESTOS ─────────────── -->
+  -- ══════════════ TAB: PRESUPUESTOS ══════════════ -->
   @if (!loading() && activeTab() === 'presupuestos') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
@@ -422,27 +521,20 @@
       @if (budgets().length === 0) {
       <p class="text-slate-500 text-sm text-center py-8">Sin presupuestos creados</p>
       }
-
       <div class="space-y-3">
         @for (b of budgets(); track b.id) {
-
         @if (confirmDeleteBudgetId() === b.id) {
         <div
           class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
           <span class="text-red-300 text-sm">Eliminar presupuesto de "{{ getBudgetCategory(b) }}"?</span>
           <div class="flex gap-2">
             <button (click)="deleteBudget(b.id)"
-              class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-              Eliminar
-            </button>
+              class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>
             <button (click)="cancelDeleteBudget()"
-              class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-              Cancelar
-            </button>
+              class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
           </div>
         </div>
         }
-
         @else if (editingBudgetId() === b.id) {
         <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
           <p class="text-white text-sm font-medium">Editar limite — {{ getBudgetCategory(b) }}</p>
@@ -453,17 +545,12 @@
           </div>
           <div class="flex gap-2">
             <button (click)="saveEditBudget(b.id)"
-              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
-              Guardar
-            </button>
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
             <button (click)="cancelEditBudget()"
-              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
-              Cancelar
-            </button>
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
           </div>
         </div>
         }
-
         @else {
         <div
           class="bg-slate-800 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
@@ -476,13 +563,9 @@
               </div>
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                 <button (click)="startEditBudget(b)"
-                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
-                  editar
-                </button>
+                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
                 <button (click)="confirmDeleteBudget(b.id)"
-                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
-                  &times;
-                </button>
+                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">&times;</button>
               </div>
             </div>
           </div>
@@ -500,14 +583,13 @@
           </div>
         </div>
         }
-
         }
       </div>
     </div>
   </div>
   }
 
-  <!-- ─────────────── TAB: METAS ─────────────── -->
+  -- ══════════════ TAB: METAS ══════════════ -->
   @if (!loading() && activeTab() === 'metas') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
@@ -551,26 +633,19 @@
       @if (goals().length === 0) {
       <p class="text-slate-500 text-sm text-center py-8">Sin metas creadas</p>
       }
-
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @for (g of goals(); track g.id) {
-
         @if (confirmDeleteGoalId() === g.id) {
         <div class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-4 flex flex-col gap-3">
           <span class="text-red-300 text-sm">Eliminar la meta "{{ g.name }}"?</span>
           <div class="flex gap-2">
             <button (click)="deleteGoal(g.id)"
-              class="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
-              Eliminar
-            </button>
+              class="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold py-2 rounded-lg transition-colors">Eliminar</button>
             <button (click)="cancelDeleteGoal()"
-              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold py-2 rounded-lg transition-colors">
-              Cancelar
-            </button>
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold py-2 rounded-lg transition-colors">Cancelar</button>
           </div>
         </div>
         }
-
         @else if (editingGoalId() === g.id) {
         <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
           <p class="text-white text-sm font-medium">Editar meta</p>
@@ -593,17 +668,12 @@
           </div>
           <div class="flex gap-2">
             <button (click)="saveEditGoal(g.id)"
-              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
-              Guardar
-            </button>
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
             <button (click)="cancelEditGoal()"
-              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
-              Cancelar
-            </button>
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
           </div>
         </div>
         }
-
         @else if (addingProgressGoalId() === g.id) {
         <div class="form-slide bg-slate-800 border border-emerald-500/40 rounded-xl p-4 space-y-3">
           <div>
@@ -618,17 +688,12 @@
           </div>
           <div class="flex gap-2">
             <button (click)="saveProgress(g)"
-              class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
-              Guardar
-            </button>
+              class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
             <button (click)="cancelAddProgress()"
-              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
-              Cancelar
-            </button>
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
           </div>
         </div>
         }
-
         @else {
         <div
           class="bg-slate-800 rounded-xl p-5 border border-slate-600 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10 group">
@@ -641,13 +706,9 @@
               }
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                 <button (click)="startEditGoal(g)"
-                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
-                  editar
-                </button>
+                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
                 <button (click)="confirmDeleteGoal(g.id)"
-                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
-                  &times;
-                </button>
+                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">&times;</button>
               </div>
             </div>
           </div>
@@ -684,7 +745,6 @@
             }
         </div>
         }
-
         }
       </div>
     </div>
