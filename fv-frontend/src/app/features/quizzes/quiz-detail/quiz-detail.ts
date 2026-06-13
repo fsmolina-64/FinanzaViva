@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
 import { Quiz, QuizQuestion, QuizSubmitResponse, QuizHistoryEntry } from '../../../core/models/quiz.model';
 
@@ -13,11 +13,13 @@ export class QuizDetail implements OnInit {
   quiz = signal<Quiz | null>(null);
   loading = signal(true);
   submitting = signal(false);
+  notFound = signal(false);
   result = signal<QuizSubmitResponse | null>(null);
   history = signal<QuizHistoryEntry[]>([]);
   answers = signal<Record<string, string>>({});
   currentIndex = signal(0);
   expandedAttemptId = signal<string | null>(null);
+  backLink = '/academy';
   protected Object = Object;
 
   currentQuestion = computed<QuizQuestion | null>(() => {
@@ -32,18 +34,34 @@ export class QuizDetail implements OnInit {
     return q.questions.every(qq => !!this.answers()[qq.id]);
   });
 
-  constructor(private route: ActivatedRoute, private quizService: QuizService) { }
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private quizService: QuizService
+  ) { }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.quizService.getQuiz(id).subscribe({
-      next: d => { this.quiz.set(d); this.loading.set(false); this.loadHistory(id); },
+    const moduleId = this.route.snapshot.paramMap.get('moduleId')!;
+    this.backLink = `/academy/${moduleId}`;
+
+    this.quizService.getQuizByModule(moduleId).subscribe({
+      next: quizzes => {
+        if (!quizzes.length) {
+          this.notFound.set(true);
+          this.loading.set(false);
+          return;
+        }
+        const q = quizzes[0];
+        this.quiz.set(q);
+        this.loading.set(false);
+        this.loadHistory(q.id);
+      },
       error: () => this.loading.set(false)
     });
   }
 
-  private loadHistory(id: string): void {
-    this.quizService.getHistory(id).subscribe({
+  private loadHistory(quizId: string): void {
+    this.quizService.getHistory(quizId).subscribe({
       next: h => this.history.set(h),
       error: () => { }
     });
@@ -108,5 +126,9 @@ export class QuizDetail implements OnInit {
     this.result.set(null);
     this.currentIndex.set(0);
     this.loadHistory(this.quiz()!.id);
+  }
+
+  goBack(): void {
+    this.router.navigateByUrl(this.backLink);
   }
 }

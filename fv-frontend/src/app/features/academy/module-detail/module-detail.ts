@@ -1,8 +1,10 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AcademyService } from '../../../core/services/academy.service';
+import { QuizService } from '../../../core/services/quiz.service';
 import { AcademyModule, Lesson } from '../../../core/models/academy.model';
+import { Quiz } from '../../../core/models/quiz.model';
 
 @Component({
   selector: 'app-module-detail',
@@ -13,17 +15,56 @@ export class ModuleDetail implements OnInit {
   module = signal<AcademyModule | null>(null);
   loading = signal(true);
 
+  quiz = signal<Quiz | null>(null);
+  quizLoading = signal(true);
+  quizPassed = signal(false);
+
+  private moduleId = '';
+
   constructor(
     private route: ActivatedRoute,
-    private academyService: AcademyService
+    private router: Router,
+    private academyService: AcademyService,
+    private quizService: QuizService
   ) { }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('moduleId')!;
-    this.academyService.getModule(id).subscribe({
+    this.moduleId = this.route.snapshot.paramMap.get('moduleId')!;
+
+    this.academyService.getModule(this.moduleId).subscribe({
       next: d => { this.module.set(d); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
+
+    this.quizService.getQuizByModule(this.moduleId).subscribe({
+      next: quizzes => {
+        if (quizzes.length) {
+          const q = quizzes[0];
+          this.quiz.set(q);
+          this.loadQuizHistory(q.id);
+        }
+        this.quizLoading.set(false);
+      },
+      error: () => this.quizLoading.set(false)
+    });
+  }
+
+  private loadQuizHistory(quizId: string): void {
+    this.quizService.getHistory(quizId).subscribe({
+      next: history => this.quizPassed.set(history.some(h => h.passed)),
+      error: () => { }
+    });
+  }
+
+  quizState(): 'locked' | 'available' | 'passed' {
+    if (this.quizPassed()) return 'passed';
+    const m = this.module();
+    if (!m || m.completedLessons < m.totalLessons) return 'locked';
+    return 'available';
+  }
+
+  navigateToQuiz(): void {
+    this.router.navigate(['/academy', this.moduleId, 'quiz']);
   }
 
   getProgress(): number {

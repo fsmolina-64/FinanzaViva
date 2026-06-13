@@ -28,6 +28,9 @@
         </div>
 
         <!-- Numero de jugadores -->
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-4">
+        <h3 class="text-white font-semibold">Nueva partida</h3>
+
         <div>
             <label class="text-slate-400 text-xs mb-2 block">Jugadores</label>
             <div class="flex gap-2">
@@ -42,7 +45,6 @@
             </div>
         </div>
 
-        <!-- Nombres -->
         <div class="space-y-2">
             @for (i of [].constructor(playerCount); track $index) {
             <div>
@@ -66,7 +68,6 @@
         </button>
     </div>
 
-    <!-- Historial -->
     @if (!loading() && history().length > 0) {
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
         <h3 class="text-white font-semibold mb-3">Mis partidas</h3>
