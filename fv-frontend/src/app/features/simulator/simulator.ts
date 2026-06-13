@@ -18,6 +18,14 @@ export class Simulator implements OnInit {
   playerCount = 1;
   playerNames: string[] = [''];
 
+  difficultyOptions = [
+    { label: 'Corta', rounds: 3 },
+    { label: 'Media', rounds: 6 },
+    { label: 'Larga', rounds: 10 }
+  ];
+  selectedRounds = 6;
+  error = signal<string | null>(null);
+
   constructor(
     private simulatorService: SimulatorService,
     private router: Router
@@ -38,6 +46,7 @@ export class Simulator implements OnInit {
   startGame(): void {
     if (this.starting()) return;
     this.starting.set(true);
+    this.error.set(null);
 
     const names = this.playerNames.map((n, i) => n.trim() || `Jugador ${i + 1}`);
 
@@ -53,7 +62,7 @@ export class Simulator implements OnInit {
         return;
       }
       const payload = {
-        maxRounds: 6,
+        maxRounds: this.selectedRounds,
         roundType: 'MONTHLY',
         players: [{ displayName: names[idx] }]
       };
@@ -73,7 +82,11 @@ export class Simulator implements OnInit {
           idx++;
           createNext();
         },
-        error: () => this.starting.set(false)
+        error: (err) => {
+          this.starting.set(false);
+          const msg = err?.error?.message;
+          this.error.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al iniciar la partida.'));
+        }
       });
     };
 
