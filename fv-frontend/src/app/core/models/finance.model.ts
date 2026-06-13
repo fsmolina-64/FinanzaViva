@@ -85,8 +85,6 @@ export interface BudgetHealth {
   breakdown: Record<string, number>;
 }
 
-export type GoalStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
 export interface UpdateGoalPayload {
   name?: string;
   targetAmount?: number;
@@ -143,12 +141,4 @@ export interface UpdateBudgetPayload {
   amount?: number;
   period?: BudgetPeriod;
   endDate?: string;
-}
-
-export interface UpdateGoalPayload {
-  name?: string;
-  targetAmount?: number;
-  currentAmount?: number;
-  deadline?: string;
-  status?: GoalStatus;
 }
