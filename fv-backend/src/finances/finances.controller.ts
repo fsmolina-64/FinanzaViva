@@ -7,6 +7,7 @@ import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { CreateTransferDto } from './dto/create-transfer.dto';
 
 @UseGuards(JwtGuard)
 @Controller('finances')
@@ -98,5 +99,10 @@ export class FinancesController {
   @Patch('transactions/:id')
   updateTransaction(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateTransactionDto) {
     return this.financesService.updateTransaction(req.user.id, id, dto);
+  }
+
+  @Post('transfers')
+  createTransfer(@Request() req: any, @Body() dto: CreateTransferDto) {
+    return this.financesService.createTransfer(req.user.id, dto);
   }
 }

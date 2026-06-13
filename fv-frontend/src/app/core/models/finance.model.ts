@@ -104,6 +104,7 @@ export interface CreateTransactionPayload {
   type: TransactionType;
   description?: string;
   date: string;
+  allowNegative?: boolean;
 }
 
 export interface CreateBudgetPayload {
@@ -140,4 +141,16 @@ export interface UpdateGoalPayload {
   currentAmount?: number;
   deadline?: string;
   status?: GoalStatus;
+}
+export interface CreateTransferPayload {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  description?: string;
+  date: string;
+}
+
+export interface TransferResponse {
+  fromTransaction: Transaction;
+  toTransaction: Transaction;
 }

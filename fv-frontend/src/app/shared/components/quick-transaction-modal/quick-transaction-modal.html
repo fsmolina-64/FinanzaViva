@@ -16,6 +16,7 @@
         </div>
         } @else {
 
+        <!-- Selector tipo -->
         <div class="flex border-b border-slate-800/80 mt-1">
             @for (opt of typeOptions; track opt.key) {
             <button (click)="setType(opt.key)"
@@ -29,6 +30,36 @@
             }
         </div>
 
+        <!-- Confirmación de deuda -->
+        @if (showDebtConfirm()) {
+        <div class="px-6 py-8 text-center space-y-4">
+            <div class="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
+                <span class="text-amber-400 font-bold text-2xl">!</span>
+            </div>
+            <div>
+                <p class="text-white font-bold text-base">Saldo insuficiente</p>
+                <p class="text-slate-400 text-sm mt-1">
+                    Esta operacion dejara la cuenta con saldo negativo de
+                    <span class="text-red-400 font-semibold">
+                        {{ formatAmount() }} sobre ${{ getSelectedAccountBalance().toFixed(2) }} disponibles
+                    </span>.
+                    ¿Registrar como deuda?
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button (click)="cancelDebt()"
+                    class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 font-semibold py-3 rounded-xl transition-all">
+                    Cancelar
+                </button>
+                <button (click)="confirmDebt()" [disabled]="submitting()"
+                    class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50">
+                    {{ submitting() ? 'Guardando...' : 'Registrar deuda' }}
+                </button>
+            </div>
+        </div>
+        } @else {
+
+        <!-- Display monto -->
         <div class="px-6 py-5 text-center select-none">
             <p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-widest">Monto</p>
             <div class="text-5xl font-bold tracking-tight tabular-nums transition-colors duration-200" [ngClass]="selectedType() === 'EXPENSE'  ? 'text-red-400'
@@ -36,9 +67,13 @@
                  :                                  'text-blue-400'">
                 {{ formatAmount() }}
             </div>
+            @if (selectedType() === 'EXPENSE' && getAmount() > 0 && getAmount() > getSelectedAccountBalance()) {
+            <p class="text-amber-400 text-xs mt-1">Supera el saldo disponible — se registrara como deuda</p>
+            }
         </div>
 
-        <div class="px-4 pb-4">
+        <!-- Numpad -->
+        <div class="px-4 pb-3">
             <div class="grid grid-cols-3 gap-2">
                 @for (key of numpadKeys; track key) {
                 <button (click)="pad(key)"
@@ -51,80 +86,115 @@
             </div>
         </div>
 
-        <div class="px-4 pb-3">
-            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">Categoria</p>
-            @if (topCategories().length === 0) {
-            <p class="text-slate-600 text-xs">Sin categorias disponibles</p>
+        <!-- MODO TRANSFER: cuentas origen/destino -->
+        @if (selectedType() === 'TRANSFER') {
+        <div class="px-4 pb-3 space-y-2.5">
+            @if (accounts().length < 2) { <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+                <p class="text-amber-400 text-sm text-center">Necesitas al menos 2 cuentas para transferir</p>
+        </div>
+        } @else {
+        <div>
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1.5">Cuenta origen</p>
+            <select [(ngModel)]="selectedAccountId"
+                class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+                @for (acc of accounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} — ${{ (+acc.balance).toFixed(2) }}</option>
+                }
+            </select>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1.5">Cuenta destino</p>
+            @if (toAccounts().length === 0) {
+            <p class="text-slate-500 text-xs">Selecciona una cuenta origen primero</p>
             } @else {
-            <div class="flex flex-wrap gap-1.5">
-                @for (cat of topCategories(); track cat.id) {
-                <button (click)="selectedCategoryId = cat.id"
-                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150" [ngClass]="selectedCategoryId === cat.id
+            <select [(ngModel)]="toAccountId"
+                class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+                <option value="">Seleccionar...</option>
+                @for (acc of toAccounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} — ${{ (+acc.balance).toFixed(2) }}</option>
+                }
+            </select>
+            }
+        </div>
+        }
+    </div>
+    } @else {
+
+    <!-- MODO INCOME/EXPENSE: categorias + cuenta -->
+    <div class="px-4 pb-3">
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">Categoria</p>
+        @if (topCategories().length === 0) {
+        <p class="text-slate-600 text-xs">Sin categorias disponibles</p>
+        } @else {
+        <div class="flex flex-wrap gap-1.5">
+            @for (cat of topCategories(); track cat.id) {
+            <button (click)="selectedCategoryId = cat.id"
+                class="px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150" [ngClass]="selectedCategoryId === cat.id
             ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-500/30'
             : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'">
-                    {{ cat.name }}
-                </button>
-                }
-            </div>
-            }
-        </div>
-
-        <div class="px-4 pb-4 space-y-2.5">
-            @if (accounts().length === 0) {
-            <p
-                class="text-amber-400 text-xs text-center py-2 bg-amber-500/10 rounded-xl border border-amber-500/20 px-3">
-                Crea una cuenta primero en la tab Resumen
-            </p>
-            } @else {
-            <div>
-                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1.5">Cuenta</p>
-                <select [(ngModel)]="selectedAccountId"
-                    class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
-                    @for (acc of accounts(); track acc.id) {
-                    <option [value]="acc.id">{{ acc.name }}</option>
-                    }
-                </select>
-            </div>
-            }
-
-            <button (click)="showExtras = !showExtras"
-                class="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5">
-                <span class="font-bold text-sm leading-none">{{ showExtras ? '-' : '+' }}</span>
-                {{ showExtras ? 'Ocultar opciones' : 'Fecha y nota (opcionales)' }}
+                {{ cat.name }}
             </button>
-
-            @if (showExtras) {
-            <div class="grid grid-cols-2 gap-2 animate-fade-in">
-                <div>
-                    <p class="text-xs text-slate-500 mb-1">Fecha</p>
-                    <input type="date" [(ngModel)]="selectedDate"
-                        class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500 mb-1">Nota</p>
-                    <input type="text" [(ngModel)]="description" placeholder="Opcional..."
-                        class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
-                </div>
-            </div>
             }
         </div>
+        }
+    </div>
 
-        <div class="px-4 pb-6">
-            <button (click)="submit()" [disabled]="submitting()"
-                class="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                [ngClass]="submitting() ? 'bg-slate-600'
+    <div class="px-4 pb-3">
+        @if (accounts().length === 0) {
+        <p class="text-amber-400 text-xs text-center py-2 bg-amber-500/10 rounded-xl border border-amber-500/20 px-3">
+            Crea una cuenta primero en la tab Resumen
+        </p>
+        } @else {
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1.5">Cuenta</p>
+        <select [(ngModel)]="selectedAccountId"
+            class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+            @for (acc of accounts(); track acc.id) {
+            <option [value]="acc.id">{{ acc.name }} — ${{ (+acc.balance).toFixed(2) }}</option>
+            }
+        </select>
+        }
+    </div>
+    }
+
+    <!-- Opcionales: fecha y nota -->
+    <div class="px-4 pb-4 space-y-2">
+        <button (click)="showExtras = !showExtras"
+            class="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5">
+            <span class="font-bold text-sm leading-none">{{ showExtras ? '-' : '+' }}</span>
+            {{ showExtras ? 'Ocultar opciones' : 'Fecha y nota (opcionales)' }}
+        </button>
+        @if (showExtras) {
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <p class="text-xs text-slate-500 mb-1">Fecha</p>
+                <input type="date" [(ngModel)]="selectedDate"
+                    class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 mb-1">Nota</p>
+                <input type="text" [(ngModel)]="description" placeholder="Opcional..."
+                    class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500" />
+            </div>
+        </div>
+        }
+    </div>
+
+    <div class="px-4 pb-6">
+        <button (click)="submit()" [disabled]="submitting()"
+            class="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            [ngClass]="submitting() ? 'bg-slate-600'
           : selectedType() === 'EXPENSE'  ? 'bg-red-600 hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/25'
           : selectedType() === 'INCOME'   ? 'bg-emerald-600 hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/25'
           :                                  'bg-blue-600 hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25'">
-                @if (submitting()) {
-                Guardando...
-                } @else {
-                Registrar {{ selectedType() === 'EXPENSE' ? 'gasto' : selectedType() === 'INCOME' ? 'ingreso' :
-                'transferencia' }}
-                }
-            </button>
-        </div>
-
-        }
+            @if (submitting()) { Guardando... }
+            @else {
+            Registrar {{ selectedType() === 'EXPENSE' ? 'gasto' : selectedType() === 'INCOME' ? 'ingreso' :
+            'transferencia' }}
+            }
+        </button>
     </div>
+
+    }
+    }
+</div>
 </div>

@@ -9,6 +9,7 @@ import { XpSource } from '@prisma/client';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { CreateTransferDto } from './dto/create-transfer.dto';
 
 @Injectable()
 export class FinancesService {
@@ -53,7 +54,7 @@ export class FinancesService {
     });
     if (!account || account.userId !== userId) throw new ForbiddenException();
 
-    if (dto.type === 'EXPENSE') {
+    if (dto.type === 'EXPENSE' && !dto.allowNegative) {
       if (Number(account.balance) < dto.amount) {
         throw new BadRequestException(
           `Saldo insuficiente. Tienes $${Number(account.balance).toFixed(2)} y quieres gastar $${dto.amount.toFixed(2)}`,
@@ -278,13 +279,13 @@ export class FinancesService {
       message = `Gastaste más de lo que ganaste. Déficit de $${Math.abs(available).toFixed(2)}`;
     } else if (percentage >= 90) {
       status = 'DANGER';
-      message = `Cuidado. Usaste el ${percentage}% de tus ingresos. Solo te quedan $${available.toFixed(2)}`;
+      message = '¡Ojo! Estás a punto de gastar todo el dinero que ingresó este mes.';
     } else if (percentage >= 80) {
       status = 'WARNING';
-      message = `Vas al ${percentage}% de tu presupuesto. Modera tus gastos.`;
+      message = 'Tus gastos ya representan una parte importante de los ingresos de este mes. Gasta con precaución.';
     } else {
       status = 'HEALTHY';
-      message = `Vas bien. Llevas el ${percentage}% de tu presupuesto usado.`;
+      message = 'Vas bien. Tus gastos están bajo control en relación con los ingresos de este mes.';
     }
 
     const breakdown = transactions
@@ -414,5 +415,82 @@ export class FinancesService {
     ]);
 
     return updated;
+  }
+
+  async createTransfer(userId: string, dto: CreateTransferDto) {
+    if (dto.fromAccountId === dto.toAccountId) {
+      throw new BadRequestException('No puedes transferir a la misma cuenta');
+    }
+
+    const [fromAccount, toAccount] = await Promise.all([
+      this.prisma.financialAccount.findUnique({ where: { id: dto.fromAccountId } }),
+      this.prisma.financialAccount.findUnique({ where: { id: dto.toAccountId } }),
+    ]);
+
+    if (!fromAccount || fromAccount.userId !== userId)
+      throw new ForbiddenException('Cuenta origen no encontrada');
+    if (!toAccount || toAccount.userId !== userId)
+      throw new ForbiddenException('Cuenta destino no encontrada');
+    if (Number(fromAccount.balance) < dto.amount)
+      throw new BadRequestException(
+        `Saldo insuficiente en cuenta origen. Disponible: $${Number(fromAccount.balance).toFixed(2)}`,
+      );
+
+    let transferCategory = await this.prisma.category.findFirst({
+      where: { isGlobal: true, name: { contains: 'Transferencia', mode: 'insensitive' } },
+    });
+    if (!transferCategory) {
+      transferCategory = await this.prisma.category.findFirst({ where: { isGlobal: true } });
+    }
+    if (!transferCategory) throw new BadRequestException('No hay categorias disponibles');
+
+    const transferDate = new Date(dto.date);
+    const description = dto.description?.trim() || `Transferencia a ${toAccount.name}`;
+
+    const [fromTx, toTx] = await this.prisma.$transaction([
+      this.prisma.transaction.create({
+        data: {
+          userId,
+          accountId: dto.fromAccountId,
+          categoryId: transferCategory.id,
+          amount: dto.amount,
+          type: 'TRANSFER',
+          description: `Transferencia a ${toAccount.name}${dto.description ? ': ' + dto.description : ''}`,
+          date: transferDate,
+        },
+      }),
+      this.prisma.transaction.create({
+        data: {
+          userId,
+          accountId: dto.toAccountId,
+          categoryId: transferCategory.id,
+          amount: dto.amount,
+          type: 'TRANSFER',
+          description: `Transferencia desde ${fromAccount.name}${dto.description ? ': ' + dto.description : ''}`,
+          date: transferDate,
+        },
+      }),
+      this.prisma.financialAccount.update({
+        where: { id: dto.fromAccountId },
+        data: { balance: { decrement: dto.amount } },
+      }),
+      this.prisma.financialAccount.update({
+        where: { id: dto.toAccountId },
+        data: { balance: { increment: dto.amount } },
+      }),
+      this.prisma.userStatistics.update({
+        where: { userId },
+        data: { totalTransactions: { increment: 2 } },
+      }),
+    ]);
+
+    await this.gamification.addXp(userId, {
+      amount: 10,
+      source: XpSource.TRANSACTION_LOGGED,
+      referenceId: fromTx.id,
+      description: 'Transferencia registrada',
+    });
+
+    return { fromTransaction: fromTx, toTransaction: toTx };
   }
 }

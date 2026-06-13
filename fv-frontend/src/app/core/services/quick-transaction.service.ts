@@ -11,6 +11,7 @@ export class QuickTransactionService {
     readonly show = signal(false);
     readonly modalType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
     readonly lastCreated = signal<QuickTransactionResult | null>(null);
+    readonly reloadTick = signal(0);
 
     open(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE'): void {
         this.modalType.set(type);
@@ -19,9 +20,9 @@ export class QuickTransactionService {
 
     close(): void { this.show.set(false); }
 
-    notifyCreated(res: QuickTransactionResult): void {
-        this.lastCreated.set(res);
-    }
-
+    notifyCreated(res: QuickTransactionResult): void { this.lastCreated.set(res); }
     resetLastCreated(): void { this.lastCreated.set(null); }
+
+    notifyReload(): void { this.reloadTick.update(n => n + 1); }
+    resetReload(): void { /* no es necesario resetear, el tick es incremental */ }
 }
