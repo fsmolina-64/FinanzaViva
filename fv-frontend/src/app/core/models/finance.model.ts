@@ -15,7 +15,7 @@ export interface Transaction {
   userId: string;
   accountId: string;
   categoryId: string;
-  amount: string; // Prisma devuelve decimal como string
+  amount: string;
   type: TransactionType;
   description: string | null;
   date: string;
@@ -65,6 +65,17 @@ export interface BudgetHealth {
   status: BudgetStatus;
   message: string;
   breakdown: Record<string, number>;
+}
+
+export type GoalStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface UpdateGoalPayload {
+  name?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+  status?: GoalStatus;
+  fromAccountId?: string;
 }
 
 export interface FinanceSummary {

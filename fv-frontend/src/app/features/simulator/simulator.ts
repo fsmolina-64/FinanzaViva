@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SimulatorService } from '../../core/services/simulator.service';
-import { SimulatorHistoryEntry } from '../../core/models/simulator.model';
+import { HistoryEntry, PlayerState } from '../../core/models/simulator.model';
 
 @Component({
   selector: 'app-simulator',
@@ -11,7 +11,7 @@ import { SimulatorHistoryEntry } from '../../core/models/simulator.model';
   templateUrl: './simulator.html'
 })
 export class Simulator implements OnInit {
-  history = signal<SimulatorHistoryEntry[]>([]);
+  history = signal<HistoryEntry[]>([]);
   loading = signal(true);
   starting = signal(false);
 
@@ -40,10 +40,8 @@ export class Simulator implements OnInit {
     this.starting.set(true);
 
     const names = this.playerNames.map((n, i) => n.trim() || `Jugador ${i + 1}`);
-    const creates = names.map(() => this.simulatorService.createGame());
 
-    // Crear partidas secuencialmente
-    const players: { name: string; gameId: string }[] = [];
+    const players: PlayerState[] = [];
     let idx = 0;
 
     const createNext = () => {
@@ -54,9 +52,24 @@ export class Simulator implements OnInit {
         });
         return;
       }
-      this.simulatorService.createGame().subscribe({
+      const payload = {
+        maxRounds: 6,
+        roundType: 'MONTHLY',
+        players: [{ displayName: names[idx] }]
+      };
+      this.simulatorService.createGame(payload).subscribe({
         next: g => {
-          players.push({ name: names[idx], gameId: g.id });
+          const bp = g.players?.[0];
+          if (bp) {
+            players.push({
+              name: bp.displayName,
+              gameId: g.id,
+              playerId: bp.id,
+              currentMoney: bp.money,
+              currentDebt: bp.debt,
+              currentScore: bp.financialScore
+            });
+          }
           idx++;
           createNext();
         },
