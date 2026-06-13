@@ -1,58 +1,52 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
 import {
-  SimulatorGame,
-  SimulatorGameDetail,
-  SimulatorEvent,
-  SimulatorDecision,
-  SimulatorRoundResult,
-  SimulatorHistoryEntry
+  BackendGame,
+  BackendEvent,
+  CreateGamePayload,
+  SubmitDecisionPayload,
+  DecisionResult,
+  HistoryEntry
 } from '../models/simulator.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class SimulatorService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
-  createGame(): Observable<SimulatorGame> {
-    return this.api.post<SimulatorGame>('/simulator/games', {});
+  createGame(payload: CreateGamePayload): Observable<BackendGame> {
+    return this.api.post<BackendGame>('/simulator/games', payload);
   }
 
-  startGame(id: string): Observable<SimulatorGameDetail> {
-    return this.api.post<SimulatorGameDetail>(
-      `/simulator/games/${id}/start`,
-      {}
+  startGame(gameId: string): Observable<BackendGame> {
+    return this.api.post<BackendGame>(`/simulator/games/${gameId}/start`, {});
+  }
+
+  getRandomEvent(): Observable<BackendEvent> {
+    return this.api.get<BackendEvent>('/simulator/events/random');
+  }
+
+  submitDecision(gameId: string, payload: SubmitDecisionPayload): Observable<DecisionResult> {
+    return this.api.post<DecisionResult>(`/simulator/games/${gameId}/decision`, payload);
+  }
+
+  nextRound(gameId: string): Observable<BackendGame> {
+    return this.api.post<BackendGame>(`/simulator/games/${gameId}/next-round`, {});
+  }
+
+  getHistory(): Observable<HistoryEntry[]> {
+    return this.api.get<BackendGame[]>('/simulator/history').pipe(
+      map(games =>
+        games
+          .filter(g => g.status === 'FINISHED')
+          .map(g => ({
+            id: g.id,
+            rounds: g.maxRounds,
+            finalBalance: Number(g.players?.[0]?.money ?? 0),
+            score: g.players?.[0]?.financialScore ?? 0,
+            completedAt: g.finishedAt ?? g.createdAt
+          }))
+      )
     );
-  }
-
-  getGame(id: string): Observable<SimulatorGameDetail> {
-    return this.api.get<SimulatorGameDetail>(`/simulator/games/${id}`);
-  }
-
-  getRandomEvent(): Observable<SimulatorEvent> {
-    return this.api.get<SimulatorEvent>('/simulator/events/random');
-  }
-
-  makeDecision(
-    id: string,
-    data: SimulatorDecision
-  ): Observable<SimulatorRoundResult> {
-    return this.api.post<SimulatorRoundResult>(
-      `/simulator/games/${id}/decision`,
-      data
-    );
-  }
-
-  nextRound(id: string): Observable<SimulatorGameDetail> {
-    return this.api.post<SimulatorGameDetail>(
-      `/simulator/games/${id}/next-round`,
-      {}
-    );
-  }
-
-  getHistory(): Observable<SimulatorHistoryEntry[]> {
-    return this.api.get<SimulatorHistoryEntry[]>('/simulator/history');
   }
 }
