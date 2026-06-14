@@ -26,7 +26,7 @@ export class SimulatorService {
     // Interleave humanos y bots para que el orden sea variado
     const humanInputs = (dto.humanPlayers ?? []).map((p, i) => ({
       displayName: p.displayName,
-      userId: p.userId ?? null,
+      userId: i === 0 ? userId : null,
       isBot: false as const,
       botPersonality: null,
       sortKey: i * 2, // posiciones pares → humanos primero

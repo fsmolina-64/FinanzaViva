@@ -100,17 +100,17 @@
                 }
         </div>
         <div class="space-y-5">
-            @for (bot of bots; track $index) {
+            @for (bot of bots; track botIdx; let botIdx = $index) {
             <div class="space-y-2.5">
                 <div class="flex items-center gap-2">
                     <div
                         class="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xs font-bold flex-shrink-0">
                         IA
                     </div>
-                    <input [(ngModel)]="bots[$index].displayName" [placeholder]="'Bot ' + ($index + 1)" type="text"
+                    <input [(ngModel)]="bots[botIdx].displayName" [placeholder]="'Bot ' + (botIdx + 1)" type="text"
                         class="flex-1 bg-slate-700/60 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 transition-colors placeholder-slate-500" />
                     @if (bots.length > selectedModeOption.minBots) {
-                    <button (click)="removeBot($index)"
+                    <button (click)="removeBot(botIdx)"
                         class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-400 transition-colors text-lg leading-none flex-shrink-0">
                         -
                     </button>
@@ -118,8 +118,8 @@
                 </div>
                 <div class="flex gap-1.5 flex-wrap pl-9">
                     @for (p of personalities; track p.value) {
-                    <button (click)="setBotPersonality($index, p.value)"
-                        class="text-xs px-2.5 py-1 rounded-full border transition-all duration-150" [ngClass]="bots[$index].personality === p.value
+                    <button (click)="setBotPersonality(botIdx, p.value)"
+                        class="text-xs px-2.5 py-1 rounded-full border transition-all duration-150" [ngClass]="bots[botIdx].personality === p.value
                     ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
                     : 'border-slate-600 text-slate-500 hover:border-slate-500 hover:text-slate-400'">
                         {{ p.label }}

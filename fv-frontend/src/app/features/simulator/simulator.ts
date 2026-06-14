@@ -172,25 +172,13 @@ export class Simulator implements OnInit {
     this.bots = this.bots.map((b, i) => i === index ? { ...b, personality: p } : b);
   }
 
-  private getUserId(): string | null {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.sub ?? payload.id ?? null;
-    } catch { return null; }
-  }
-
   startGame(): void {
     if (this.starting()) return;
     this.starting.set(true);
     this.error.set(null);
 
-    const userId = this.getUserId();
-
     const humanPlayers = this.humanNames.map((name, i) => ({
-      displayName: name.trim() || `Jugador ${i + 1}`,
-      ...(i === 0 && userId ? { userId } : {})
+      displayName: name.trim() || `Jugador ${i + 1}`
     }));
 
     const botPlayers = this.bots.map(b => ({
@@ -202,8 +190,7 @@ export class Simulator implements OnInit {
       maxRounds: this.selectedRounds,
       mode: this.selectedMode,
       humanPlayers: this.showHumans ? humanPlayers : [],
-      botPlayers: this.showBots ? botPlayers : undefined,
-      xpRecipientId: userId ?? undefined
+      botPlayers: this.showBots ? botPlayers : undefined
     }).subscribe({
       next: game => {
         this.starting.set(false);
