@@ -8,6 +8,8 @@ import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransferDto } from './dto/create-transfer.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @UseGuards(JwtGuard)
 @Controller('finances')
@@ -47,6 +49,21 @@ export class FinancesController {
   @Get('categories')
   getCategories(@Request() req: any) {
     return this.financesService.getCategories(req.user.id);
+  }
+
+  @Post('categories')
+  createCategory(@Request() req: any, @Body() dto: CreateCategoryDto) {
+    return this.financesService.createCategory(req.user.id, dto);
+  }
+
+  @Patch('categories/:id')
+  updateCategory(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.financesService.updateCategory(req.user.id, id, dto);
+  }
+
+  @Delete('categories/:id')
+  deleteCategory(@Request() req: any, @Param('id') id: string) {
+    return this.financesService.deleteCategory(req.user.id, id);
   }
 
   @Post('budgets')

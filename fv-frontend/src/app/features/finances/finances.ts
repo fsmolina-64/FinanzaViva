@@ -8,7 +8,7 @@ import { QuickTransactionService } from '../../core/services/quick-transaction.s
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
-  CreateTransactionPayload
+  CreateTransactionPayload, CreateCategoryPayload, UpdateCategoryPayload
 } from '../../core/models/finance.model';
 
 type Tab = 'resumen' | 'transacciones' | 'presupuestos' | 'metas';
@@ -51,9 +51,11 @@ export class Finances implements OnInit {
   newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', months: 1 };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
-  // ── EDICIÓN INLINE ────────────────────────────────────────────────────────
+  // ── EDICION INLINE ────────────────────────────────────────────────────────
   editingTxId = signal<string | null>(null);
-  editTx = { categoryId: '', amount: 0, type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER', description: '', date: '' };
+  // editTxType como signal para que editTxCategories computed sea reactivo
+  editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
+  editTx = { categoryId: '', amount: 0, description: '', date: '' };
   editingBudgetId = signal<string | null>(null);
   editBudgetAmount = 0;
   editingGoalId = signal<string | null>(null);
@@ -68,6 +70,7 @@ export class Finances implements OnInit {
   confirmDeleteTxId = signal<string | null>(null);
   confirmDeleteBudgetId = signal<string | null>(null);
   confirmDeleteGoalId = signal<string | null>(null);
+  confirmDeleteCategoryId = signal<string | null>(null);
 
   // ── LOADING STATES ───────────────────────────────────────────────────────
   submittingAccount = signal(false);
@@ -79,20 +82,30 @@ export class Finances implements OnInit {
   showDebtConfirm = signal(false);
   private pendingDebtPayload: CreateTransactionPayload | null = null;
 
-  // ── FILTROS TRANSACCIONES ────────────────────────────────────────────────
+  // ── FILTROS TRANSACCIONES (lista) ────────────────────────────────────────
   txFilter = signal<TxTypeFilter>('ALL');
   txDateMode = signal<TxDateMode>('MONTH');
   txMonth = signal(new Date().getMonth());
   txYear = signal(new Date().getFullYear());
   txViewMode = signal<ViewMode>('list');
 
-  // ── CALENDARIO ───────────────────────────────────────────────────────────
+  // ── CALENDARIO (signals independientes de la lista) ───────────────────────
+  calMonth = signal(new Date().getMonth());
+  calYear = signal(new Date().getFullYear());
+  calTypeFilter = signal<TxTypeFilter>('ALL');
   calendarDayKey = signal<string | null>(null);
 
   // ── PRESUPUESTO GENERAL (localStorage) ───────────────────────────────────
   globalBudgetLimit = signal<number>(parseFloat(localStorage.getItem('fv_global_budget') ?? '0'));
   showGlobalForm = signal(false);
   newGlobalLimit = 0;
+
+  // ── CATEGORIAS PERSONALIZADAS ────────────────────────────────────────────
+  showCategorySection = signal(false);
+  showCategoryForm = signal(false);
+  editingCategoryId = signal<string | null>(null);
+  newCategory = { name: '', type: 'EXPENSE' as 'INCOME' | 'EXPENSE' };
+  editCategory = { name: '' };
 
   // ── CONSTANTES ───────────────────────────────────────────────────────────
   readonly monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -115,16 +128,19 @@ export class Finances implements OnInit {
     return this.categories();
   });
 
+  // Lee editTxType (signal) para ser reactivo al cambio de tipo
   editTxCategories = computed(() => {
-    const t = this.editTx.type;
+    const t = this.editTxType();
     if (t === 'INCOME') return this.categories().filter(c => c.type === 'INCOME');
     if (t === 'EXPENSE') return this.categories().filter(c => c.type === 'EXPENSE');
     return this.categories();
   });
 
+  userCategories = computed(() => this.categories().filter(c => !c.isGlobal));
+  globalCategories = computed(() => this.categories().filter(c => c.isGlobal));
+
   filteredTransactions = computed(() => {
     let txs = this.transactions();
-
     const typeF = this.txFilter();
     if (typeF !== 'ALL') txs = txs.filter(t => t.type === typeF);
 
@@ -165,33 +181,41 @@ export class Finances implements OnInit {
     }));
   });
 
+  // calendarCells usa calMonth/calYear y respeta calTypeFilter para los totales
   calendarCells = computed(() => {
-    const y = this.txYear();
-    const m = this.txMonth();
+    const y = this.calYear();
+    const m = this.calMonth();
+    const typeF = this.calTypeFilter();
     const firstDay = new Date(y, m, 1).getDay();
     const lastDate = new Date(y, m + 1, 0).getDate();
 
     const cells: { date: string | null; income: number; expense: number; count: number }[] = [];
-
     for (let i = 0; i < firstDay; i++) cells.push({ date: null, income: 0, expense: 0, count: 0 });
 
     for (let d = 1; d <= lastDate; d++) {
       const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayTx = this.transactions().filter(t => t.date.substring(0, 10) === key);
+      const allDayTx = this.transactions().filter(t => t.date.substring(0, 10) === key);
+      const filtered = typeF === 'ALL' ? allDayTx : allDayTx.filter(t => t.type === typeF);
       cells.push({
         date: key,
-        income: dayTx.filter(t => t.type === 'INCOME').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
-        expense: dayTx.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
-        count: dayTx.length
+        income: filtered.filter(t => t.type === 'INCOME').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
+        expense: filtered.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
+        count: filtered.length
       });
     }
     return cells;
   });
 
+  // calendarDayTxs respeta calTypeFilter para el modal del dia
   calendarDayTxs = computed(() => {
     const key = this.calendarDayKey();
     if (!key) return [];
-    return this.transactions().filter(t => t.date.substring(0, 10) === key);
+    const typeF = this.calTypeFilter();
+    return this.transactions().filter(t => {
+      if (t.date.substring(0, 10) !== key) return false;
+      if (typeF === 'ALL') return true;
+      return t.type === typeF;
+    });
   });
 
   globalBudgetPct = computed(() => {
@@ -260,11 +284,7 @@ export class Finances implements OnInit {
 
   deleteAccount(id: string): void {
     this.financeService.deleteAccount(id).subscribe({
-      next: () => {
-        this.accounts.update(l => l.filter(a => a.id !== id));
-        this.refreshSummary();
-        this.toast.success('Cuenta eliminada');
-      },
+      next: () => { this.accounts.update(l => l.filter(a => a.id !== id)); this.refreshSummary(); this.toast.success('Cuenta eliminada'); },
       error: err => this.toast.error(this.extractError(err, 'Error al eliminar la cuenta'))
     });
   }
@@ -315,15 +335,40 @@ export class Finances implements OnInit {
   }
 
   startEditTx(tx: Transaction): void {
-    this.editingTxId.set(tx.id); this.confirmDeleteTxId.set(null);
-    this.editTx = { categoryId: tx.categoryId, amount: parseFloat(String(tx.amount)), type: tx.type as any, description: tx.description ?? '', date: new Date(tx.date).toISOString().split('T')[0] };
+    this.editingTxId.set(tx.id);
+    this.confirmDeleteTxId.set(null);
+    this.editTxType.set(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER');
+    this.editTx = {
+      categoryId: tx.categoryId,
+      amount: parseFloat(String(tx.amount)),
+      description: tx.description ?? '',
+      date: new Date(tx.date).toISOString().split('T')[0]
+    };
   }
+
   cancelEditTx(): void { this.editingTxId.set(null); }
+
+  // Actualiza signal reactivo Y objeto plano sincronizados; resetea categoría para forzar selección válida
+  onEditTxTypeChange(t: 'INCOME' | 'EXPENSE' | 'TRANSFER'): void {
+    this.editTxType.set(t);
+    this.editTx.categoryId = '';
+  }
 
   saveEditTx(id: string): void {
     if (Number(this.editTx.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
-    this.financeService.updateTransaction(id, { categoryId: this.editTx.categoryId, amount: Number(this.editTx.amount), type: this.editTx.type, description: this.editTx.description.trim() || undefined, date: this.editTx.date }).subscribe({
-      next: updated => { this.transactions.update(l => l.map(t => t.id === id ? { ...t, ...updated } : t)); this.editingTxId.set(null); this.refreshSummary(); this.toast.success('Transaccion actualizada'); },
+    this.financeService.updateTransaction(id, {
+      categoryId: this.editTx.categoryId,
+      amount: Number(this.editTx.amount),
+      type: this.editTxType(),
+      description: this.editTx.description.trim() || undefined,
+      date: this.editTx.date
+    }).subscribe({
+      next: updated => {
+        this.transactions.update(l => l.map(t => t.id === id ? { ...t, ...updated } : t));
+        this.editingTxId.set(null);
+        this.refreshSummary();
+        this.toast.success('Transaccion actualizada');
+      },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar la transaccion'))
     });
   }
@@ -333,7 +378,13 @@ export class Finances implements OnInit {
 
   deleteTransaction(id: string): void {
     this.financeService.deleteTransaction(id).subscribe({
-      next: () => { this.transactions.update(l => l.filter(t => t.id !== id)); this.confirmDeleteTxId.set(null); this.refreshSummary(); this.toast.success('Transaccion eliminada'); },
+      next: () => {
+        this.transactions.update(l => l.filter(t => t.id !== id));
+        this.confirmDeleteTxId.set(null);
+        this.calendarDayKey.set(null); // cierra modal si estaba abierto
+        this.refreshSummary();
+        this.toast.success('Transaccion eliminada');
+      },
       error: () => this.toast.error('Error al eliminar la transaccion')
     });
   }
@@ -341,21 +392,37 @@ export class Finances implements OnInit {
   // ── FILTROS / CALENDARIO ──────────────────────────────────────────────────
   setViewMode(mode: ViewMode): void {
     this.txViewMode.set(mode);
-    if (mode === 'calendar') this.txDateMode.set('MONTH');
+    if (mode === 'calendar') {
+      // Sincroniza el calendario al mes activo de la lista si está en modo MES
+      this.calMonth.set(this.txDateMode() === 'MONTH' ? this.txMonth() : new Date().getMonth());
+      this.calYear.set(this.txDateMode() === 'MONTH' ? this.txYear() : new Date().getFullYear());
+    }
   }
 
   prevMonth(): void {
-    this.txDateMode.set('MONTH');
-    const m = this.txMonth();
-    if (m === 0) { this.txMonth.set(11); this.txYear.update(y => y - 1); }
-    else this.txMonth.update(v => v - 1);
+    if (this.txViewMode() === 'calendar') {
+      const m = this.calMonth();
+      if (m === 0) { this.calMonth.set(11); this.calYear.update(y => y - 1); }
+      else this.calMonth.update(v => v - 1);
+    } else {
+      this.txDateMode.set('MONTH');
+      const m = this.txMonth();
+      if (m === 0) { this.txMonth.set(11); this.txYear.update(y => y - 1); }
+      else this.txMonth.update(v => v - 1);
+    }
   }
 
   nextMonth(): void {
-    this.txDateMode.set('MONTH');
-    const m = this.txMonth();
-    if (m === 11) { this.txMonth.set(0); this.txYear.update(y => y + 1); }
-    else this.txMonth.update(v => v + 1);
+    if (this.txViewMode() === 'calendar') {
+      const m = this.calMonth();
+      if (m === 11) { this.calMonth.set(0); this.calYear.update(y => y + 1); }
+      else this.calMonth.update(v => v + 1);
+    } else {
+      this.txDateMode.set('MONTH');
+      const m = this.txMonth();
+      if (m === 11) { this.txMonth.set(0); this.txYear.update(y => y + 1); }
+      else this.txMonth.update(v => v + 1);
+    }
   }
 
   openCalendarDay(key: string): void { this.calendarDayKey.set(key); }
@@ -419,6 +486,56 @@ export class Finances implements OnInit {
     this.toast.info('Presupuesto general eliminado');
   }
 
+  // ── CATEGORIAS ────────────────────────────────────────────────────────────
+  submitCategory(): void {
+    if (!this.newCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    this.financeService.createCategory({
+      name: this.newCategory.name.trim(),
+      type: this.newCategory.type
+    }).subscribe({
+      next: cat => {
+        this.categories.update(l => [...l, cat].sort((a, b) => a.name.localeCompare(b.name)));
+        this.showCategoryForm.set(false);
+        this.newCategory = { name: '', type: 'EXPENSE' };
+        this.toast.success('Categoria creada');
+      },
+      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoria'))
+    });
+  }
+
+  startEditCategory(cat: Category): void {
+    this.editingCategoryId.set(cat.id);
+    this.confirmDeleteCategoryId.set(null);
+    this.editCategory = { name: cat.name };
+  }
+  cancelEditCategory(): void { this.editingCategoryId.set(null); }
+
+  saveEditCategory(id: string): void {
+    if (!this.editCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    this.financeService.updateCategory(id, { name: this.editCategory.name.trim() }).subscribe({
+      next: updated => {
+        this.categories.update(l => l.map(c => c.id === id ? { ...c, ...updated } : c));
+        this.editingCategoryId.set(null);
+        this.toast.success('Categoria actualizada');
+      },
+      error: err => this.toast.error(this.extractError(err, 'Error al actualizar la categoria'))
+    });
+  }
+
+  confirmDeleteCategory(id: string): void { this.confirmDeleteCategoryId.set(id); this.editingCategoryId.set(null); }
+  cancelDeleteCategory(): void { this.confirmDeleteCategoryId.set(null); }
+
+  deleteCategory(id: string): void {
+    this.financeService.deleteCategory(id).subscribe({
+      next: () => {
+        this.categories.update(l => l.filter(c => c.id !== id));
+        this.confirmDeleteCategoryId.set(null);
+        this.toast.success('Categoria eliminada');
+      },
+      error: err => this.toast.error(this.extractError(err, 'Error al eliminar la categoria'))
+    });
+  }
+
   // ── METAS ─────────────────────────────────────────────────────────────────
   submitGoal(): void {
     if (!this.newGoal.name.trim()) { this.toast.warning('Ingresa un nombre para la meta'); return; }
@@ -463,16 +580,30 @@ export class Finances implements OnInit {
   }
 
   startEditGoal(g: Goal): void {
-    this.editingGoalId.set(g.id); this.addingProgressGoalId.set(null); this.confirmDeleteGoalId.set(null);
-    this.editGoal = { name: g.name, targetAmount: Number(g.targetAmount), deadline: g.deadline ? new Date(g.deadline).toISOString().split('T')[0] : '' };
+    this.editingGoalId.set(g.id);
+    this.addingProgressGoalId.set(null);
+    this.confirmDeleteGoalId.set(null);
+    this.editGoal = {
+      name: g.name,
+      targetAmount: parseFloat(String(g.targetAmount)),
+      deadline: g.deadline ? new Date(g.deadline).toISOString().split('T')[0] : ''
+    };
   }
   cancelEditGoal(): void { this.editingGoalId.set(null); }
 
   saveEditGoal(id: string): void {
     if (!this.editGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
-    if (this.editGoal.targetAmount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
-    this.financeService.updateGoal(id, { name: this.editGoal.name.trim(), targetAmount: this.editGoal.targetAmount, deadline: this.editGoal.deadline || undefined }).subscribe({
-      next: updated => { this.goals.update(l => l.map(g => g.id === id ? { ...g, ...updated } : g)); this.editingGoalId.set(null); this.toast.success('Meta actualizada'); },
+    if (Number(this.editGoal.targetAmount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    this.financeService.updateGoal(id, {
+      name: this.editGoal.name.trim(),
+      targetAmount: Number(this.editGoal.targetAmount),
+      deadline: this.editGoal.deadline || undefined
+    }).subscribe({
+      next: updated => {
+        this.goals.update(l => l.map(g => g.id === id ? { ...g, ...updated } : g));
+        this.editingGoalId.set(null);
+        this.toast.success('Meta actualizada');
+      },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar la meta'))
     });
   }
@@ -482,76 +613,109 @@ export class Finances implements OnInit {
 
   deleteGoal(id: string): void {
     this.financeService.deleteGoal(id).subscribe({
-      next: () => { this.goals.update(l => l.filter(g => g.id !== id)); this.confirmDeleteGoalId.set(null); this.toast.success('Meta eliminada'); },
+      next: () => {
+        this.goals.update(l => l.filter(g => g.id !== id));
+        this.confirmDeleteGoalId.set(null);
+        this.toast.success('Meta eliminada');
+      },
       error: () => this.toast.error('Error al eliminar la meta')
     });
   }
 
-  // ── HELPERS ───────────────────────────────────────────────────────────────
+  // ── UTILIDADES ────────────────────────────────────────────────────────────
+  formatCurrency(value: number | string): string {
+    const n = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(n)) return '0,00';
+    return new Intl.NumberFormat('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  }
+
+  formatDateLabel(dateKey: string): string {
+    const d = new Date(dateKey + 'T12:00:00');
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    if (dateKey === today) return 'Hoy';
+    if (dateKey === yesterday) return 'Ayer';
+    return d.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  getCategoryName(categoryId: string): string {
+    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoria';
+  }
+
+  getTransactionBg(type: string): string {
+    if (type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
+    if (type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
+    return 'bg-red-500/20 text-red-400';
+  }
+
+  getTransactionColor(type: string): string {
+    if (type === 'INCOME') return 'text-emerald-400';
+    if (type === 'TRANSFER') return 'text-blue-400';
+    return 'text-red-400';
+  }
+
+  getTransactionSign(type: string): string {
+    if (type === 'INCOME') return '+$';
+    if (type === 'TRANSFER') return '$';
+    return '-$';
+  }
+
+  getAccountTypeLabel(type: AccountType): string {
+    const map: Record<AccountType, string> = { CASH: 'Efectivo', BANK: 'Banco', DIGITAL_WALLET: 'Billetera' };
+    return map[type] ?? type;
+  }
+
+  getAccountTypeColor(type: AccountType): string {
+    if (type === 'CASH') return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+    if (type === 'BANK') return 'text-blue-400 border-blue-500/30 bg-blue-500/10';
+    return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+  }
+
   computeSpent(categoryId: string): number {
-    const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const now = new Date();
     return this.transactions()
-      .filter(t => t.categoryId === categoryId && t.type === 'EXPENSE' && new Date(t.date) >= start)
+      .filter(t =>
+        t.type === 'EXPENSE' &&
+        t.categoryId === categoryId &&
+        new Date(t.date).getMonth() === now.getMonth() &&
+        new Date(t.date).getFullYear() === now.getFullYear()
+      )
       .reduce((s, t) => s + parseFloat(String(t.amount)), 0);
   }
 
-  getBudgetPercent(b: Budget): number {
+  getBudgetPct(b: Budget): number {
     const spent = this.computeSpent(b.categoryId);
-    return !b.amount ? 0 : Math.min(100, Math.round((spent / Number(b.amount)) * 100));
+    const amount = parseFloat(String(b.amount));
+    if (!amount) return 0;
+    return Math.min(100, Math.round((spent / amount) * 100));
   }
 
-  getBudgetStatusColor(b: Budget): string {
-    const p = this.getBudgetPercent(b);
-    if (p >= 100) return 'from-red-500 to-red-400';
-    if (p >= 80) return 'from-amber-500 to-amber-400';
-    return 'from-emerald-500 to-emerald-400';
+  getGoalProgress(g: Goal): number {
+    const current = parseFloat(String(g.currentAmount));
+    const target = parseFloat(String(g.targetAmount));
+    if (!target) return 0;
+    return Math.min(100, Math.round((current / target) * 100));
   }
 
-  getBudgetCategory(b: Budget): string { return this.categories().find(c => c.id === b.categoryId)?.name ?? 'Categoria'; }
-
-  getGoalPercent(g: Goal): number {
-    return !g.targetAmount ? 0 : Math.min(100, Math.round((Number(g.currentAmount) / Number(g.targetAmount)) * 100));
+  extractError(err: any, fallback: string): string {
+    return err?.error?.message ?? fallback;
   }
 
-  formatCurrency(v: number | string): string {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(typeof v === 'string' ? parseFloat(v) : v);
-  }
-
-  formatDateLabel(dateStr: string): string {
-    const todayKey = new Date().toISOString().split('T')[0];
-    const yestKey = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (dateStr === todayKey) return 'Hoy';
-    if (dateStr === yestKey) return 'Ayer';
-    const d = new Date(dateStr + 'T12:00:00');
-    const label = d.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  }
-
-  getHealthColor(s: string): string { return ({ HEALTHY: 'text-emerald-400', WARNING: 'text-amber-400', DANGER: 'text-orange-400', CRITICAL: 'text-red-400' } as any)[s] ?? 'text-slate-400'; }
-  getHealthBarColor(s: string): string { return ({ HEALTHY: 'from-emerald-500 to-emerald-400', WARNING: 'from-amber-500 to-amber-400', DANGER: 'from-orange-500 to-orange-400', CRITICAL: 'from-red-500 to-red-400' } as any)[s] ?? 'from-slate-500 to-slate-400'; }
-  getHealthLabel(s: string): string { return ({ HEALTHY: 'Saludable', WARNING: 'Advertencia', DANGER: 'Peligro', CRITICAL: 'Critico' } as any)[s] ?? s; }
-  getTransactionColor(t: string): string { return t === 'INCOME' ? 'text-emerald-400' : t === 'TRANSFER' ? 'text-blue-400' : 'text-red-400'; }
-  getTransactionSign(t: string): string { return t === 'INCOME' ? '+' : t === 'TRANSFER' ? '' : '-'; }
-  getTransactionBg(t: string): string { return t === 'INCOME' ? 'bg-emerald-500/20 text-emerald-400' : t === 'TRANSFER' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'; }
-  getAccountTypeLabel(t: string): string { return ({ CASH: 'Efectivo', BANK: 'Banco', DIGITAL_WALLET: 'Digital' } as any)[t] ?? t; }
-  getAccountTypeColor(t: string): string { return ({ CASH: 'bg-amber-500/20 text-amber-400 border-amber-500/30', BANK: 'bg-blue-500/20 text-blue-400 border-blue-500/30', DIGITAL_WALLET: 'bg-violet-500/20 text-violet-400 border-violet-500/30' } as any)[t] ?? 'bg-slate-500/20 text-slate-400'; }
-  getCategoryName(id: string): string { return this.categories().find(c => c.id === id)?.name ?? 'Sin categoria'; }
-  getAccountName(id: string): string { return this.accounts().find(a => a.id === id)?.name ?? 'Cuenta'; }
-
-  private reloadAll(): void {
-    this.financeService.getSummary().subscribe({ next: d => this.summary.set(d) });
-    this.financeService.getBudgetHealth().subscribe({ next: d => this.health.set(d) });
-    this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
-    this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
-  }
-
-  private refreshSummary(): void {
+  refreshSummary(): void {
     this.financeService.getSummary().subscribe({ next: d => this.summary.set(d) });
     this.financeService.getBudgetHealth().subscribe({ next: d => this.health.set(d) });
   }
 
-  private extractError(err: any, fallback: string): string {
-    const msg = err?.error?.message ?? fallback;
-    return Array.isArray(msg) ? msg[0] : msg;
+  reloadAll(): void {
+    this.loading.set(true);
+    let loaded = 0;
+    const done = () => { if (++loaded >= 7) this.loading.set(false); };
+    this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
+    this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
+    this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); done(); }, error: done });
+    this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
+    this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
+    this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
   }
 }

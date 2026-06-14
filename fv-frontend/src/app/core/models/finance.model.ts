@@ -155,3 +155,16 @@ export interface TransferResponse {
   fromTransaction: Transaction;
   toTransaction: Transaction;
 }
+
+export interface CreateCategoryPayload {
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateCategoryPayload {
+  name?: string;
+  icon?: string;
+  color?: string;
+}
