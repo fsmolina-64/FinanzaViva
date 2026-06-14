@@ -28,14 +28,14 @@
       <div class="flex items-start gap-4">
 
         <div class="relative flex-shrink-0">
-          @if (user()!.profile?.avatarUrl) {
+          @if (user()!.profile.avatarUrl) {
           <img [src]="user()!.profile.avatarUrl" alt="avatar"
             class="w-20 h-20 rounded-2xl object-cover border-2 border-slate-600" />
           } @else {
           <div
             class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2 border-blue-500/50">
             <span class="text-white font-bold text-2xl">
-              {{ getInitials(user()!.profile?.displayName ?? '') }}
+              {{ getInitials(user()!.profile.displayName) }}
             </span>
           </div>
           }

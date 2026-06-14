@@ -1,52 +1,43 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { ApiService } from './api.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   BackendGame,
-  BackendEvent,
   CreateGamePayload,
-  SubmitDecisionPayload,
-  DecisionResult,
+  SubmitDecisionResponse,
   HistoryEntry
 } from '../models/simulator.model';
 
 @Injectable({ providedIn: 'root' })
 export class SimulatorService {
-  constructor(private api: ApiService) { }
+  private readonly base = `${environment.apiUrl}/simulator`;
+
+  constructor(private http: HttpClient) { }
 
   createGame(payload: CreateGamePayload): Observable<BackendGame> {
-    return this.api.post<BackendGame>('/simulator/games', payload);
+    return this.http.post<BackendGame>(`${this.base}/games`, payload);
   }
 
+  // startGame devuelve el estado completo con el primer evento ya asignado
+  // Los bots que van antes del primer humano se procesan en el backend automáticamente
   startGame(gameId: string): Observable<BackendGame> {
-    return this.api.post<BackendGame>(`/simulator/games/${gameId}/start`, {});
+    return this.http.post<BackendGame>(`${this.base}/games/${gameId}/start`, {});
   }
 
-  getRandomEvent(): Observable<BackendEvent> {
-    return this.api.get<BackendEvent>('/simulator/events/random');
+  getGameState(gameId: string): Observable<BackendGame> {
+    return this.http.get<BackendGame>(`${this.base}/games/${gameId}`);
   }
 
-  submitDecision(gameId: string, payload: SubmitDecisionPayload): Observable<DecisionResult> {
-    return this.api.post<DecisionResult>(`/simulator/games/${gameId}/decision`, payload);
-  }
-
-  nextRound(gameId: string): Observable<BackendGame> {
-    return this.api.post<BackendGame>(`/simulator/games/${gameId}/next-round`, {});
+  // Devuelve { result, gameState } — gameState ya tiene el próximo evento listo
+  submitDecision(gameId: string, chosenOptionId: string): Observable<SubmitDecisionResponse> {
+    return this.http.post<SubmitDecisionResponse>(
+      `${this.base}/games/${gameId}/decision`,
+      { chosenOptionId }
+    );
   }
 
   getHistory(): Observable<HistoryEntry[]> {
-    return this.api.get<BackendGame[]>('/simulator/history').pipe(
-      map(games =>
-        games
-          .filter(g => g.status === 'FINISHED')
-          .map(g => ({
-            id: g.id,
-            rounds: g.maxRounds,
-            finalBalance: Number(g.players?.[0]?.money ?? 0),
-            score: g.players?.[0]?.financialScore ?? 0,
-            completedAt: g.finishedAt ?? g.createdAt
-          }))
-      )
-    );
+    return this.http.get<HistoryEntry[]>(`${this.base}/history`);
   }
 }
