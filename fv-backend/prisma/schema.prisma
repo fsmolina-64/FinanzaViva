@@ -124,7 +124,8 @@ enum EventCategory {
 
 enum RewardType {
   AVATAR
-  THEME
+  TITLE
+  AURA
   BADGE
   SIMULATOR_EVENT
   FRAME
@@ -232,6 +233,7 @@ model XpTransaction {
 
   @@index([userId])
   @@index([createdAt])
+  @@unique([userId, source, referenceId])   // ← añade esta línea exactamente aquí
   @@map("xp_transactions")
 }
 

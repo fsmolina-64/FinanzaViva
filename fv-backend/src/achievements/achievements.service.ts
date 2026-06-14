@@ -10,49 +10,31 @@ export class AchievementsService {
   constructor(
     private prisma: PrismaService,
     private gamification: GamificationService,
-  ) {}
-
-  async evaluate(userId: string) {
-    const stats = await this.prisma.userStatistics.findUnique({ where: { userId } });
-    const gameStats = await this.prisma.userGameStats.findUnique({ where: { userId } });
-    if (!stats || !gameStats) return;
-
-    const achievements = await this.prisma.achievement.findMany({ where: { isActive: true } });
-    const unlocked = await this.prisma.userAchievement.findMany({ where: { userId } });
-    const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
-
-    for (const achievement of achievements) {
-      if (unlockedIds.has(achievement.id)) continue;
-
-      const condition = achievement.condition as { metric: string; threshold: number };
-      const value = this.getMetricValue(stats, gameStats, condition.metric);
-
-      if (value >= condition.threshold) {
-        await this.unlock(userId, achievement.id, achievement.xpReward);
-      }
-    }
-  }
+  ) { }
 
   private getMetricValue(stats: any, gameStats: any, metric: string): number {
     const map: Record<string, number> = {
-      quizzes_passed:     stats.quizzesPassed,
-      lessons_completed:  stats.lessonsCompleted,
-      modules_completed:  stats.modulesCompleted,
-      games_played:       stats.gamesPlayed,
-      games_won:          stats.gamesWon,
+      quizzes_passed: stats.quizzesPassed,
+      lessons_completed: stats.lessonsCompleted,
+      modules_completed: stats.modulesCompleted,
+      games_played: stats.gamesPlayed,
+      games_won: stats.gamesWon,
       total_transactions: stats.totalTransactions,
-      total_xp:           stats.totalXpEarned,
-      current_streak:     gameStats.currentStreak,
-      longest_streak:     gameStats.longestStreak,
-      level:              gameStats.level,
+      total_xp: stats.totalXpEarned,
+      current_streak: gameStats.currentStreak,
+      longest_streak: gameStats.longestStreak,
+      level: gameStats.level,
     };
     return map[metric] ?? 0;
   }
 
   private async unlock(userId: string, achievementId: string, xpReward: number) {
-    await this.prisma.userAchievement.create({
-      data: { userId, achievementId },
+    const existing = await this.prisma.userAchievement.findUnique({
+      where: { userId_achievementId: { userId, achievementId } },
     });
+    if (existing) return;
+
+    await this.prisma.userAchievement.create({ data: { userId, achievementId } });
 
     await this.prisma.userStatistics.update({
       where: { userId },
@@ -67,8 +49,6 @@ export class AchievementsService {
         description: 'Logro desbloqueado',
       });
     }
-
-    await this.checkRewards(userId);
   }
 
   async checkRewards(userId: string) {
@@ -134,14 +114,48 @@ export class AchievementsService {
   }
 
   async equipReward(userId: string, rewardId: string) {
-    return this.prisma.userReward.update({
+    const reward = await this.prisma.reward.findUniqueOrThrow({ where: { id: rewardId } });
+
+    const sameType = await this.prisma.reward.findMany({
+      where: { type: reward.type, isActive: true },
+      select: { id: true }
+    });
+    const sameTypeIds = sameType.map(r => r.id);
+
+    await this.prisma.userReward.updateMany({
+      where: { userId, rewardId: { in: sameTypeIds }, isEquipped: true },
+      data: { isEquipped: false },
+    });
+
+    return this.prisma.userReward.upsert({
       where: { userId_rewardId: { userId, rewardId } },
-      data: { isEquipped: true },
+      update: { isEquipped: true },
+      create: { userId, rewardId, isEquipped: true },
     });
   }
 
   @OnEvent('user.action')
   async handleUserAction(event: UserActionEvent) {
     await this.evaluate(event.userId);
+  }
+  async evaluate(userId: string) {
+    const stats = await this.prisma.userStatistics.findUnique({ where: { userId } });
+    const gameStats = await this.prisma.userGameStats.findUnique({ where: { userId } });
+    if (!stats || !gameStats) return;
+
+    const achievements = await this.prisma.achievement.findMany({ where: { isActive: true } });
+    const unlocked = await this.prisma.userAchievement.findMany({ where: { userId } });
+    const unlockedIds = new Set(unlocked.map((u) => u.achievementId));
+
+    for (const achievement of achievements) {
+      if (unlockedIds.has(achievement.id)) continue;
+      const condition = achievement.condition as { metric: string; threshold: number };
+      const value = this.getMetricValue(stats, gameStats, condition.metric);
+      if (value >= condition.threshold) {
+        await this.unlock(userId, achievement.id, achievement.xpReward);
+      }
+    }
+
+    await this.checkRewards(userId);
   }
 }

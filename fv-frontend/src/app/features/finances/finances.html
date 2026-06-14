@@ -1,5 +1,6 @@
 <div class="space-y-6 animate-slide-up">
 
+  <!-- HEADER -->
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold text-white">Mis Finanzas</h1>
@@ -13,6 +14,7 @@
     }
   </div>
 
+  <!-- ALERTA DE PRESUPUESTO -->
   @if (lastAlert()) {
   <div class="alert-banner rounded-2xl p-4 border flex items-start gap-3"
     [ngClass]="lastAlert()!.type === 'BUDGET_EXCEEDED' ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'">
@@ -28,6 +30,7 @@
   </div>
   }
 
+  <!-- TABS -->
   <div class="flex gap-1 bg-slate-800/60 p-1 rounded-2xl border border-slate-700">
     @for (tab of tabs; track tab.key) {
     <button (click)="setTab(tab.key)"
@@ -39,6 +42,7 @@
     }
   </div>
 
+  <!-- SKELETON -->
   @if (loading()) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
@@ -47,6 +51,7 @@
   </div>
   }
 
+  <!-- ─────────────── TAB: RESUMEN ─────────────── -->
   @if (!loading() && activeTab() === 'resumen') {
   <div class="space-y-5 animate-fade-in">
 
@@ -91,7 +96,9 @@
           <h3 class="text-white font-semibold">Salud financiera</h3>
           <p class="text-slate-400 text-xs mt-0.5">{{ health()!.message }}</p>
         </div>
-        <span class="font-bold text-lg" [ngClass]="getHealthColor(health()!.status)">{{ health()!.status }}</span>
+        <span class="font-bold text-lg" [ngClass]="getHealthColor(health()!.status)">
+          {{ getHealthLabel(health()!.status) }}
+        </span>
       </div>
       <div class="space-y-2">
         <div class="flex justify-between text-xs text-slate-400">
@@ -122,6 +129,7 @@
     </div>
     }
 
+    <!-- CUENTAS -->
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-white font-semibold">Mis cuentas</h3>
@@ -142,16 +150,15 @@
             <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
             <select [(ngModel)]="newAccount.type"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
-              <option value="CHECKING">Corriente</option>
-              <option value="SAVINGS">Ahorros</option>
-              <option value="CREDIT">Credito</option>
               <option value="CASH">Efectivo</option>
+              <option value="BANK">Banco</option>
+              <option value="DIGITAL_WALLET">Billetera Digital</option>
             </select>
           </div>
         </div>
         <div>
           <label class="text-slate-400 text-xs mb-1 block">Balance inicial</label>
-          <input [(ngModel)]="newAccount.balance" type="number" placeholder="0.00"
+          <input [(ngModel)]="newAccount.initialBalance" type="number" placeholder="0.00"
             class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
         <button (click)="submitAccount()"
@@ -183,9 +190,11 @@
         }
       </div>
     </div>
+
   </div>
   }
 
+  <!-- ─────────────── TAB: TRANSACCIONES ─────────────── -->
   @if (!loading() && activeTab() === 'transacciones') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
@@ -196,6 +205,7 @@
           {{ showTransactionForm() ? 'Cancelar' : '+ Nueva transaccion' }}
         </button>
       </div>
+
       @if (showTransactionForm()) {
       <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
         <div class="grid grid-cols-2 gap-3">
@@ -254,11 +264,84 @@
         </button>
       </div>
       }
+
       @if (transactions().length === 0) {
       <p class="text-slate-500 text-sm text-center py-8">Sin transacciones registradas</p>
       }
+
       <div class="space-y-2">
         @for (tx of transactions(); track tx.id) {
+
+        @if (confirmDeleteTxId() === tx.id) {
+        <div
+          class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-red-300 text-sm">Eliminar "{{ tx.description || getCategoryName(tx.categoryId) }}"?</span>
+          <div class="flex gap-2">
+            <button (click)="deleteTransaction(tx.id)"
+              class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+              Eliminar
+            </button>
+            <button (click)="cancelDeleteTx()"
+              class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else if (editingTxId() === tx.id) {
+        <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
+              <select [(ngModel)]="editTx.type"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                <option value="INCOME">Ingreso</option>
+                <option value="EXPENSE">Gasto</option>
+                <option value="TRANSFER">Transferencia</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+              <input [(ngModel)]="editTx.amount" type="number"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+              <select [(ngModel)]="editTx.categoryId"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                @for (cat of editTxCategories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
+              <input [(ngModel)]="editTx.date" type="date"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+          </div>
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Descripcion</label>
+            <input [(ngModel)]="editTx.description" type="text" placeholder="Opcional"
+              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveEditTx(tx.id)"
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
+              Guardar
+            </button>
+            <button (click)="cancelEditTx()"
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else {
         <div
           class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
           <div class="flex items-center gap-3 min-w-0">
@@ -273,20 +356,31 @@
                 getAccountName(tx.accountId) }} &middot; {{ tx.date | date:'dd/MM/yyyy' }}</p>
             </div>
           </div>
-          <div class="flex items-center gap-3 flex-shrink-0">
+          <div class="flex items-center gap-2 flex-shrink-0">
             <span class="font-bold text-sm" [ngClass]="getTransactionColor(tx.type)">
               {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
             </span>
-            <button (click)="deleteTransaction(tx.id)"
-              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 font-bold transition-all duration-200">&times;</button>
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <button (click)="startEditTx(tx)"
+                class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
+                editar
+              </button>
+              <button (click)="confirmDeleteTx(tx.id)"
+                class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
+                &times;
+              </button>
+            </div>
           </div>
         </div>
+        }
+
         }
       </div>
     </div>
   </div>
   }
 
+  <!-- ─────────────── TAB: PRESUPUESTOS ─────────────── -->
   @if (!loading() && activeTab() === 'presupuestos') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
@@ -300,6 +394,7 @@
           {{ showBudgetForm() ? 'Cancelar' : '+ Nuevo presupuesto' }}
         </button>
       </div>
+
       @if (showBudgetForm()) {
       <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
         <div>
@@ -323,18 +418,72 @@
         </button>
       </div>
       }
+
       @if (budgets().length === 0) {
       <p class="text-slate-500 text-sm text-center py-8">Sin presupuestos creados</p>
       }
+
       <div class="space-y-3">
         @for (b of budgets(); track b.id) {
+
+        @if (confirmDeleteBudgetId() === b.id) {
         <div
-          class="bg-slate-800 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition-all duration-200">
+          class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-red-300 text-sm">Eliminar presupuesto de "{{ getBudgetCategory(b) }}"?</span>
+          <div class="flex gap-2">
+            <button (click)="deleteBudget(b.id)"
+              class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+              Eliminar
+            </button>
+            <button (click)="cancelDeleteBudget()"
+              class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else if (editingBudgetId() === b.id) {
+        <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+          <p class="text-white text-sm font-medium">Editar limite — {{ getBudgetCategory(b) }}</p>
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Nuevo limite mensual (USD)</label>
+            <input [(ngModel)]="editBudgetAmount" type="number"
+              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveEditBudget(b.id)"
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
+              Guardar
+            </button>
+            <button (click)="cancelEditBudget()"
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else {
+        <div
+          class="bg-slate-800 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
           <div class="flex items-center justify-between mb-2">
             <span class="text-white text-sm font-medium">{{ getBudgetCategory(b) }}</span>
-            <div>
-              <span class="text-white text-sm font-bold">{{ formatCurrency(b.spent) }}</span>
-              <span class="text-slate-500 text-xs"> / {{ formatCurrency(b.amount) }}</span>
+            <div class="flex items-center gap-3">
+              <div>
+                <span class="text-white text-sm font-bold">{{ formatCurrency(computeSpent(b.categoryId)) }}</span>
+                <span class="text-slate-500 text-xs"> / {{ formatCurrency(b.amount) }}</span>
+              </div>
+              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <button (click)="startEditBudget(b)"
+                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
+                  editar
+                </button>
+                <button (click)="confirmDeleteBudget(b.id)"
+                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
+                  &times;
+                </button>
+              </div>
             </div>
           </div>
           <div class="h-2.5 bg-slate-700 rounded-full overflow-hidden">
@@ -342,7 +491,8 @@
               [ngClass]="getBudgetStatusColor(b)" [style.width.%]="getBudgetPercent(b)"></div>
           </div>
           <div class="flex justify-between mt-1.5">
-            <span class="text-slate-500 text-xs">{{ formatCurrency(b.amount - b.spent) }} disponible</span>
+            <span class="text-slate-500 text-xs">{{ formatCurrency(+b.amount - computeSpent(b.categoryId)) }}
+              disponible</span>
             <span class="text-xs font-semibold"
               [ngClass]="getBudgetPercent(b) >= 100 ? 'text-red-400' : getBudgetPercent(b) >= 80 ? 'text-amber-400' : 'text-emerald-400'">
               {{ getBudgetPercent(b) }}%
@@ -350,11 +500,14 @@
           </div>
         </div>
         }
+
+        }
       </div>
     </div>
   </div>
   }
 
+  <!-- ─────────────── TAB: METAS ─────────────── -->
   @if (!loading() && activeTab() === 'metas') {
   <div class="space-y-5 animate-fade-in">
     <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
@@ -368,6 +521,7 @@
           {{ showGoalForm() ? 'Cancelar' : '+ Nueva meta' }}
         </button>
       </div>
+
       @if (showGoalForm()) {
       <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
         <div>
@@ -382,15 +536,10 @@
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Ya tengo (USD)</label>
-            <input [(ngModel)]="newGoal.currentAmount" type="number" placeholder="0.00"
+            <label class="text-slate-400 text-xs mb-1 block">Fecha limite (opcional)</label>
+            <input [(ngModel)]="newGoal.deadline" type="date"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
-        </div>
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Fecha limite (opcional)</label>
-          <input [(ngModel)]="newGoal.deadline" type="date"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
         <button (click)="submitGoal()"
           class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
@@ -398,19 +547,109 @@
         </button>
       </div>
       }
+
       @if (goals().length === 0) {
       <p class="text-slate-500 text-sm text-center py-8">Sin metas creadas</p>
       }
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @for (g of goals(); track g.id) {
+
+        @if (confirmDeleteGoalId() === g.id) {
+        <div class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-4 flex flex-col gap-3">
+          <span class="text-red-300 text-sm">Eliminar la meta "{{ g.name }}"?</span>
+          <div class="flex gap-2">
+            <button (click)="deleteGoal(g.id)"
+              class="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold py-2 rounded-lg transition-colors">
+              Eliminar
+            </button>
+            <button (click)="cancelDeleteGoal()"
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-semibold py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else if (editingGoalId() === g.id) {
+        <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+          <p class="text-white text-sm font-medium">Editar meta</p>
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Nombre</label>
+            <input [(ngModel)]="editGoal.name" type="text"
+              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Meta (USD)</label>
+              <input [(ngModel)]="editGoal.targetAmount" type="number"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Fecha limite</label>
+              <input [(ngModel)]="editGoal.deadline" type="date"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveEditGoal(g.id)"
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
+              Guardar
+            </button>
+            <button (click)="cancelEditGoal()"
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else if (addingProgressGoalId() === g.id) {
+        <div class="form-slide bg-slate-800 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+          <div>
+            <p class="text-white text-sm font-medium">Agregar ahorro</p>
+            <p class="text-slate-400 text-xs mt-0.5">{{ formatCurrency(g.currentAmount) }} de {{
+              formatCurrency(g.targetAmount) }}</p>
+          </div>
+          <div>
+            <label class="text-slate-400 text-xs mb-1 block">Cuanto agregaste (USD)</label>
+            <input [(ngModel)]="progressAmount" type="number" placeholder="0.00"
+              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500 transition-colors" />
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveProgress(g)"
+              class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
+              Guardar
+            </button>
+            <button (click)="cancelAddProgress()"
+              class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+        }
+
+        @else {
         <div
-          class="bg-slate-800 rounded-xl p-5 border border-slate-600 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10">
+          class="bg-slate-800 rounded-xl p-5 border border-slate-600 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10 group">
           <div class="flex items-start justify-between mb-3">
             <h4 class="text-white font-semibold text-sm">{{ g.name }}</h4>
-            @if (getGoalPercent(g) === 100) {
-            <span
-              class="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">Completada</span>
-            }
+            <div class="flex items-center gap-2">
+              @if (getGoalPercent(g) === 100) {
+              <span
+                class="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">Completada</span>
+              }
+              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <button (click)="startEditGoal(g)"
+                  class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">
+                  editar
+                </button>
+                <button (click)="confirmDeleteGoal(g.id)"
+                  class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">
+                  &times;
+                </button>
+              </div>
+            </div>
           </div>
           <div class="flex items-center gap-4 mb-3">
             <div class="relative w-16 h-16 flex-shrink-0">
@@ -429,16 +668,23 @@
             <div class="flex-1">
               <div class="text-white text-lg font-bold">{{ formatCurrency(g.currentAmount) }}</div>
               <div class="text-slate-400 text-xs">de {{ formatCurrency(g.targetAmount) }}</div>
-              <div class="text-slate-500 text-xs mt-1">Faltan {{ formatCurrency(g.targetAmount - g.currentAmount) }}
+              <div class="text-slate-500 text-xs mt-1">Faltan {{ formatCurrency(+g.targetAmount - +g.currentAmount) }}
               </div>
             </div>
           </div>
           @if (g.deadline) {
-          <div class="text-slate-500 text-xs border-t border-slate-700 pt-2">
+          <div class="text-slate-500 text-xs border-t border-slate-700 pt-2 mb-3">
             Limite: {{ g.deadline | date:'dd/MM/yyyy' }}
           </div>
           }
+          @if (getGoalPercent(g) < 100) { <button (click)="startAddProgress(g)"
+            class="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 text-xs font-semibold py-2 rounded-lg transition-all duration-200">
+            + Agregar ahorro
+            </button>
+            }
         </div>
+        }
+
         }
       </div>
     </div>

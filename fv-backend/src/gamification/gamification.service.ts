@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AddXpDto } from './dto/add-xp.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserActionEvent } from '../common/events/user-action.event';
+import { XpSource } from '@prisma/client';
 
 @Injectable()
 export class GamificationService {
@@ -40,6 +41,51 @@ export class GamificationService {
       xp: stats.xp,
       level: newLevel?.number ?? stats.level,
       leveledUp: !!newLevel,
+    };
+  }
+
+  async grantModuleXpIfFirstTime(userId: string, moduleId: string, amount: number) {
+    const existing = await this.prisma.xpTransaction.findFirst({
+      where: {
+        userId,
+        source: XpSource.LESSON_COMPLETED,
+        referenceId: moduleId,
+      },
+    });
+
+    if (existing) {
+      return { xp: 0, alreadyAwarded: true, leveledUp: false };
+    }
+
+    await this.prisma.xpTransaction.create({
+      data: {
+        userId,
+        amount,
+        source: XpSource.LESSON_COMPLETED,
+        referenceId: moduleId,
+        description: 'Módulo completado',
+      },
+    });
+
+    const stats = await this.prisma.userGameStats.update({
+      where: { userId },
+      data: { xp: { increment: amount } },
+    });
+
+    await this.prisma.userStatistics.update({
+      where: { userId },
+      data: { totalXpEarned: { increment: amount } },
+    });
+
+    const newLevel = await this.checkLevelUp(userId, stats.xp);
+
+    this.eventEmitter.emit('user.action', new UserActionEvent(userId));
+
+    return {
+      xp: stats.xp,
+      level: newLevel?.number ?? stats.level,
+      leveledUp: !!newLevel,
+      alreadyAwarded: false,
     };
   }
 
@@ -83,7 +129,18 @@ export class GamificationService {
     });
   }
 
-  private async checkLevelUp(userId: string, currentXp: number) {
+  async checkAndEmitLevelUp(userId: string) {
+    const stats = await this.prisma.userGameStats.findUnique({ where: { userId } });
+    if (!stats) return null;
+    
+    const newLevel = await this.checkLevelUp(userId, stats.xp);
+    if (newLevel) {
+      this.eventEmitter.emit('user.action', new UserActionEvent(userId));
+    }
+    return newLevel;
+  }
+
+  public async checkLevelUp(userId: string, currentXp: number) {
     const nextLevel = await this.prisma.level.findFirst({
       where: { xpRequired: { lte: currentXp } },
       orderBy: { number: 'desc' },

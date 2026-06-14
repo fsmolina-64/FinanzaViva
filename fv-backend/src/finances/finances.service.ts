@@ -6,15 +6,17 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { XpSource } from '@prisma/client';
+import { UpdateBudgetDto } from './dto/update-budget.dto';
+import { UpdateGoalDto } from './dto/update-goal.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @Injectable()
 export class FinancesService {
   constructor(
     private prisma: PrismaService,
     private gamification: GamificationService,
-  ) {}
+  ) { }
 
-  // ── CUENTAS ──────────────────────────────────────
 
   async createAccount(userId: string, dto: CreateAccountDto) {
     return this.prisma.financialAccount.create({
@@ -44,7 +46,6 @@ export class FinancesService {
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
 
-  // ── TRANSACCIONES ─────────────────────────────────
 
   async createTransaction(userId: string, dto: CreateTransactionDto) {
     const account = await this.prisma.financialAccount.findUnique({
@@ -52,7 +53,6 @@ export class FinancesService {
     });
     if (!account || account.userId !== userId) throw new ForbiddenException();
 
-    // Validar saldo suficiente antes de gastar
     if (dto.type === 'EXPENSE') {
       if (Number(account.balance) < dto.amount) {
         throw new BadRequestException(
@@ -92,7 +92,6 @@ export class FinancesService {
       description: 'Transacción registrada',
     });
 
-    // Verificar alerta de presupuesto por categoría
     let alert: { type: string; message: string; percentage: number } | null = null;
 
     if (dto.type === 'EXPENSE') {
@@ -288,7 +287,6 @@ export class FinancesService {
       message = `Vas bien. Llevas el ${percentage}% de tu presupuesto usado.`;
     }
 
-    // Gastos agrupados por categoría
     const breakdown = transactions
       .filter((t) => t.type === 'EXPENSE')
       .reduce((acc: Record<string, number>, t) => {
@@ -306,5 +304,115 @@ export class FinancesService {
       message,
       breakdown,
     };
+  }
+
+  async updateBudget(userId: string, budgetId: string, dto: UpdateBudgetDto) {
+    const budget = await this.prisma.budget.findUnique({ where: { id: budgetId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    if (budget.userId !== userId) throw new ForbiddenException();
+
+    return this.prisma.budget.update({
+      where: { id: budgetId },
+      data: {
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.period !== undefined && { period: dto.period }),
+        ...(dto.endDate !== undefined && { endDate: new Date(dto.endDate) }),
+      },
+    });
+  }
+
+  async deleteBudget(userId: string, budgetId: string) {
+    const budget = await this.prisma.budget.findUnique({ where: { id: budgetId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    if (budget.userId !== userId) throw new ForbiddenException();
+    return this.prisma.budget.delete({ where: { id: budgetId } });
+  }
+
+
+  async updateGoal(userId: string, goalId: string, dto: UpdateGoalDto) {
+    const goal = await this.prisma.financialGoal.findUnique({ where: { id: goalId } });
+    if (!goal) throw new NotFoundException('Meta no encontrada');
+    if (goal.userId !== userId) throw new ForbiddenException();
+
+    const newCurrent = dto.currentAmount !== undefined
+      ? dto.currentAmount
+      : Number(goal.currentAmount);
+    const newTarget = dto.targetAmount !== undefined
+      ? dto.targetAmount
+      : Number(goal.targetAmount);
+
+    let resolvedStatus = dto.status;
+    if (newCurrent >= newTarget) {
+      resolvedStatus = 'COMPLETED';
+    } else if (!resolvedStatus) {
+      resolvedStatus = 'ACTIVE';
+    }
+
+    return this.prisma.financialGoal.update({
+      where: { id: goalId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.targetAmount !== undefined && { targetAmount: dto.targetAmount }),
+        ...(dto.currentAmount !== undefined && { currentAmount: dto.currentAmount }),
+        ...(dto.deadline !== undefined && { deadline: new Date(dto.deadline) }),
+        status: resolvedStatus,
+      },
+    });
+  }
+
+  async deleteGoal(userId: string, goalId: string) {
+    const goal = await this.prisma.financialGoal.findUnique({ where: { id: goalId } });
+    if (!goal) throw new NotFoundException('Meta no encontrada');
+    if (goal.userId !== userId) throw new ForbiddenException();
+    return this.prisma.financialGoal.delete({ where: { id: goalId } });
+  }
+
+
+  async updateTransaction(userId: string, transactionId: string, dto: UpdateTransactionDto) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+    if (!transaction) throw new NotFoundException('Transaccion no encontrada');
+    if (transaction.userId !== userId) throw new ForbiddenException();
+
+    const account = await this.prisma.financialAccount.findUnique({
+      where: { id: transaction.accountId },
+    });
+    if (!account) throw new NotFoundException('Cuenta no encontrada');
+
+    const originalDelta = transaction.type === 'INCOME'
+      ? -Number(transaction.amount)
+      : Number(transaction.amount);
+
+    const newType = dto.type ?? transaction.type;
+    const newAmount = dto.amount ?? Number(transaction.amount);
+
+    const balanceAfterReverse = Number(account.balance) + originalDelta;
+    if (newType === 'EXPENSE' && balanceAfterReverse < newAmount) {
+      throw new BadRequestException(
+        `Saldo insuficiente. Disponible: $${balanceAfterReverse.toFixed(2)}`
+      );
+    }
+
+    const newDelta = newType === 'INCOME' ? newAmount : -newAmount;
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.transaction.update({
+        where: { id: transactionId },
+        data: {
+          ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
+          ...(dto.amount !== undefined && { amount: dto.amount }),
+          ...(dto.type !== undefined && { type: dto.type }),
+          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        },
+      }),
+      this.prisma.financialAccount.update({
+        where: { id: transaction.accountId },
+        data: { balance: { increment: originalDelta + newDelta } },
+      }),
+    ]);
+
+    return updated;
   }
 }

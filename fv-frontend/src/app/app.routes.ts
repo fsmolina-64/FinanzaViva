@@ -54,24 +54,19 @@ export const routes: Routes = [
           import('./features/academy/academy').then(m => m.Academy)
       },
       {
-        path: 'academy/:moduleId',
-        loadComponent: () =>
-          import('./features/academy/module-detail/module-detail').then(m => m.ModuleDetail)
-      },
-      {
         path: 'academy/lesson/:lessonId',
         loadComponent: () =>
           import('./features/academy/lesson/lesson').then(m => m.LessonComponent)
       },
       {
-        path: 'quizzes',
-        loadComponent: () =>
-          import('./features/quizzes/quizzes').then(m => m.Quizzes)
-      },
-      {
-        path: 'quizzes/:id',
+        path: 'academy/:moduleId/quiz',
         loadComponent: () =>
           import('./features/quizzes/quiz-detail/quiz-detail').then(m => m.QuizDetail)
+      },
+      {
+        path: 'academy/:moduleId',
+        loadComponent: () =>
+          import('./features/academy/module-detail/module-detail').then(m => m.ModuleDetail)
       },
       {
         path: 'simulator',

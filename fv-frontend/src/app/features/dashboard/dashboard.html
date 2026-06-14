@@ -1,7 +1,8 @@
 ﻿<div class="space-y-6 animate-slide-up">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-2xl font-bold text-white">Hola, {{ authService.currentUser()?.displayName?.split(' ')?.[0] ?? '' }}</h1>
+      <h1 class="text-2xl font-bold text-white">Hola, {{ authService.currentUser()?.displayName?.split(' ')?.[0] ?? ''
+        }}</h1>
       <p class="text-slate-400 text-sm mt-0.5">Aqui va tu resumen financiero de hoy</p>
     </div>
     <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
@@ -11,115 +12,152 @@
   </div>
 
   @if (stats()) {
-    <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <span class="text-slate-400 text-sm">Tu progreso</span>
-          <div class="flex items-center gap-3 mt-1">
-            <span class="text-white text-2xl font-bold">Nivel {{ stats()!.level }}</span>
-            <span class="bg-blue-500/20 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/30">
-              {{ getRankLabel(stats()!.rank) }}
-            </span>
-          </div>
-        </div>
-        <div class="text-right">
-          <span class="text-slate-400 text-sm">XP Total</span>
-          <div class="text-emerald-400 font-bold text-xl">{{ stats()!.xp }}</div>
+  <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-6 border border-slate-700">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <span class="text-slate-400 text-sm">Tu progreso</span>
+        <div class="flex items-center gap-3 mt-1">
+          <span class="text-white text-2xl font-bold">Nivel {{ stats()!.level }}</span>
+          <span
+            class="bg-blue-500/20 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/30">
+            {{ getRankLabel(stats()!.rank) }}
+          </span>
         </div>
       </div>
-      <div class="space-y-1.5">
-        <div class="flex justify-between text-xs text-slate-400">
-          <span>{{ stats()!.xp % 100 }} / 100 XP para siguiente nivel</span>
-          <span>{{ getXpProgress() }}%</span>
-        </div>
-        <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-1000"
-            [style.width.%]="getXpProgress()"
-          ></div>
-        </div>
+      <div class="text-right">
+        <span class="text-slate-400 text-sm">XP Total</span>
+        <div class="text-emerald-400 font-bold text-xl">{{ stats()!.xp }}</div>
       </div>
     </div>
+    <div class="space-y-1.5">
+      <div class="flex justify-between text-xs text-slate-400">
+        <span>{{ stats()!.xp % 100 }} / 100 XP para siguiente nivel</span>
+        <span>{{ getXpProgress() }}%</span>
+      </div>
+      <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-1000"
+          [style.width.%]="getXpProgress()"></div>
+      </div>
+    </div>
+  </div>
   }
 
   @if (loading()) {
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-      <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-      <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-    </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
+    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
+    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
+  </div>
   }
 
   @if (!loading() && summary()) {
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Balance total</span>
-          <div class="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-lg">💳</div>
-        </div>
-        <div class="text-white text-2xl font-bold">{{ formatCurrency(summary()!.totalBalance) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Todas tus cuentas</div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div
+      class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-slate-400 text-sm">Balance total</span>
+        <div class="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-lg">💳</div>
       </div>
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-0.5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Ingresos del mes</span>
-          <div class="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center text-lg">📈</div>
-        </div>
-        <div class="text-emerald-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyIncome) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Este mes</div>
-      </div>
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10 hover:-translate-y-0.5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Gastos del mes</span>
-          <div class="w-9 h-9 bg-red-500/10 rounded-xl flex items-center justify-center text-lg">📉</div>
-        </div>
-        <div class="text-red-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyExpenses) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Este mes</div>
-      </div>
+      <div class="text-white text-2xl font-bold">{{ formatCurrency(summary()!.totalBalance) }}</div>
+      <div class="text-slate-500 text-xs mt-1">Todas tus cuentas</div>
     </div>
+    <div
+      class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-0.5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-slate-400 text-sm">Ingresos del mes</span>
+        <div class="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center text-lg">📈</div>
+      </div>
+      <div class="text-emerald-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyIncome) }}</div>
+      <div class="text-slate-500 text-xs mt-1">Este mes</div>
+    </div>
+    <div
+      class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10 hover:-translate-y-0.5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-slate-400 text-sm">Gastos del mes</span>
+        <div class="w-9 h-9 bg-red-500/10 rounded-xl flex items-center justify-center text-lg">📉</div>
+      </div>
+      <div class="text-red-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyExpenses) }}</div>
+      <div class="text-slate-500 text-xs mt-1">Este mes</div>
+    </div>
+  </div>
   }
 
   @if (health()) {
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-white font-semibold">Salud financiera del mes</h3>
-          <p class="text-slate-400 text-xs mt-0.5">{{ health()!.message }}</p>
-        </div>
-        <span class="font-bold text-lg" [ngClass]="getHealthColor(health()!.status)">
-          {{ health()!.status }}
-        </span>
+  <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-white font-semibold">Salud financiera del mes</h3>
+        <p class="text-slate-400 text-xs mt-0.5">{{ health()!.message }}</p>
       </div>
-      <div class="space-y-2">
-        <div class="flex justify-between text-xs text-slate-400">
-          <span>{{ formatCurrency(health()!.expenses) }} gastado</span>
-          <span>{{ formatCurrency(health()!.income) }} ingreso</span>
+      <span class="font-bold text-lg" [ngClass]="getHealthColor(health()!.status)">
+        {{ health()!.status }}
+      </span>
+    </div>
+    <div class="space-y-2">
+      <div class="flex justify-between text-xs text-slate-400">
+        <span>{{ formatCurrency(health()!.expenses) }} gastado</span>
+        <span>{{ formatCurrency(health()!.income) }} ingreso</span>
+      </div>
+      <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-1000"
+          [ngClass]="'bg-gradient-to-r ' + getHealthBarColor(health()!.status)" [style.width.%]="health()!.percentage">
         </div>
-        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-1000"
-            [ngClass]="'bg-gradient-to-r ' + getHealthBarColor(health()!.status)"
-            [style.width.%]="health()!.percentage"
-          ></div>
-        </div>
-        <div class="text-right text-xs" [ngClass]="getHealthColor(health()!.status)">
-          {{ health()!.percentage }}% del presupuesto usado
-        </div>
+      </div>
+      <div class="text-right text-xs" [ngClass]="getHealthColor(health()!.status)">
+        {{ health()!.percentage }}% del presupuesto usado
       </div>
     </div>
+  </div>
   }
 
   <div>
-    <h3 class="text-white font-semibold mb-3">Accesos rapidos</h3>
+    <h3 class="text-white font-semibold mb-3">Accesos rápidos</h3>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-      @for (action of quickActions; track action.path) {
-        <a [routerLink]="action.path" class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700 flex flex-col items-center gap-2 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br" [ngClass]="action.color">
-            {{ action.icon }}
-          </div>
-          <span class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">{{ action.label }}</span>
-        </a>
-      }
+
+      <a routerLink="/dashboard/academy"
+        class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div
+          class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="academia.png" alt="Academia"
+            class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span
+          class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Academia</span>
+      </a>
+
+      <a routerLink="/dashboard/finances"
+        class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div
+          class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="billetera-premium.png" alt="Finanzas"
+            class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span
+          class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Finanzas</span>
+      </a>
+
+      <a routerLink="/dashboard/simulator"
+        class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div
+          class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="simulador.png" alt="Simulador"
+            class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span
+          class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Simulador</span>
+      </a>
+
+      <a routerLink="/dashboard/achievements"
+        class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700/60 flex flex-col items-center justify-center hover:bg-[#1E293B]/80 hover:border-slate-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group no-underline">
+        <div
+          class="w-14 h-14 flex items-center justify-center mb-2 transform group-hover:scale-110 transition-transform duration-300">
+          <img src="logro.png" alt="Logros"
+            class="w-full h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]" />
+        </div>
+        <span
+          class="text-slate-300 text-sm font-medium group-hover:text-white transition-colors duration-200">Logros</span>
+      </a>
+
     </div>
   </div>
 </div>
