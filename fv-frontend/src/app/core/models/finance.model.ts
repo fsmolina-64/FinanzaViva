@@ -122,17 +122,19 @@ export interface CreateGoalPayload {
 }
 
 export interface UpdateTransactionPayload {
+  accountId?: string;
   categoryId?: string;
   amount?: number;
   type?: TransactionType;
   description?: string;
   date?: string;
+  allowNegative?: boolean;
 }
 
 export interface UpdateBudgetPayload {
   amount?: number;
   period?: BudgetPeriod;
-  endDate?: string;
+  endDate?: string | null;
 }
 
 export interface UpdateGoalPayload {

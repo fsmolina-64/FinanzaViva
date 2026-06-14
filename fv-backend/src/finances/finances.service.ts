@@ -150,27 +150,51 @@ export class FinancesService {
     if (!tx) throw new NotFoundException('Transaccion no encontrada');
     if (tx.userId !== userId) throw new ForbiddenException();
 
-    // Revertir impacto original, luego aplicar el nuevo
+    const newAccountId = dto.accountId ?? tx.accountId;
+    const newType     = dto.type   ?? tx.type;
+    const newAmount   = dto.amount ?? Number(tx.amount);
+    const sameAccount = newAccountId === tx.accountId;
+
+    if (!sameAccount) {
+      const newAcc = await this.prisma.financialAccount.findUnique({ where: { id: newAccountId } });
+      if (!newAcc || newAcc.userId !== userId) throw new ForbiddenException('Cuenta no valida');
+    }
+
+    // revertDelta: deshace el balance de la transaccion original
     const revertDelta = tx.type === 'INCOME' ? -Number(tx.amount) : Number(tx.amount);
-    const newType = dto.type ?? tx.type;
-    const newAmount = dto.amount ?? Number(tx.amount);
-    const applyDelta = newType === 'INCOME' ? newAmount : -newAmount;
+    // applyDelta: aplica el nuevo valor
+    const applyDelta  = newType  === 'INCOME' ? newAmount : -newAmount;
+
+    const balanceOps = sameAccount
+      ? [this.prisma.financialAccount.update({
+          where: { id: tx.accountId },
+          data:  { balance: { increment: revertDelta + applyDelta } },
+        })]
+      : [
+          this.prisma.financialAccount.update({
+            where: { id: tx.accountId },
+            data:  { balance: { increment: revertDelta } },
+          }),
+          this.prisma.financialAccount.update({
+            where: { id: newAccountId },
+            data:  { balance: { increment: applyDelta } },
+          }),
+        ];
 
     const results = await this.prisma.$transaction([
       this.prisma.transaction.update({
         where: { id: transactionId },
         data: {
-          ...(dto.categoryId && { categoryId: dto.categoryId }),
-          ...(dto.amount !== undefined && { amount: dto.amount }),
-          ...(dto.type && { type: dto.type }),
+          ...(dto.accountId  && { accountId:   dto.accountId }),
+          ...(dto.categoryId && { categoryId:  dto.categoryId }),
+          ...(dto.amount  !== undefined && { amount:       dto.amount }),
+          ...(dto.type       && { type:         dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.date && { date: new Date(dto.date) }),
+          ...(dto.date       && { date:         new Date(dto.date) }),
         },
+        include: { category: true, account: true },
       }),
-      this.prisma.financialAccount.update({
-        where: { id: tx.accountId },
-        data: { balance: { increment: revertDelta + applyDelta } },
-      }),
+      ...balanceOps,
     ]);
 
     return results[0];
