@@ -1,16 +1,12 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SimulatorService } from '../../../core/services/simulator.service';
 import {
-  BackendGame,
-  BackendEvent,
-  BackendEventOption,
-  DecisionResult,
-  PlayerState
+  BackendGame, BackendPlayer, BackendEventOption, DecisionResult
 } from '../../../core/models/simulator.model';
 
-type GamePhase = 'starting' | 'event' | 'result' | 'player-done' | 'final' | 'error';
+type GamePhase = 'loading' | 'event' | 'deciding' | 'result' | 'handoff' | 'final' | 'error';
 
 @Component({
   selector: 'app-game',
@@ -19,191 +15,157 @@ type GamePhase = 'starting' | 'event' | 'result' | 'player-done' | 'final' | 'er
   templateUrl: './game.html'
 })
 export class Game implements OnInit {
-  phase = signal<GamePhase>('starting');
-  game = signal<BackendGame | null>(null);
-  currentEvent = signal<BackendEvent | null>(null);
-  decisionResult = signal<DecisionResult | null>(null);
+  phase = signal<GamePhase>('loading');
+  gameState = signal<BackendGame | null>(null);
+  lastResult = signal<DecisionResult | null>(null);
   selectedOption = signal<BackendEventOption | null>(null);
-  deciding = signal(false);
   errorMessage = signal<string | null>(null);
+  // Quién tomó la última decisión (para mostrar en pantalla de resultado)
+  actingPlayer = signal<BackendPlayer | null>(null);
 
-  players = signal<PlayerState[]>([]);
-  currentIndex = signal(0);
+  // currentPlayerId previo — para detectar cambio de turno
+  private prevPlayerId: string | null = null;
 
-  get currentPlayer(): PlayerState {
-    return this.players()[this.currentIndex()];
-  }
+  gameId!: string;
 
-  get roundProgress(): number {
-    const g = this.game();
+  // Jugador activo según el backend
+  currentPlayer = computed<BackendPlayer | null>(() => {
+    const g = this.gameState();
+    if (!g?.players || !g.currentPlayerId) return null;
+    return g.players.find(p => p.id === g.currentPlayerId) ?? null;
+  });
+
+  // Ranking final por score
+  rankedPlayers = computed<BackendPlayer[]>(() => {
+    const g = this.gameState();
+    if (!g?.players) return [];
+    return [...g.players].sort((a, b) => (b.financialScore ?? 0) - (a.financialScore ?? 0));
+  });
+
+  roundProgress = computed<number>(() => {
+    const g = this.gameState();
     if (!g) return 0;
-    return (g.currentRound / g.maxRounds) * 100;
+    return Math.min(100, (g.currentRound / g.maxRounds) * 100);
+  });
+
+  get isMultiHuman(): boolean {
+    const mode = this.gameState()?.mode;
+    return mode === 'MULTIPLAYER' || mode === 'MIXED';
   }
 
   constructor(
     private simulatorService: SimulatorService,
+    private route: ActivatedRoute,
     public router: Router
   ) { }
 
   ngOnInit(): void {
-    const state = history.state as { players: PlayerState[]; currentIndex: number };
-    if (!state?.players?.length) {
-      this.router.navigate(['/simulator']);
+    this.gameId = this.route.snapshot.params['id'];
+    if (!this.gameId) { this.router.navigate(['/simulator']); return; }
+
+    // startGame: cambia status a IN_PROGRESS, asigna primer evento al primer humano
+    // Los bots con turnOrder anterior se procesan automáticamente en el backend
+    this.simulatorService.startGame(this.gameId).subscribe({
+      next: gs => this.applyGameState(gs),
+      error: err => {
+        const msg = err?.error?.message;
+        // Si la partida ya inició (recarga de página), obtener estado actual
+        if (err?.status === 400) {
+          this.simulatorService.getGameState(this.gameId).subscribe({
+            next: gs => this.applyGameState(gs),
+            error: () => this.router.navigate(['/simulator'])
+          });
+        } else {
+          this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al iniciar la partida.'));
+          this.phase.set('error');
+        }
+      }
+    });
+  }
+
+  private applyGameState(gs: BackendGame): void {
+    this.gameState.set(gs);
+    this.selectedOption.set(null);
+
+    if (gs.status === 'FINISHED') {
+      this.phase.set('final');
       return;
     }
-    this.players.set(state.players);
-    this.currentIndex.set(state.currentIndex ?? 0);
-    this.startCurrentPlayer();
+
+    if (!gs.currentEvent || !gs.currentPlayerId) {
+      this.errorMessage.set('Error al cargar el escenario. Recarga la pagina.');
+      this.phase.set('error');
+      return;
+    }
+
+    this.prevPlayerId = gs.currentPlayerId;
+    this.phase.set('event');
   }
 
-  private startCurrentPlayer(): void {
-    this.phase.set('starting');
-    this.selectedOption.set(null);
-    this.decisionResult.set(null);
-    this.currentEvent.set(null);
-    this.errorMessage.set(null);
-
-    this.simulatorService.startGame(this.currentPlayer.gameId).subscribe({
-      next: game => {
-        this.game.set(game);
-        this.loadNextEvent();
-      },
-      error: err => {
-        const msg = err.error?.message;
-        this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al iniciar la partida.'));
-        this.phase.set('error');
-      }
-    });
-  }
-
-  private loadNextEvent(): void {
-    this.currentEvent.set(null);
-    this.simulatorService.getRandomEvent().subscribe({
-      next: event => {
-        this.currentEvent.set(event);
-        this.phase.set('event');
-      },
-      error: () => {
-        this.errorMessage.set('No se pudo cargar el escenario. Intenta de nuevo.');
-        this.phase.set('error');
-      }
-    });
-  }
-
-  selectOption(option: BackendEventOption): void {
-    if (this.deciding()) return;
-    this.selectedOption.set(option);
+  selectOption(opt: BackendEventOption): void {
+    if (this.phase() === 'deciding') return;
+    this.selectedOption.set(opt);
   }
 
   confirmDecision(): void {
-    const option = this.selectedOption();
-    const event = this.currentEvent();
-    if (!option || !event || this.deciding()) return;
+    const opt = this.selectedOption();
+    if (!opt || this.phase() === 'deciding') return;
 
-    this.deciding.set(true);
+    // Guardar quién estaba jugando antes de que el estado cambie
+    this.actingPlayer.set(this.currentPlayer());
+    this.phase.set('deciding');
+    this.errorMessage.set(null);
 
-    this.simulatorService.submitDecision(this.currentPlayer.gameId, {
-      playerId: this.currentPlayer.playerId,
-      eventId: event.id,
-      chosenOptionId: option.id
-    }).subscribe({
-      next: result => {
-        this.players.update(list =>
-          list.map((p, i) =>
-            i === this.currentIndex()
-              ? { ...p, currentMoney: result.moneyAfter, currentDebt: result.debtAfter, currentScore: result.scoreAfter }
-              : p
-          )
-        );
-        this.decisionResult.set(result);
-        this.deciding.set(false);
+    this.simulatorService.submitDecision(this.gameId, opt.id).subscribe({
+      next: ({ result, gameState }) => {
+        this.lastResult.set(result);
+        this.gameState.set(gameState);
         this.phase.set('result');
       },
       error: err => {
-        this.deciding.set(false);
-        const msg = err.error?.message;
+        const msg = err?.error?.message;
         this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al procesar la decision.'));
+        this.phase.set('event');
       }
     });
   }
 
-  nextRound(): void {
-    this.simulatorService.nextRound(this.currentPlayer.gameId).subscribe({
-      next: game => {
-        this.game.set(game);
-        this.selectedOption.set(null);
-        this.decisionResult.set(null);
+  continueAfterResult(): void {
+    const gs = this.gameState();
+    if (!gs) return;
 
-        if (game.status === 'FINISHED') {
-          const p = this.currentPlayer;
-          this.players.update(list =>
-            list.map((player, i) =>
-              i === this.currentIndex()
-                ? { ...player, finalScore: p.currentScore, finalBalance: p.currentMoney }
-                : player
-            )
-          );
-          this.phase.set('player-done');
-        } else {
-          this.phase.set('event');
-          this.loadNextEvent();
-        }
-      },
-      error: err => {
-        const msg = err.error?.message;
-        this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al avanzar ronda.'));
-      }
-    });
-  }
-
-  nextPlayer(): void {
-    const next = this.currentIndex() + 1;
-    if (next >= this.players().length) {
+    if (gs.status === 'FINISHED') {
       this.phase.set('final');
+      return;
+    }
+
+    const playerChanged = this.prevPlayerId !== gs.currentPlayerId;
+    const needsHandoff = this.isMultiHuman && playerChanged;
+
+    this.prevPlayerId = gs.currentPlayerId;
+
+    if (needsHandoff) {
+      this.phase.set('handoff');
     } else {
-      this.currentIndex.set(next);
-      this.startCurrentPlayer();
+      this.lastResult.set(null);
+      this.actingPlayer.set(null);
+      this.phase.set('event');
     }
   }
 
-  retryEvent(): void {
-    this.errorMessage.set(null);
-    this.loadNextEvent();
+  proceedFromHandoff(): void {
+    this.lastResult.set(null);
+    this.actingPlayer.set(null);
+    this.phase.set('event');
   }
 
-  sortedPlayers(): PlayerState[] {
-    return [...this.players()].sort((a, b) => (b.finalScore ?? 0) - (a.finalScore ?? 0));
-  }
+  // ─── Helpers visuales ───────────────────────────────────────────────────────
 
+  // Convierte Decimal de Prisma (viene como string del JSON) a number
+  n(v: any): number { return parseFloat(String(v)) || 0; }
 
-  optionImpact(option: BackendEventOption): string {
-    const parts: string[] = [];
-    const money = Number(option.effectMoney);
-    const debt = Number(option.effectDebt);
-    const score = Number(option.effectScore);
-
-    if (money !== 0) parts.push(`${money > 0 ? '+' : ''}${this.formatCurrency(money)}`);
-    if (debt !== 0) parts.push(`deuda ${debt > 0 ? '+' : ''}${this.formatCurrency(debt)}`);
-    if (score !== 0) parts.push(`${score > 0 ? '+' : ''}${score} pts`);
-
-    return parts.length ? parts.join(' · ') : 'Sin impacto financiero';
-  }
-
-  optionImpactClass(option: BackendEventOption): string {
-    const money = Number(option.effectMoney);
-    if (money > 0) return 'text-emerald-400';
-    if (money < 0) return 'text-red-400';
-    return 'text-slate-400';
-  }
-
-  resultChangeClass(delta: number): string {
-    if (delta > 0) return 'text-emerald-400';
-    if (delta < 0) return 'text-red-400';
-    return 'text-slate-400';
-  }
-
-  isGoodDecision(result: DecisionResult): boolean {
-    return result.scoreAfter >= result.scoreBefore;
+  patrimonio(p: BackendPlayer): number {
+    return this.n(p.money) + this.n(p.savings) + this.n(p.investments) - this.n(p.debt);
   }
 
   scoreLabel(score: number): string {
@@ -214,11 +176,31 @@ export class Game implements OnInit {
     return 'Critico';
   }
 
-  scoreClass(score: number): string {
-    if (score >= 650) return 'text-emerald-400';
-    if (score >= 500) return 'text-yellow-400';
+  scoreColor(score: number): string {
+    if (score >= 750) return 'text-emerald-400';
+    if (score >= 650) return 'text-blue-400';
+    if (score >= 550) return 'text-yellow-400';
+    if (score >= 450) return 'text-orange-400';
     return 'text-red-400';
   }
+
+  scoreBar(score: number): string {
+    if (score >= 750) return 'bg-emerald-500';
+    if (score >= 650) return 'bg-blue-500';
+    if (score >= 550) return 'bg-yellow-500';
+    if (score >= 450) return 'bg-orange-500';
+    return 'bg-red-500';
+  }
+
+  deltaColor(delta: number, inverse = false): string {
+    const good = inverse ? delta < 0 : delta > 0;
+    const bad = inverse ? delta > 0 : delta < 0;
+    if (good) return 'text-emerald-400';
+    if (bad) return 'text-red-400';
+    return 'text-slate-400';
+  }
+
+  sign(v: number): string { return v > 0 ? '+' : ''; }
 
   formatCurrency(v: number): string {
     return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(v);
