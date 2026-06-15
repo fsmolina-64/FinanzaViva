@@ -1,15 +1,16 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsIn } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsNotEmpty()
   @IsString()
   name!: string;
 
-  @IsOptional()
   @IsString()
-  icon?: string;
+  icon: string = '';
 
-  @IsOptional()
   @IsString()
-  color?: string;
+  color: string = '';
+
+  @IsIn(['INCOME', 'EXPENSE'])
+  type!: 'INCOME' | 'EXPENSE';
 }

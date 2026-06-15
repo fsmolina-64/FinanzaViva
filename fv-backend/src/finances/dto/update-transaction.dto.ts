@@ -1,7 +1,11 @@
-import { IsEnum, IsString, IsOptional, IsDateString, IsUUID, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsString, IsOptional, IsDateString, IsUUID, IsNumber, Min, IsBoolean } from 'class-validator';
 import { TransactionType } from '@prisma/client';
 
 export class UpdateTransactionDto {
+    @IsOptional()
+    @IsUUID()
+    accountId?: string;
+
     @IsOptional()
     @IsUUID()
     categoryId?: string;
@@ -22,4 +26,8 @@ export class UpdateTransactionDto {
     @IsOptional()
     @IsDateString()
     date?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    allowNegative?: boolean;
 }

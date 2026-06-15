@@ -78,6 +78,8 @@ export class Finances implements OnInit {
   // ── EDICION PRESUPUESTO ───────────────────────────────────────────────────
   editingBudgetId = signal<string | null>(null);
   editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', indefinido: false, months: 1 };
+  get editBudgetAmount(): number { return this.editBudget.amount; }
+  set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
   // ── EDICION META ──────────────────────────────────────────────────────────
   editingGoalId = signal<string | null>(null);
