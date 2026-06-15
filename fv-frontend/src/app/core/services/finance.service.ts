@@ -6,7 +6,9 @@ import {
   Category, Budget, Goal, BudgetHealth, FinanceSummary,
   CreateAccountPayload, CreateTransactionPayload,
   CreateBudgetPayload, CreateGoalPayload,
-  UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload
+  UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload,
+   CreateTransferPayload, TransferResponse,
+   CreateCategoryPayload, UpdateCategoryPayload
 } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -83,5 +85,21 @@ export class FinanceService {
 
   deleteGoal(id: string): Observable<void> {
     return this.api.delete<void>(`/finances/goals/${id}`);
+  }
+
+  createTransfer(data: CreateTransferPayload): Observable<TransferResponse> {
+    return this.api.post<TransferResponse>('/finances/transfers', data);
+  }
+
+  createCategory(data: CreateCategoryPayload): Observable<Category> {
+    return this.api.post<Category>('/finances/categories', data);
+  }
+
+  updateCategory(id: string, data: UpdateCategoryPayload): Observable<Category> {
+    return this.api.patch<Category>(`/finances/categories/${id}`, data);
+  }
+
+  deleteCategory(id: string): Observable<void> {
+    return this.api.delete<void>(`/finances/categories/${id}`);
   }
 }

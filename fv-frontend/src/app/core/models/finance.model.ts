@@ -113,6 +113,7 @@ export interface CreateTransactionPayload {
   type: TransactionType;
   description?: string;
   date: string;
+  allowNegative?: boolean;
 }
 
 export interface CreateBudgetPayload {
@@ -130,15 +131,52 @@ export interface CreateGoalPayload {
 }
 
 export interface UpdateTransactionPayload {
+  accountId?: string;
   categoryId?: string;
   amount?: number;
   type?: TransactionType;
   description?: string;
   date?: string;
+  allowNegative?: boolean;
 }
 
 export interface UpdateBudgetPayload {
   amount?: number;
   period?: BudgetPeriod;
+  endDate?: string | null;
+}
+
+export interface UpdateGoalPayload {
+  name?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+  status?: GoalStatus;
+  fromAccountId?: string;
+}
+export interface CreateTransferPayload {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  description?: string;
+  date: string;
+}
+
+export interface TransferResponse {
+  fromTransaction: Transaction;
+  toTransaction: Transaction;
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateCategoryPayload {
+  name?: string;
+  icon?: string;
+  color?: string;
   endDate?: string;
 }

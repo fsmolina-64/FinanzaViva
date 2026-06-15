@@ -1,6 +1,5 @@
 <div class="space-y-5 animate-slide-up">
 
-    <!-- Navegacion -->
     <a [routerLink]="lesson() ? backLink : '/academy'"
         class="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm no-underline group">
         <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none"
@@ -10,7 +9,6 @@
         Volver al modulo
     </a>
 
-    <!-- Skeleton de carga -->
     @if (loading()) {
     <div class="space-y-4">
         <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
@@ -18,11 +16,9 @@
     </div>
     }
 
-    <!-- Contenido de la leccion -->
     @if (!loading() && lesson()) {
     <div class="animate-fade-in space-y-5">
 
-        <!-- Tarjeta de encabezado -->
         <div class="bg-[#1E293B] rounded-2xl p-5 space-y-4 border transition-colors duration-300"
             [class.border-emerald-500]="isCompleted" [class.border-emerald-500\/30]="isCompleted"
             [class.border-slate-700]="!isCompleted">
@@ -79,7 +75,6 @@
                 }
             </div>
 
-            <!-- Barra de progreso de lectura -->
             <div class="space-y-1">
                 <div class="flex justify-between text-xs text-slate-500">
                     <span>Progreso de lectura</span>
@@ -93,7 +88,6 @@
             </div>
         </div>
 
-        <!-- Tarjeta de contenido -->
         <div class="bg-[#1E293B] rounded-2xl border border-slate-700 overflow-hidden">
             <div class="p-6 space-y-6">
                 @for (block of lesson()!.content; track $index) {
@@ -314,7 +308,6 @@
             </div>
         </div>
 
-        <!-- Banner de resultado -->
         @if (result()) {
         <div
             class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
@@ -353,7 +346,6 @@
         </div>
         }
 
-        <!-- Botones de accion -->
         @if (!result()) {
         @if (!isCompleted) {
         <button (click)="complete()" [disabled]="completing()"
