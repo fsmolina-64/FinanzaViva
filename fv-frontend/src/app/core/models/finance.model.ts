@@ -85,6 +85,15 @@ export interface BudgetHealth {
   breakdown: Record<string, number>;
 }
 
+export interface UpdateGoalPayload {
+  name?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+  status?: GoalStatus;
+  fromAccountId?: string;
+}
+
 export interface FinanceSummary {
   totalBalance: number;
   monthlyIncome: number;
@@ -169,4 +178,5 @@ export interface UpdateCategoryPayload {
   name?: string;
   icon?: string;
   color?: string;
+  endDate?: string;
 }

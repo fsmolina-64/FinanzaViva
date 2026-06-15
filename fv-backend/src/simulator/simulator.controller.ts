@@ -7,7 +7,7 @@ import { JwtGuard } from '../auth/guards/jwt.guard';
 @UseGuards(JwtGuard)
 @Controller('simulator')
 export class SimulatorController {
-  constructor(private simulatorService: SimulatorService) {}
+  constructor(private readonly simulatorService: SimulatorService) { }
 
   @Post('games')
   createGame(@Request() req: any, @Body() dto: CreateGameDto) {
@@ -19,28 +19,26 @@ export class SimulatorController {
     return this.simulatorService.startGame(id, req.user.id);
   }
 
+  // GET /simulator/games/:id → ahora devuelve estado completo con evento activo
   @Get('games/:id')
-  getGame(@Param('id') id: string) {
-    return this.simulatorService.getGame(id);
+  getGameState(@Param('id') id: string) {
+    return this.simulatorService.getGameState(id);
   }
 
-  @Get('events/random')
-  getRandomEvent() {
-    return this.simulatorService.getRandomEvent();
-  }
-
+  // POST /simulator/games/:id/decision → devuelve { result, gameState }
+  // next-round ya no existe — el avance de turno es automático en submitDecision
   @Post('games/:id/decision')
   submitDecision(@Param('id') id: string, @Body() dto: SubmitDecisionDto) {
     return this.simulatorService.submitDecision(id, dto);
   }
 
-  @Post('games/:id/next-round')
-  nextRound(@Request() req: any, @Param('id') id: string) {
-    return this.simulatorService.nextRound(id, req.user.id);
-  }
-
   @Get('history')
   getHistory(@Request() req: any) {
     return this.simulatorService.getGameHistory(req.user.id);
+  }
+
+  @Get('events/random')
+  getRandomEvent() {
+    return this.simulatorService.getRandomEvent();
   }
 }

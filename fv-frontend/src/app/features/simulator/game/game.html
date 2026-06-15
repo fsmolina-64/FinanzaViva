@@ -1,183 +1,425 @@
-<div class="space-y-6 animate-slide-up">
+<div class="pb-24 space-y-4 animate-slide-up">
 
-    @if (phase() === 'starting') {
-    <div class="flex flex-col items-center justify-center py-20 space-y-3">
-        <div class="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
-        <p class="text-slate-400 text-sm">Preparando partida para {{ currentPlayer.name }}...</p>
+    <!-- ══════════════════ CARGANDO ══════════════════ -->
+    @if (phase() === 'loading') {
+    <div class="flex flex-col items-center justify-center py-24 space-y-4">
+        <div class="relative">
+            <div class="w-14 h-14 rounded-full border-4 border-blue-500/20"></div>
+            <div
+                class="w-14 h-14 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute inset-0">
+            </div>
+        </div>
+        <p class="text-slate-400 text-sm">Preparando simulacion...</p>
     </div>
     }
 
-    @if (game() && (phase() === 'event' || phase() === 'result')) {
-    <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
+    <!-- ══════════════════ GAMEPLAY (event / deciding / result / handoff) ══════════════════ -->
+    @if (phase() !== 'loading' && phase() !== 'final' && phase() !== 'error' && gameState()) {
+
+    <!-- Cabecera: ronda + barra de progreso -->
+    <div class="space-y-2 pt-1">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-slate-400 text-xs">Turno de</p>
-                <p class="text-white font-bold">{{ currentPlayer.name }}</p>
+                <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">{{ gameState()!.mode }}</p>
+                <p class="text-white font-bold text-lg leading-tight">
+                    Ronda {{ gameState()!.currentRound }}
+                    <span class="text-slate-500 font-normal text-sm">/ {{ gameState()!.maxRounds }}</span>
+                </p>
             </div>
-            <div class="flex gap-4 text-center">
-                <div>
-                    <p class="text-slate-400 text-xs">Ronda</p>
-                    <p class="text-white font-bold">{{ game()!.round }}/{{ game()!.totalRounds }}</p>
-                </div>
-                <div>
-                    <p class="text-slate-400 text-xs">Balance</p>
-                    <p class="text-emerald-400 font-bold">{{ formatCurrency(game()!.balance) }}</p>
-                </div>
-                <div>
-                    <p class="text-slate-400 text-xs">Score</p>
-                    <p class="text-blue-400 font-bold">{{ game()!.score }}</p>
-                </div>
+            @if (currentPlayer() && phase() !== 'handoff') {
+            <div class="text-right">
+                <p class="text-xs text-slate-500">Turno de</p>
+                <p class="text-white font-semibold text-sm">{{ currentPlayer()!.displayName }}</p>
             </div>
-        </div>
-        <div class="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-700"
-                [style.width.%]="(game()!.round / game()!.totalRounds) * 100"></div>
-        </div>
-    </div>
-
-    @if (players().length > 1) {
-    <div class="flex gap-2">
-        @for (p of players(); track p.gameId; let i = $index) {
-        <div class="flex-1 text-center px-2 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200"
-            [ngClass]="i === currentIndex()
-                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-400'
-                 : i < currentIndex()
-                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                   : 'bg-slate-800 border-slate-700 text-slate-500'">
-            {{ p.name }}
-        </div>
-        }
-    </div>
-    }
-    }
-
-    @if (phase() === 'event' && game()?.currentEvent) {
-    <div class="space-y-4 animate-fade-in">
-        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-            <p class="text-slate-400 text-xs mb-1">Escenario</p>
-            <h2 class="text-white font-bold text-lg">{{ game()!.currentEvent!.title }}</h2>
-            <p class="text-slate-300 text-sm mt-2 leading-relaxed">{{ game()!.currentEvent!.description }}</p>
-        </div>
-
-        <div class="space-y-2">
-            <p class="text-slate-400 text-xs">Elige una opcion:</p>
-            @for (opt of game()!.currentEvent!.options; track opt.id) {
-            <button (click)="selectOption(opt.id)"
-                class="w-full text-left px-4 py-4 rounded-xl border text-sm transition-all duration-200 space-y-1"
-                [ngClass]="selectedOption() === opt.id
-                    ? 'border-blue-500 bg-blue-500/20 text-white'
-                    : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500'">
-                <p class="font-medium">{{ opt.text }}</p>
-                <p class="text-xs opacity-60">{{ opt.impact }}</p>
-            </button>
             }
         </div>
-
-        <button (click)="confirmDecision()" [disabled]="!selectedOption() || deciding()"
-            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-            {{ deciding() ? 'Procesando...' : 'Confirmar decision' }}
-        </button>
+        <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-700"
+                [style.width.%]="roundProgress()"></div>
+        </div>
     </div>
-    }
 
-    @if (phase() === 'result' && roundResult()) {
-    <div class="space-y-4 animate-fade-in">
+    <!-- ── Board de jugadores ── -->
+    <div class="overflow-x-auto -mx-4 px-4">
+        <div class="flex gap-2" [style.minWidth]="(gameState()!.players?.length ?? 1) * 144 + 'px'">
+            @for (p of gameState()!.players ?? []; track p.id) {
+            <div class="w-36 flex-shrink-0 rounded-xl p-3 border transition-all duration-300" [ngClass]="{
+              'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10': p.id === gameState()!.currentPlayerId && phase() !== 'result',
+              'border-emerald-500/30 bg-emerald-500/5': p.hasActed && p.id !== gameState()!.currentPlayerId,
+              'border-slate-700 bg-[#1E293B]': !p.hasActed && p.id !== gameState()!.currentPlayerId,
+              'opacity-40': p.isEliminated
+            }">
+
+                <!-- Nombre + bot badge -->
+                <div class="flex items-center gap-1 mb-2 min-w-0">
+                    <p class="text-white text-xs font-semibold truncate flex-1">{{ p.displayName }}</p>
+                    @if (p.isBot) {
+                    <span
+                        class="text-amber-400 text-xs font-bold bg-amber-500/10 border border-amber-500/20 px-1 rounded flex-shrink-0">IA</span>
+                    }
+                </div>
+
+                <!-- Dinero -->
+                <p class="font-bold text-sm leading-none"
+                    [ngClass]="n(p.money) >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                    {{ formatCurrency(n(p.money)) }}
+                </p>
+
+                <!-- Score bar -->
+                <div class="mt-2.5 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500 text-xs">Score</span>
+                        <span class="text-xs font-bold" [ngClass]="scoreColor(p.financialScore)">
+                            {{ p.financialScore }}
+                        </span>
+                    </div>
+                    <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500"
+                            [ngClass]="scoreBar(p.financialScore)" [style.width.%]="(p.financialScore / 1000) * 100">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deuda -->
+                @if (n(p.debt) > 0) {
+                <p class="text-red-400 text-xs mt-1.5 truncate">
+                    -{{ formatCurrency(n(p.debt)) }}
+                </p>
+                }
+
+                <!-- Consecuencias activas -->
+                @if ((p.consequences?.length ?? 0) > 0) {
+                <div class="mt-1.5 text-amber-400 text-xs font-medium">
+                    {{ p.consequences!.length }} efecto(s)
+                </div>
+                }
+            </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══════ FASE: EVENTO ══════ -->
+    @if ((phase() === 'event' || phase() === 'deciding') && gameState()!.currentEvent) {
+    <div class="space-y-3 animate-fade-in">
+
+        <!-- Tarjeta del evento -->
         <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-3">
-            <h3 class="text-white font-bold">Resultado de la ronda</h3>
-            <p class="text-slate-300 text-sm leading-relaxed">{{ roundResult()!.feedback }}</p>
-            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700">
-                <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
-                    <p class="text-slate-400 text-xs">Cambio en balance</p>
-                    <p class="font-bold text-lg mt-1"
-                        [ngClass]="roundResult()!.balanceChange >= 0 ? 'text-emerald-400' : 'text-red-400'">
-                        {{ roundResult()!.balanceChange >= 0 ? '+' : '' }}{{
-                        formatCurrency(roundResult()!.balanceChange) }}
-                    </p>
-                </div>
-                <div class="bg-slate-800 rounded-xl p-3 border border-slate-600 text-center">
-                    <p class="text-slate-400 text-xs">Nuevo balance</p>
-                    <p class="text-white font-bold text-lg mt-1">{{ formatCurrency(roundResult()!.newBalance) }}</p>
-                </div>
-            </div>
+            <span
+                class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600 uppercase tracking-wide">
+                {{ gameState()!.currentEvent!.category }}
+            </span>
+            <h2 class="text-white font-bold text-lg leading-snug">
+                {{ gameState()!.currentEvent!.name }}
+            </h2>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                {{ gameState()!.currentEvent!.description }}
+            </p>
         </div>
 
-        <button (click)="nextRound()"
-            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-            Siguiente ronda &rarr;
-        </button>
-    </div>
-    }
-
-    @if (phase() === 'player-done') {
-    <div class="animate-fade-in space-y-5">
-        <div
-            class="bg-gradient-to-br from-blue-600/20 to-emerald-600/20 border border-blue-500/30 rounded-2xl p-6 text-center space-y-2">
-            <p class="text-slate-400 text-sm">Partida terminada para</p>
-            <h2 class="text-white text-2xl font-bold">{{ currentPlayer.name }}</h2>
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700">
-                    <p class="text-slate-400 text-xs">Score final</p>
-                    <p class="text-blue-400 font-bold text-xl">{{ currentPlayer.finalScore ?? 0 }}</p>
-                </div>
-                <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-700">
-                    <p class="text-slate-400 text-xs">Balance final</p>
-                    <p class="text-emerald-400 font-bold text-xl">{{ formatCurrency(currentPlayer.finalBalance ?? 0) }}
-                    </p>
-                </div>
+        <!-- Contexto financiero del jugador activo -->
+        @if (currentPlayer()) {
+        <div class="grid grid-cols-3 gap-2">
+            <div class="bg-slate-800/60 rounded-xl p-2.5 border border-slate-700/50 text-center">
+                <p class="text-slate-500 text-xs">Tu dinero</p>
+                <p class="text-white text-xs font-bold mt-0.5 truncate">
+                    {{ formatCurrency(n(currentPlayer()!.money)) }}
+                </p>
             </div>
-        </div>
-
-        @if (currentIndex() + 1 < players().length) { <div class="text-center space-y-2">
-            <p class="text-slate-400 text-sm">Siguiente turno:</p>
-            <p class="text-white font-bold text-lg">{{ players()[currentIndex() + 1].name }}</p>
-    </div>
-    <button (click)="nextPlayer()"
-        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-        Pasar dispositivo a {{ players()[currentIndex() + 1].name }}
-    </button>
-    } @else {
-    <button (click)="nextPlayer()"
-        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition-all duration-200">
-        Ver resultados finales
-    </button>
-    }
-</div>
-}
-
-@if (phase() === 'final') {
-<div class="space-y-5 animate-fade-in">
-    <div class="text-center">
-        <h2 class="text-white text-2xl font-bold">Resultados finales</h2>
-        <p class="text-slate-400 text-sm mt-1">Partida completada</p>
-    </div>
-
-    <div class="space-y-3">
-        @for (p of sortedPlayers(); track p.gameId; let i = $index) {
-        <div class="flex items-center gap-4 rounded-2xl p-4 border transition-all duration-200" [ngClass]="i === 0
-                 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/40'
-                 : 'bg-[#1E293B] border-slate-700'">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold flex-shrink-0"
-                [ngClass]="i === 0 ? 'bg-amber-500/20 text-amber-400 text-lg' : 'bg-slate-700 text-slate-400'">
-                {{ i + 1 }}
+            <div class="bg-slate-800/60 rounded-xl p-2.5 border border-slate-700/50 text-center">
+                <p class="text-slate-500 text-xs">Deuda</p>
+                <p class="text-xs font-bold mt-0.5"
+                    [ngClass]="n(currentPlayer()!.debt) > 0 ? 'text-red-400' : 'text-slate-600'">
+                    {{ n(currentPlayer()!.debt) > 0 ? formatCurrency(n(currentPlayer()!.debt)) : 'Ninguna' }}
+                </p>
             </div>
-            <div class="flex-1">
-                <p class="text-white font-semibold">{{ p.name }}</p>
-                <p class="text-slate-400 text-xs">Balance: {{ formatCurrency(p.finalBalance ?? 0) }}</p>
-            </div>
-            <div class="text-right">
-                <p class="font-bold text-lg" [ngClass]="i === 0 ? 'text-amber-400' : 'text-blue-400'">
-                    {{ p.finalScore ?? 0 }} pts
+            <div class="bg-slate-800/60 rounded-xl p-2.5 border border-slate-700/50 text-center">
+                <p class="text-slate-500 text-xs">Score</p>
+                <p class="text-xs font-bold mt-0.5" [ngClass]="scoreColor(currentPlayer()!.financialScore)">
+                    {{ currentPlayer()!.financialScore }}
                 </p>
             </div>
         </div>
         }
-    </div>
 
-    <button (click)="router.navigate(['/simulator'])"
-        class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all duration-200">
-        Nueva partida
-    </button>
-</div>
-}
+        <!-- Opciones — sin pistas de impacto (el jugador decide por criterio propio) -->
+        <div class="space-y-2">
+            <p class="text-slate-500 text-xs px-0.5">Que decides hacer?</p>
+            @for (opt of gameState()!.currentEvent!.options; track opt.id) {
+            <button (click)="selectOption(opt)" [disabled]="phase() === 'deciding'"
+                class="w-full text-left p-4 rounded-xl border transition-all duration-200" [ngClass]="selectedOption()?.id === opt.id
+                ? 'border-blue-500 bg-blue-600/15 text-white shadow-sm shadow-blue-500/10'
+                : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'">
+                <p class="text-sm font-medium leading-snug">{{ opt.text }}</p>
+            </button>
+            }
+        </div>
+
+        @if (errorMessage()) {
+        <div class="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+            <p class="text-red-400 text-sm">{{ errorMessage() }}</p>
+        </div>
+        }
+
+        <button (click)="confirmDecision()" [disabled]="!selectedOption() || phase() === 'deciding'"
+            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+            @if (phase() === 'deciding') {
+            <span class="flex items-center justify-center gap-2.5">
+                <span class="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                Procesando...
+            </span>
+            } @else {
+            Confirmar decision
+            }
+        </button>
+    </div>
+    }
+
+    <!-- ══════ FASE: RESULTADO ══════ -->
+    @if (phase() === 'result' && lastResult()) {
+    <div class="space-y-3 animate-fade-in">
+
+        <!-- Banner: buena/mala decision -->
+        <div class="rounded-2xl p-4 border text-center" [ngClass]="lastResult()!.scoreChange >= 0
+            ? 'bg-emerald-500/10 border-emerald-500/30'
+            : 'bg-amber-500/10 border-amber-500/30'">
+            <p class="font-bold" [ngClass]="lastResult()!.scoreChange >= 0 ? 'text-emerald-400' : 'text-amber-400'">
+                {{ lastResult()!.scoreChange >= 0 ? 'Buena decision financiera' : 'Decision con riesgo' }}
+            </p>
+            @if (actingPlayer()) {
+            <p class="text-slate-500 text-xs mt-1">{{ actingPlayer()!.displayName }} ha tomado su decision</p>
+            }
+        </div>
+
+        <!-- Explicacion educativa + comparativa antes/despues -->
+        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-4">
+            <p class="text-slate-300 text-sm leading-relaxed">{{ lastResult()!.explanation }}</p>
+
+            <div class="border-t border-slate-700/50 pt-4 space-y-3">
+
+                <!-- Dinero -->
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-500 text-xs w-20 flex-shrink-0">Dinero</p>
+                    <p class="text-slate-600 text-xs">{{ formatCurrency(lastResult()!.moneyBefore) }}</p>
+                    <p class="text-slate-600 text-xs flex-shrink-0">-&gt;</p>
+                    <p class="text-white text-sm font-bold flex-shrink-0">{{ formatCurrency(lastResult()!.moneyAfter) }}
+                    </p>
+                    <p class="ml-auto text-xs font-bold flex-shrink-0"
+                        [ngClass]="deltaColor(lastResult()!.moneyChange)">
+                        {{ sign(lastResult()!.moneyChange) }}{{ formatCurrency(lastResult()!.moneyChange) }}
+                    </p>
+                </div>
+
+                <!-- Deuda (solo si cambia) -->
+                @if (lastResult()!.debtChange !== 0) {
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-500 text-xs w-20 flex-shrink-0">Deuda</p>
+                    <p class="text-slate-600 text-xs">{{ formatCurrency(lastResult()!.debtBefore) }}</p>
+                    <p class="text-slate-600 text-xs flex-shrink-0">-&gt;</p>
+                    <p class="text-white text-sm font-bold flex-shrink-0">{{ formatCurrency(lastResult()!.debtAfter) }}
+                    </p>
+                    <p class="ml-auto text-xs font-bold flex-shrink-0"
+                        [ngClass]="deltaColor(lastResult()!.debtChange, true)">
+                        {{ lastResult()!.debtChange > 0 ? '+' : '' }}{{ formatCurrency(lastResult()!.debtChange) }}
+                    </p>
+                </div>
+                }
+
+                <!-- Ahorros (solo si cambia) -->
+                @if (lastResult()!.savingsAfter !== lastResult()!.savingsBefore) {
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-500 text-xs w-20 flex-shrink-0">Ahorros</p>
+                    <p class="text-slate-600 text-xs">{{ formatCurrency(lastResult()!.savingsBefore) }}</p>
+                    <p class="text-slate-600 text-xs flex-shrink-0">-&gt;</p>
+                    <p class="text-white text-sm font-bold flex-shrink-0">{{ formatCurrency(lastResult()!.savingsAfter)
+                        }}</p>
+                    <p class="ml-auto text-xs font-bold flex-shrink-0"
+                        [ngClass]="deltaColor(lastResult()!.savingsAfter - lastResult()!.savingsBefore)">
+                        {{ sign(lastResult()!.savingsAfter - lastResult()!.savingsBefore) }}{{
+                        formatCurrency(lastResult()!.savingsAfter - lastResult()!.savingsBefore) }}
+                    </p>
+                </div>
+                }
+
+                <!-- Inversiones (solo si cambia) -->
+                @if (lastResult()!.investmentsAfter !== lastResult()!.investmentsBefore) {
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-500 text-xs w-20 flex-shrink-0">Inversiones</p>
+                    <p class="text-slate-600 text-xs">{{ formatCurrency(lastResult()!.investmentsBefore) }}</p>
+                    <p class="text-slate-600 text-xs flex-shrink-0">-&gt;</p>
+                    <p class="text-white text-sm font-bold flex-shrink-0">{{
+                        formatCurrency(lastResult()!.investmentsAfter) }}</p>
+                    <p class="ml-auto text-xs font-bold flex-shrink-0"
+                        [ngClass]="deltaColor(lastResult()!.investmentsAfter - lastResult()!.investmentsBefore)">
+                        {{ sign(lastResult()!.investmentsAfter - lastResult()!.investmentsBefore) }}{{
+                        formatCurrency(lastResult()!.investmentsAfter - lastResult()!.investmentsBefore) }}
+                    </p>
+                </div>
+                }
+
+                <!-- Score financiero -->
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-500 text-xs w-20 flex-shrink-0">Score</p>
+                    <p class="text-slate-600 text-xs">{{ lastResult()!.scoreBefore }}</p>
+                    <p class="text-slate-600 text-xs flex-shrink-0">-&gt;</p>
+                    <p class="text-sm font-bold flex-shrink-0" [ngClass]="scoreColor(lastResult()!.scoreAfter)">
+                        {{ lastResult()!.scoreAfter }}
+                    </p>
+                    <p class="ml-auto text-xs font-bold flex-shrink-0"
+                        [ngClass]="deltaColor(lastResult()!.scoreChange)">
+                        {{ sign(lastResult()!.scoreChange) }}{{ lastResult()!.scoreChange }} pts
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advertencia de consecuencia persistente -->
+        @if (lastResult()!.hasConsequence && lastResult()!.consequenceDesc) {
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+            <p class="text-amber-400 text-xs font-semibold">
+                Efecto durante {{ lastResult()!.consequenceRounds }} ronda(s)
+            </p>
+            <p class="text-slate-400 text-xs mt-0.5">{{ lastResult()!.consequenceDesc }}</p>
+        </div>
+        }
+
+        <button (click)="continueAfterResult()"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+            Continuar
+        </button>
+    </div>
+    }
+
+    <!-- ══════ FASE: HANDOFF (pasar dispositivo) ══════ -->
+    @if (phase() === 'handoff' && currentPlayer()) {
+    <div class="space-y-4 animate-fade-in">
+        <div class="bg-[#1E293B] rounded-2xl p-8 border border-slate-700 text-center space-y-4">
+            <div
+                class="w-16 h-16 rounded-full bg-blue-600/20 border-2 border-blue-500/40 flex items-center justify-center mx-auto">
+                <span class="text-blue-400 font-bold text-2xl">
+                    {{ currentPlayer()!.displayName.charAt(0).toUpperCase() }}
+                </span>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">Es el turno de</p>
+                <p class="text-white text-2xl font-bold mt-1">{{ currentPlayer()!.displayName }}</p>
+            </div>
+            <div class="h-px bg-slate-700"></div>
+            <p class="text-slate-500 text-sm">Pasa el dispositivo antes de continuar</p>
+        </div>
+
+        <button (click)="proceedFromHandoff()"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all duration-200">
+            Estoy listo, ver mi escenario
+        </button>
+    </div>
+    }
+    }
+
+    <!-- ══════════════════ FINAL ══════════════════ -->
+    @if (phase() === 'final' && gameState()) {
+    <div class="space-y-5 animate-fade-in pt-1">
+
+        <div class="text-center">
+            <p class="text-slate-400 text-sm">Simulacion completada</p>
+            <h1 class="text-white text-2xl font-bold mt-1">Resultados</h1>
+        </div>
+
+        <!-- Ranking -->
+        <div class="space-y-2">
+            @for (p of rankedPlayers(); track p.id; let i = $index) {
+            <div class="flex items-center gap-3 rounded-2xl p-4 border transition-all" [ngClass]="i === 0
+              ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/40'
+              : 'bg-[#1E293B] border-slate-700'">
+
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0"
+                    [ngClass]="i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400'">
+                    {{ i + 1 }}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <p class="text-white font-semibold truncate">{{ p.displayName }}</p>
+                        @if (p.isBot) {
+                        <span
+                            class="text-amber-400 text-xs bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex-shrink-0">IA</span>
+                        }
+                    </div>
+                    <p class="text-xs mt-0.5" [ngClass]="scoreColor(p.financialScore)">
+                        {{ scoreLabel(p.financialScore) }}
+                    </p>
+                </div>
+
+                <div class="text-right flex-shrink-0">
+                    <p class="font-bold" [ngClass]="i === 0 ? 'text-amber-400' : 'text-blue-400'">
+                        {{ p.financialScore }} pts
+                    </p>
+                    <p class="text-emerald-400 text-xs">{{ formatCurrency(n(p.money)) }}</p>
+                </div>
+            </div>
+            }
+        </div>
+
+        <!-- Detalle del mejor jugador humano -->
+        @for (p of gameState()!.players ?? []; track p.id) {
+        @if (!p.isBot && (p.finalRank === 1 || (gameState()!.players!.filter(x => !x.isBot).length === 1))) {
+        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-3">
+            <p class="text-white font-semibold text-sm">Tu situacion financiera final</p>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Dinero disponible</p>
+                    <p class="text-white font-bold text-sm mt-1">{{ formatCurrency(n(p.money)) }}</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Patrimonio neto</p>
+                    <p class="font-bold text-sm mt-1"
+                        [ngClass]="patrimonio(p) >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                        {{ formatCurrency(patrimonio(p)) }}
+                    </p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Ahorros</p>
+                    <p class="text-emerald-400 font-bold text-sm mt-1">{{ formatCurrency(n(p.savings)) }}</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Inversiones</p>
+                    <p class="text-blue-400 font-bold text-sm mt-1">{{ formatCurrency(n(p.investments)) }}</p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Deuda total</p>
+                    <p class="font-bold text-sm mt-1" [ngClass]="n(p.debt) > 0 ? 'text-red-400' : 'text-slate-500'">
+                        {{ n(p.debt) > 0 ? formatCurrency(n(p.debt)) : 'Sin deudas' }}
+                    </p>
+                </div>
+                <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 text-center">
+                    <p class="text-slate-400 text-xs">Score final</p>
+                    <p class="font-bold text-sm mt-1" [ngClass]="scoreColor(p.financialScore)">
+                        {{ p.financialScore }} — {{ scoreLabel(p.financialScore) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        }
+        }
+
+        <button (click)="router.navigate(['/simulator'])"
+            class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-2xl transition-all duration-200">
+            Nueva partida
+        </button>
+    </div>
+    }
+
+    <!-- ══════════════════ ERROR ══════════════════ -->
+    @if (phase() === 'error') {
+    <div class="space-y-4 animate-fade-in">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center space-y-2">
+            <p class="text-red-400 font-bold">Error en la partida</p>
+            <p class="text-slate-400 text-sm">{{ errorMessage() }}</p>
+        </div>
+        <button (click)="router.navigate(['/simulator'])"
+            class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-2xl transition-all duration-200">
+            Volver al menu
+        </button>
+    </div>
+    }
 
 </div>

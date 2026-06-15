@@ -1,50 +1,123 @@
-export type GameStatus = 'PENDING' | 'ACTIVE' | 'FINISHED';
+export type GameStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
+export type GameMode = 'MULTIPLAYER' | 'SOLO' | 'SIMULATION' | 'MIXED';
+export type BotPersonality = 'CONSERVATIVE' | 'RISKY' | 'IMPULSIVE' | 'INVESTOR' | 'SAVER';
 
-export interface DecisionOption {
+export interface BackendConsequence {
   id: string;
-  text: string;
-  impact: string;
-}
-
-export interface SimulatorEvent {
-  id: string;
-  title: string;
+  playerId: string;
   description: string;
-  options: DecisionOption[];
+  effectMoney: number;
+  effectIncome: number;
+  effectExpenses: number;
+  effectScore: number;
+  roundsRemaining: number;
 }
 
-export interface SimulatorGame {
+export interface BackendPlayer {
   id: string;
+  gameId: string;
+  userId: string | null;
+  displayName: string;
+  isBot: boolean;
+  botPersonality: BotPersonality | null;
+  turnOrder: number;
+  hasActed: boolean;
+  currentEventId: string | null;
+  money: number;
+  income: number;
+  expenses: number;
+  debt: number;
+  savings: number;
+  investments: number;
+  assets: number;
+  financialScore: number;
+  isEliminated: boolean;
+  finalRank: number | null;
+  consequences?: BackendConsequence[];
+}
+
+export interface BackendEventOption {
+  id: string;
+  eventId: string;
+  text: string;
+  explanation: string;
+  effectMoney: number;
+  effectDebt: number;
+  effectScore: number;
+  effectIncome: number;
+  effectExpenses: number;
+  effectSavings: number;
+  effectAssets: number;
+  effectInvestments: number;
+  consequenceRounds: number;
+  consequenceDesc: string | null;
+}
+
+export interface BackendEvent {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  options: BackendEventOption[];
+}
+
+export interface BackendGame {
+  id: string;
+  createdByUserId: string;
   status: GameStatus;
-  round: number;
-  totalRounds: number;
-  balance: number;
-  score: number;
+  mode: GameMode;
+  currentRound: number;
+  maxRounds: number;
+  currentPlayerId: string | null;
+  xpRecipientId: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
   createdAt: string;
+  players?: BackendPlayer[];
+  currentEvent?: BackendEvent | null;
 }
 
-export interface SimulatorGameDetail extends SimulatorGame {
-  currentEvent?: SimulatorEvent;
-  history: SimulatorRoundResult[];
+export interface DecisionResult {
+  explanation: string;
+  moneyBefore: number;
+  moneyAfter: number;
+  moneyChange: number;
+  debtBefore: number;
+  debtAfter: number;
+  debtChange: number;
+  scoreBefore: number;
+  scoreAfter: number;
+  scoreChange: number;
+  savingsBefore: number;
+  savingsAfter: number;
+  investmentsBefore: number;
+  investmentsAfter: number;
+  incomeAfter: number;
+  expensesAfter: number;
+  hasConsequence: boolean;
+  consequenceDesc: string | null;
+  consequenceRounds: number;
 }
 
-export interface SimulatorRoundResult {
-  round: number;
-  eventTitle: string;
-  decisionText: string;
-  balanceChange: number;
-  newBalance: number;
-  feedback: string;
+export interface SubmitDecisionResponse {
+  result: DecisionResult;
+  gameState: BackendGame;
 }
 
-export interface SimulatorDecision {
-  optionId: string;
+export interface CreateGamePayload {
+  maxRounds: number;
+  mode: GameMode;
+  humanPlayers: { displayName: string; userId?: string }[];
+  botPlayers?: { displayName: string; personality: BotPersonality }[];
+  xpRecipientId?: string;
 }
 
-export interface SimulatorHistoryEntry {
+export interface HistoryEntry {
   id: string;
-  score: number;
   rounds: number;
+  mode: GameMode;
+  playerCount: number;
   finalBalance: number;
+  score: number;
   completedAt: string;
 }
