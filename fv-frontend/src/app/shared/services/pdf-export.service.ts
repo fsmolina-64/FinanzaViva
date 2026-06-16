@@ -16,6 +16,7 @@ export interface PdfReportData {
   summary:      FinanceSummary;
   health:       BudgetHealth;
   accountInceptionDates?: Record<string, string>;
+  transferGroups?: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -80,6 +81,24 @@ export class PdfExportService {
     if (data.goals.length > 0) {
       doc.addPage();
       this.buildGoals(doc, data.goals, PW);
+    }
+
+    const tfs = data.transferGroups?.filter(tf => {
+      const d = tf.date.substring(0, 10);
+      return d >= period.from && d <= period.to;
+    }) ?? [];
+    if (tfs.length > 0) {
+      doc.addPage();
+      this.buildTransfers(doc, tfs, data.accounts, PW);
+    }
+
+    const allTxs = data.transactions.filter(t => {
+      const d = t.date.substring(0, 10);
+      return d >= period.from && d <= period.to && t.type !== 'TRANSFER';
+    });
+    if (allTxs.length > 0) {
+      doc.addPage();
+      this.buildTransactionDetail(doc, allTxs, data.categories, data.accounts, period, PW);
     }
 
     const totalPages = (doc as any).internal.getNumberOfPages();
@@ -407,6 +426,64 @@ export class PdfExportService {
         }
       }
     });
+  }
+
+  private buildTransfers(doc: jsPDF, transfers: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[], accounts: Account[], PW: number): void {
+    this.buildHeader(doc, 'Transferencias', PW);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [['#', 'Fecha', 'Origen', 'Destino', 'Monto', 'Descripcion']],
+      body: transfers.map((tf, i) => {
+        const from = accounts.find(a => a.id === tf.fromAccountId)?.name ?? '?';
+        const to = accounts.find(a => a.id === tf.toAccountId)?.name ?? '?';
+        return [String(i + 1), this.fmtDate(tf.date.substring(0,10)), from, to, this.fmt(tf.amount), tf.description ?? '-'];
+      }),
+      headStyles:     { fillColor: [59,130,246], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+      bodyStyles:     { textColor: [51,65,85], fontSize: 8 },
+      alternateRowStyles: { fillColor: [239,246,255] },
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'center' },
+        4: { halign: 'right', fontStyle: 'bold' },
+      },
+      margin: { left: 20, right: 20 },
+      styles: { cellPadding: 3 },
+    });
+  }
+
+  private buildTransactionDetail(doc: jsPDF, txs: Transaction[], categories: Category[], accounts: Account[], period: { from: string; to: string }, PW: number): void {
+    this.buildHeader(doc, 'Detalle de Transacciones', PW);
+
+    const display = txs.slice(0, 80);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [['Fecha', 'Tipo', 'Categoria', 'Cuenta', 'Monto', 'Descripcion']],
+      body: display.map(tx => {
+        const catName = categories.find(c => c.id === tx.categoryId)?.name ?? 'Sin categoria';
+        const accName = accounts.find(a => a.id === tx.accountId)?.name ?? '?';
+        const typeLabel = tx.type === 'INCOME' ? 'Ingreso' : tx.type === 'EXPENSE' ? 'Gasto' : 'Transferencia';
+        let sign = '';
+        if (tx.type === 'INCOME') sign = '+';
+        else if (tx.type === 'EXPENSE') sign = '-';
+        return [this.fmtDate(tx.date.substring(0,10)), typeLabel, catName, accName, `${sign}$${parseFloat(String(tx.amount)).toFixed(2)}`, tx.description ?? '-'];
+      }),
+      headStyles:     { fillColor: [59,130,246], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      bodyStyles:     { textColor: [51,65,85], fontSize: 7 },
+      alternateRowStyles: { fillColor: [248,250,252] },
+      columnStyles: {
+        4: { halign: 'right', fontStyle: 'bold' },
+      },
+      margin: { left: 12, right: 12 },
+      styles: { cellPadding: 2 },
+    });
+
+    if (txs.length > 80) {
+      const y = (doc as any).lastAutoTable?.finalY ?? 42;
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(8);
+      doc.text(`Mostrando 80 de ${txs.length} transacciones.`, PW / 2, y + 8, { align: 'center' });
+    }
   }
 
   private buildGoals(doc: jsPDF, goals: Goal[], PW: number): void {

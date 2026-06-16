@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { FinancesService } from './finances.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { CreateAccountDto } from './dto/create-account.dto';
@@ -57,7 +57,7 @@ export class FinancesController {
   updateCategory(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateCategoryDto) { return this.financesService.updateCategory(req.user.id, id, dto); }
 
   @Delete('categories/:id')
-  deleteCategory(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteCategory(req.user.id, id); }
+  deleteCategory(@Request() req: any, @Param('id') id: string, @Query('reassignToId') reassignToId?: string) { return this.financesService.deleteCategory(req.user.id, id, reassignToId); }
 
   // BUDGETS
   @Post('budgets')
@@ -88,4 +88,10 @@ export class FinancesController {
   // TRANSFERS
   @Post('transfers')
   createTransfer(@Request() req: any, @Body() dto: CreateTransferDto) { return this.financesService.createTransfer(req.user.id, dto); }
+
+  @Patch('transfers/:groupId')
+  updateTransfer(@Request() req: any, @Param('groupId') groupId: string, @Body() dto: any) { return this.financesService.updateTransfer(req.user.id, groupId, dto); }
+
+  @Delete('transfers/:groupId')
+  deleteTransfer(@Request() req: any, @Param('groupId') groupId: string) { return this.financesService.deleteTransferByGroup(req.user.id, groupId); }
 }

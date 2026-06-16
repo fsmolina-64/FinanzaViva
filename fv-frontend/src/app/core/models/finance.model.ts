@@ -35,9 +35,24 @@ export interface Transaction {
   type: TransactionType;
   description: string | null;
   date: string;
+  transferGroupId?: string | null;
   createdAt: string;
   category?: Category;
   account?: Account;
+}
+
+export interface TransferDisplay {
+  groupId: string;
+  type: 'TRANSFER';
+  fromAccountId: string;
+  toAccountId: string;
+  fromAccountName: string;
+  toAccountName: string;
+  amount: number;
+  description: string | null;
+  date: string;
+  fromTxId: string;
+  toTxId: string;
 }
 
 export interface TransactionAlert {
