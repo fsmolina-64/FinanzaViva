@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../core/services/finance.service';
 import { ToastService } from '../../core/services/toast.service';
 import { QuickTransactionService } from '../../core/services/quick-transaction.service';
+import { PdfExportService } from '../../shared/services/pdf-export.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
@@ -128,6 +130,18 @@ export class Finances implements OnInit {
   globalBudgetLimit = signal<number>(parseFloat(localStorage.getItem('fv_global_budget') ?? '0'));
   showGlobalForm = signal(false);
   newGlobalLimit = 0;
+
+  // ── EXPORTAR PDF ──────────────────────────────────────────────────────────
+  showExportModal = signal(false);
+  exportDateFrom  = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  exportDateTo    = signal(new Date().toISOString().split('T')[0]);
+  exporting       = signal(false);
+
+  // ── BALANCES INICIALES (localStorage) ─────────────────────────────────────
+  private readonly INIT_BAL_KEY = 'fv_init_balances';
+  initialBalances = signal<{ accountId: string; amount: number; date: string }[]>(
+    this.loadInitBalances()
+  );
 
   // ── REGLAS RECURRENTES (localStorage) ────────────────────────────────────
   private readonly RECURRING_KEY = 'fv_recurring';
@@ -255,7 +269,9 @@ export class Finances implements OnInit {
   constructor(
     private financeService: FinanceService,
     private toast: ToastService,
-    private quickTxService: QuickTransactionService
+    private quickTxService: QuickTransactionService,
+    private pdfExport: PdfExportService,
+    public authService: AuthService
   ) {
     // Effect 1: sincronizar con QuickModal
     effect(() => {
@@ -279,6 +295,7 @@ export class Finances implements OnInit {
       this.calTypeFilter(); this.calMonth(); this.calYear();
       this.txMonth(); this.txYear();
       untracked(() => {
+        this.closeAllForms();
         this.editingTxId.set(null);
         this.confirmDeleteTxId.set(null);
         this.editingBudgetId.set(null);
@@ -299,9 +316,18 @@ export class Finances implements OnInit {
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
   }
 
-  setTab(t: Tab) { this.activeTab.set(t); }
+  setTab(t: Tab) { this.activeTab.set(t); this.closeAllForms(); }
   dismissAlert() { this.lastAlert.set(null); }
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
+
+  closeAllForms(): void {
+    this.showAccountForm.set(false);
+    this.showTransactionForm.set(false);
+    this.showBudgetForm.set(false);
+    this.showGoalForm.set(false);
+    this.showCategoryForm.set(false);
+    this.showGlobalForm.set(false);
+  }
 
   // ── CUENTAS ───────────────────────────────────────────────────────────────
   submitAccount(): void {
@@ -313,6 +339,12 @@ export class Finances implements OnInit {
     }).subscribe({
       next: acc => {
         this.accounts.update(l => [acc, ...l]);
+        const initAmt = Number(this.newAccount.initialBalance);
+        if (initAmt !== 0) {
+          const rec = { accountId: acc.id, amount: initAmt, date: new Date().toISOString().split('T')[0] };
+          this.initialBalances.update(list => [...list, rec]);
+          this.saveInitBalances(this.initialBalances());
+        }
         this.refreshSummary();
         this.showAccountForm.set(false);
         this.newAccount = { name: '', type: 'CASH', initialBalance: 0 };
@@ -488,6 +520,7 @@ export class Finances implements OnInit {
 
   // ── CALENDARIO ────────────────────────────────────────────────────────────
   setViewMode(mode: ViewMode): void {
+    this.closeAllForms();
     this.txViewMode.set(mode);
     if (mode === 'calendar') {
       this.calMonth.set(this.txDateMode() === 'MONTH' ? this.txMonth() : new Date().getMonth());
@@ -722,6 +755,16 @@ export class Finances implements OnInit {
     });
   }
 
+  // ── BALANCES INICIALES ──────────────────────────────────────────────────
+  private loadInitBalances(): { accountId: string; amount: number; date: string }[] {
+    try { return JSON.parse(localStorage.getItem(this.INIT_BAL_KEY) ?? '[]'); }
+    catch { return []; }
+  }
+
+  private saveInitBalances(list: { accountId: string; amount: number; date: string }[]): void {
+    localStorage.setItem(this.INIT_BAL_KEY, JSON.stringify(list));
+  }
+
   // ── RECURRENTES ───────────────────────────────────────────────────────────
   private loadRecurring(): RecurringRule[] {
     try { return JSON.parse(localStorage.getItem(this.RECURRING_KEY) ?? '[]'); }
@@ -866,5 +909,39 @@ export class Finances implements OnInit {
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
+  }
+
+  // ── EXPORTAR PDF ─────────────────────────────────────────────────────────
+  async triggerExport(): Promise<void> {
+    if (!this.summary() || !this.health()) {
+      this.toast.warning('Espera a que carguen los datos');
+      return;
+    }
+    this.exporting.set(true);
+    try {
+      await this.pdfExport.generateReport(
+        {
+          userName:     this.authService.currentUser()?.displayName ?? 'Usuario',
+          transactions: this.transactions(),
+          accounts:     this.accounts(),
+          budgets:      this.budgets(),
+          goals:        this.goals(),
+          categories:   this.categories(),
+          summary:      this.summary()!,
+          health:       this.health()!,
+          accountInceptionDates: Object.fromEntries(
+            this.initialBalances().map(ib => [ib.accountId, ib.date])
+          ),
+        },
+        { from: this.exportDateFrom(), to: this.exportDateTo() }
+      );
+      this.showExportModal.set(false);
+      this.toast.success('PDF generado correctamente');
+    } catch (e) {
+      this.toast.error('Error al generar el PDF');
+      console.error(e);
+    } finally {
+      this.exporting.set(false);
+    }
   }
 }

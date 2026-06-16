@@ -2,19 +2,28 @@
 
   <!-- HEADER -->
   <div class="bg-[#0F172A] border-b border-slate-800">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <div>
         <h1 class="text-white text-xl font-bold">Mis Finanzas</h1>
         <p class="text-slate-400 text-xs">Control completo de tu dinero</p>
       </div>
       @if (summary()) {
-      <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-right">
-        <p class="text-slate-400 text-xs">Balance:</p>
-        <p class="text-white font-bold text-lg">${{ formatCurrency(summary()!.totalBalance) }}</p>
+      <div class="flex items-center gap-2">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-right">
+          <p class="text-slate-400 text-xs">Balance:</p>
+          <p class="text-white font-bold text-lg">${{ formatCurrency(summary()!.totalBalance) }}</p>
+        </div>
+        <button (click)="showExportModal.set(true)"
+          class="flex items-center gap-1.5 px-3 py-2 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-xs font-semibold rounded-xl transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          PDF
+        </button>
       </div>
       }
     </div>
-    <div class="max-w-5xl mx-auto px-4">
+    <div class="max-w-6xl mx-auto px-4">
       <div class="flex">
         @for (t of tabs; track t.key) {
         <button (click)="setTab(t.key)" class="flex-1 py-3 text-sm font-medium transition-all border-b-2"
@@ -31,7 +40,7 @@
     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
   </div>
   } @else {
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-5">
+  <div class="max-w-6xl mx-auto px-4 py-4 space-y-4">
 
     <!-- ALERT -->
     @if (lastAlert()) {
@@ -47,10 +56,10 @@
          TAB: RESUMEN
     ════════════════════════════════════════════════════════════════════════ -->
     @if (activeTab() === 'resumen') {
-    <div class="space-y-5">
+    <div class="space-y-4">
 
       <!-- KPIs -->
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-3 gap-3">
         <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
           <p class="text-slate-400 text-xs mb-1">Ingresos del mes</p>
           <p class="text-emerald-400 font-bold text-xl">${{ formatCurrency(summary()?.monthlyIncome ?? 0) }}</p>
@@ -70,7 +79,7 @@
 
       <!-- SALUD FINANCIERA -->
       @if (health()) {
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-white font-semibold text-sm">Salud financiera del mes</h3>
           <span class="text-xs font-semibold px-2 py-0.5 rounded-full" [ngClass]="{
@@ -93,7 +102,7 @@
       }
 
       <!-- ULTIMAS TRANSACCIONES -->
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-white font-semibold">Ultimas transacciones</h3>
           <button (click)="setTab('transacciones')"
@@ -197,7 +206,7 @@
       </div>
 
       <!-- CUENTAS -->
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-white font-semibold">Mis cuentas</h3>
           @if (!showAccountForm()) {
@@ -419,7 +428,7 @@
         }
       </div>
       } @else {
-      <div class="space-y-5">
+      <div class="space-y-4">
         @for (group of groupedTransactions(); track group.date) {
         <div>
           <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 px-1">{{ group.label }}</p>
@@ -709,10 +718,10 @@
     </div>
     }
 
-    <div class="space-y-5">
+    <div class="space-y-4">
 
       <!-- PRESUPUESTO GENERAL -->
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-3">
           <div>
             <h3 class="text-white font-semibold">Presupuesto general</h3>
@@ -757,7 +766,7 @@
       </div>
 
       <!-- PRESUPUESTOS POR CATEGORIA -->
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+      <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-white font-semibold">Por categoria</h3>
           <button (click)="showBudgetForm.set(!showBudgetForm())"
@@ -865,7 +874,7 @@
         }
       </div>
 
-      <!-- MIS CATEGORIAS — Task 4 -->
+      <!-- MIS CATEGORIAS -->
       <div class="bg-[#1E293B] rounded-2xl border border-slate-700 overflow-hidden">
         <button (click)="showCategorySection.set(!showCategorySection())"
           class="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-800/40 transition-colors">
@@ -874,8 +883,8 @@
               class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">
               #</div>
             <div class="text-left">
-              <h3 class="text-white font-semibold text-sm">Mis categorias</h3>
-              <p class="text-slate-500 text-xs">{{ userCategories().length }} personalizadas</p>
+              <h3 class="text-white font-semibold text-sm">Categorias</h3>
+              <p class="text-slate-500 text-xs">{{ categories().length }} total · {{ userCategories().length }} personalizadas</p>
             </div>
           </div>
           <span class="text-slate-500 text-xs transition-transform inline-block"
@@ -886,7 +895,7 @@
         <div class="border-t border-slate-800 p-5 space-y-4">
 
           <div class="flex items-center justify-between">
-            <p class="text-slate-500 text-xs">Categorias exclusivas para tu cuenta</p>
+            <p class="text-slate-500 text-xs">Todas las categorias</p>
             <button (click)="showCategoryForm.set(!showCategoryForm())"
               class="text-blue-400 text-xs hover:text-blue-300 transition-colors font-medium">
               {{ showCategoryForm() ? 'Cancelar' : '+ Nueva' }}
@@ -917,15 +926,15 @@
           </div>
           }
 
-          @if (userCategories().length === 0) {
-          <p class="text-slate-500 text-sm text-center py-4">Sin categorias personalizadas aun</p>
+          @if (categories().length === 0) {
+          <p class="text-slate-500 text-sm text-center py-4">Sin categorias aun</p>
           } @else {
 
-          @if (userCategories().filter(c => c.type === 'INCOME').length > 0) {
+          @if (categories().filter(c => c.type === 'INCOME').length > 0) {
           <div>
             <p class="text-xs font-semibold text-emerald-400 uppercase tracking-widest mb-2">Ingresos</p>
             <div class="space-y-1">
-              @for (cat of userCategories().filter(c => c.type === 'INCOME'); track cat.id) {
+              @for (cat of categories().filter(c => c.type === 'INCOME'); track cat.id) {
               @if (confirmDeleteCategoryId() === cat.id) {
               <div
                 class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -953,6 +962,9 @@
                 <div class="flex items-center gap-2">
                   <div class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
                   <span class="text-white text-sm">{{ cat.name }}</span>
+                  @if (cat.isGlobal) {
+                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Sistema</span>
+                  }
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button (click)="startEditCategory(cat)"
@@ -967,11 +979,11 @@
           </div>
           }
 
-          @if (userCategories().filter(c => c.type === 'EXPENSE').length > 0) {
+          @if (categories().filter(c => c.type === 'EXPENSE').length > 0) {
           <div>
             <p class="text-xs font-semibold text-red-400 uppercase tracking-widest mb-2">Gastos</p>
             <div class="space-y-1">
-              @for (cat of userCategories().filter(c => c.type === 'EXPENSE'); track cat.id) {
+              @for (cat of categories().filter(c => c.type === 'EXPENSE'); track cat.id) {
               @if (confirmDeleteCategoryId() === cat.id) {
               <div
                 class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -999,6 +1011,9 @@
                 <div class="flex items-center gap-2">
                   <div class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
                   <span class="text-white text-sm">{{ cat.name }}</span>
+                  @if (cat.isGlobal) {
+                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Sistema</span>
+                  }
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button (click)="startEditCategory(cat)"
@@ -1013,10 +1028,6 @@
           </div>
           }
 
-          @if (globalCategories().length > 0) {
-          <p class="text-slate-600 text-xs text-center">{{ globalCategories().length }} categorias del sistema no son
-            editables</p>
-          }
           }
         </div>
         }
@@ -1143,7 +1154,7 @@
         </div>
         }
         @else {
-        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+        <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
           <div class="flex items-start justify-between mb-3">
             <div>
               <p class="text-white font-semibold">{{ g.name }}</p>
@@ -1193,4 +1204,69 @@
 
   </div>
   }
+
+  <!-- MODAL EXPORTAR PDF -->
+  @if (showExportModal()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+       (click)="showExportModal.set(false)">
+    <div class="bg-[#1E293B] rounded-xl border border-slate-700/60 w-full max-w-sm mx-4 form-slide"
+         (click)="$event.stopPropagation()">
+
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-800">
+        <div>
+          <h3 class="text-white font-semibold text-sm">Exportar reporte PDF</h3>
+          <p class="text-slate-500 text-[11px] mt-0.5">Selecciona el periodo a analizar</p>
+        </div>
+        <button (click)="showExportModal.set(false)" class="text-slate-500 hover:text-white text-lg leading-none transition-colors">&times;</button>
+      </div>
+
+      <div class="px-5 py-3 space-y-2.5">
+        <div>
+          <label class="text-slate-500 text-[11px] mb-1 block font-medium">Fecha inicio</label>
+          <input [ngModel]="exportDateFrom()" (ngModelChange)="exportDateFrom.set($event)"
+            type="date" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+        </div>
+        <div>
+          <label class="text-slate-500 text-[11px] mb-1 block font-medium">Fecha fin</label>
+          <input [ngModel]="exportDateTo()" (ngModelChange)="exportDateTo.set($event)"
+            type="date" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+        </div>
+      </div>
+
+      <div class="mx-5 mb-3 bg-slate-800/50 rounded-lg px-3 py-2.5 space-y-1">
+        <p class="text-slate-400 text-[11px] font-semibold mb-1.5">El PDF incluira:</p>
+        @for (item of [
+          'Portada con branding',
+          'Resumen ejecutivo con KPIs',
+          'Graficas de gastos e ingresos',
+          'Estado de cuentas',
+          'Presupuestos y metas'
+        ]; track item) {
+        <div class="flex items-center gap-2">
+          <div class="w-1 h-1 rounded-full bg-blue-500 flex-shrink-0"></div>
+          <span class="text-slate-400 text-[11px]">{{ item }}</span>
+        </div>
+        }
+      </div>
+
+      <div class="px-5 pb-4 pt-1 flex gap-2.5">
+        <button (click)="triggerExport()" [disabled]="exporting()"
+          class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          @if (exporting()) {
+          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          Generando...
+          } @else {
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          Descargar PDF
+          }
+        </button>
+        <button (click)="showExportModal.set(false)" class="px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors">Cancelar</button>
+      </div>
+
+    </div>
+  </div>
+  }
+
 </div>
