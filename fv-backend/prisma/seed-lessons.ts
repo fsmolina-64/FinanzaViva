@@ -3,10 +3,6 @@ import { PrismaClient, LessonType } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
 type B = {
     type: string; text?: string; title?: string; items?: string[];
     url?: string; question?: string; hint?: string;
@@ -1166,7 +1162,7 @@ const DATA: MD[] = [
     },
 ];
 
-async function main() {
+export async function seedLessons(prisma: PrismaClient) {
     console.log('Iniciando seed de lecciones...');
 
     for (const modData of DATA) {
@@ -1201,4 +1197,14 @@ async function main() {
     console.log('Seed completado. Total: 28 lecciones en 7 modulos.');
 }
 
-main().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+async function main() {
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    const prisma = new PrismaClient({ adapter });
+    await seedLessons(prisma);
+    await prisma.$disconnect();
+}
+
+if (require.main === module) {
+    main().catch(e => { console.error(e); process.exit(1); });
+}

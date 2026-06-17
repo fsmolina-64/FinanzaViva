@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { QuickTransactionService } from '../../core/services/quick-transaction.service';
 import { PdfExportService } from '../../shared/services/pdf-export.service';
 import { AuthService } from '../../core/services/auth.service';
+import { GamificationService } from '../../core/services/gamification.service';
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
@@ -328,7 +329,8 @@ export class Finances implements OnInit {
     private toast: ToastService,
     private quickTxService: QuickTransactionService,
     private pdfExport: PdfExportService,
-    public authService: AuthService
+    public authService: AuthService,
+    private gamificationService: GamificationService
   ) {
     // Effect 1: sincronizar con QuickModal
     effect(() => {
@@ -491,6 +493,7 @@ export class Finances implements OnInit {
       next: res => {
         this.transactions.update(l => [res.transaction, ...l]);
         if (res.alert) this.lastAlert.set(res.alert);
+        this.gamificationService.registerStreak().subscribe();
 
         // Guardar regla recurrente si aplica
         const rec = this.newTransaction.recurrence;

@@ -15,6 +15,8 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     const { passwordHash, ...safeUser } = user;
+    const actualCount = await this.prisma.userAchievement.count({ where: { userId } });
+    if (safeUser.statistics) safeUser.statistics.achievementsCount = actualCount;
     return safeUser;
   }
 

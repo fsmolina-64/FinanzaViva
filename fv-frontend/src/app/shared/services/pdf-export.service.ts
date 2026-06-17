@@ -28,13 +28,63 @@ export class PdfExportService {
     '#14B8A6','#A855F7'
   ];
 
+  private logoDataUrl: string | null = null;
+
+  private async loadLogo(): Promise<string | null> {
+    if (this.logoDataUrl) return this.logoDataUrl;
+    try {
+      const resp = await fetch('/logo-oficial.png');
+      if (!resp.ok) return null;
+      const blob = await resp.blob();
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => { this.logoDataUrl = reader.result as string; resolve(this.logoDataUrl); };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private historicalBalances(transactions: Transaction[], accounts: Account[], upTo: string): Record<string, number> {
+    const end = upTo.substring(0, 10);
+    const result: Record<string, number> = {};
+    for (const acct of accounts) {
+      result[acct.id] = parseFloat(String(acct.balance));
+    }
+    for (const tx of transactions) {
+      const d = tx.date.substring(0, 10);
+      if (d <= end) continue;
+      const amt = parseFloat(String(tx.amount));
+      if (tx.type === 'INCOME') {
+        result[tx.accountId] -= amt;
+      } else if (tx.type === 'EXPENSE') {
+        result[tx.accountId] += amt;
+      } else if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+        const pair = transactions.find(t => t.transferGroupId === tx.transferGroupId && t.id !== tx.id);
+        if (pair && pair.date.substring(0, 10) > end) {
+          continue;
+        }
+        result[tx.accountId] += amt;
+      }
+    }
+    return result;
+  }
+
   async generateReport(data: PdfReportData, period: { from: string; to: string }): Promise<void> {
     const doc = new jsPDF('p', 'mm', 'a4');
     const PW  = doc.internal.pageSize.getWidth();
     const PH  = doc.internal.pageSize.getHeight();
 
-    const inception = data.accountInceptionDates ?? {};
+    const logoUrl = await this.loadLogo();
 
+    const inception: Record<string, string> = { ...(data.accountInceptionDates ?? {}) };
+    for (const acct of data.accounts) {
+      if (!inception[acct.id]) {
+        inception[acct.id] = acct.createdAt.substring(0, 10);
+      }
+    }
     const activeAccounts = data.accounts.filter(a => {
       const d = inception[a.id];
       return !d || d <= period.to;
@@ -51,7 +101,15 @@ export class PdfExportService {
     const expenses = txs.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)), 0);
     const savings  = income - expenses;
     const savingsRate = income > 0 ? Math.max(0, Math.round((savings / income) * 100)) : 0;
-    const totalBal = activeAccounts.reduce((s, a) => s + parseFloat(String(a.balance)), 0);
+    const histBal  = this.historicalBalances(data.transactions, data.accounts, period.to);
+    const totalBal = activeAccounts.reduce((s, a) => s + (histBal[a.id] ?? parseFloat(String(a.balance))), 0);
+
+    const periodHealth = this.deriveHealth(income, expenses);
+
+    const periodGoals = data.goals.filter(g => {
+      const created = g.createdAt.substring(0, 10);
+      return created <= period.to;
+    });
 
     const incCat = this.groupByCategory(txs.filter(t => t.type === 'INCOME'  ), data.categories);
     const expCat = this.groupByCategory(txs.filter(t => t.type === 'EXPENSE' ), data.categories);
@@ -59,10 +117,10 @@ export class PdfExportService {
     const incChart = incCat.length > 0 ? this.drawDonutChart(incCat, '#10B981') : null;
     const expChart = expCat.length > 0 ? this.drawDonutChart(expCat, '#EF4444') : null;
 
-    this.buildCover(doc, data.userName, period, PW, PH);
+    this.buildCover(doc, data.userName, period, PW, PH, logoUrl);
 
     doc.addPage();
-    this.buildSummary(doc, { income, expenses, savings, savingsRate, totalBal, txCount: txs.length }, data.health, PW);
+    this.buildSummary(doc, { income, expenses, savings, savingsRate, totalBal, txCount: txs.length }, periodHealth, PW);
 
     doc.addPage();
     this.buildCategoryPage(doc, 'Analisis de Gastos', expCat, expChart, expenses, '#EF4444', [220,38,38], [254,242,242], PW);
@@ -75,12 +133,12 @@ export class PdfExportService {
 
     if (data.budgets.length > 0) {
       doc.addPage();
-      this.buildBudgets(doc, data.budgets, data.categories, txs, PW);
+      this.buildBudgets(doc, data.budgets, data.categories, txs, PW, period);
     }
 
-    if (data.goals.length > 0) {
+    if (periodGoals.length > 0) {
       doc.addPage();
-      this.buildGoals(doc, data.goals, PW);
+      this.buildGoals(doc, periodGoals, PW);
     }
 
     const tfs = data.transferGroups?.filter(tf => {
@@ -111,9 +169,13 @@ export class PdfExportService {
     doc.save(fn);
   }
 
-  private buildCover(doc: jsPDF, userName: string, period: { from: string; to: string }, PW: number, PH: number): void {
+  private buildCover(doc: jsPDF, userName: string, period: { from: string; to: string }, PW: number, PH: number, logoUrl?: string | null): void {
     doc.setFillColor(37, 99, 235);
     doc.rect(0, 0, PW, 85, 'F');
+
+    if (logoUrl) {
+      try { doc.addImage(logoUrl, 'PNG', PW / 2 - 14, 6, 28, 28); } catch { /* fallback: no logo */ }
+    }
 
     doc.setDrawColor(255, 255, 255);
     doc.setLineWidth(0.4);
@@ -326,6 +388,11 @@ export class PdfExportService {
       y += 88;
     }
 
+    if (y + data.length * 8 > 270) {
+      doc.addPage();
+      y = 20;
+    }
+
     autoTable(doc, {
       startY: y,
       head: [['#', 'Categoria', 'Monto', '% del total', 'Transacciones']],
@@ -387,9 +454,9 @@ export class PdfExportService {
     });
   }
 
-  private buildBudgets(doc: jsPDF, budgets: Budget[], categories: Category[], txs: Transaction[], PW: number): void {
+  private buildBudgets(doc: jsPDF, budgets: Budget[], categories: Category[], txs: Transaction[], PW: number, period?: { from: string; to: string }): void {
     this.buildHeader(doc, 'Presupuestos', PW);
-    const now = new Date();
+    const refDate = period ? new Date(period.to + 'T00:00:00') : new Date();
 
     autoTable(doc, {
       startY: 42,
@@ -399,8 +466,8 @@ export class PdfExportService {
         const budget  = parseFloat(String(b.amount));
         const spent   = txs.filter(t =>
           t.type === 'EXPENSE' && t.categoryId === b.categoryId &&
-          new Date(t.date).getMonth() === now.getMonth() &&
-          new Date(t.date).getFullYear() === now.getFullYear()
+          new Date(t.date).getMonth() === refDate.getMonth() &&
+          new Date(t.date).getFullYear() === refDate.getFullYear()
         ).reduce((s, t) => s + parseFloat(String(t.amount)), 0);
         const pct   = budget > 0 ? Math.round((spent / budget) * 100) : 0;
         const avail = budget - spent;
@@ -518,6 +585,27 @@ export class PdfExportService {
         }
       }
     });
+  }
+
+  private deriveHealth(income: number, expenses: number): BudgetHealth {
+    const available = income - expenses;
+    const percentage = income > 0 ? Math.round((expenses / income) * 100) : 0;
+    let status: BudgetHealth['status'];
+    let message: string;
+    if (percentage >= 100) {
+      status = 'CRITICAL';
+      message = `Gastaste m\u00E1s de lo que ganaste. D\u00E9ficit de $${Math.abs(available).toFixed(2)}`;
+    } else if (percentage >= 90) {
+      status = 'DANGER';
+      message = `Cuidado. Usaste el ${percentage}% de tus ingresos. Solo te quedan $${available.toFixed(2)}`;
+    } else if (percentage >= 80) {
+      status = 'WARNING';
+      message = `Vas al ${percentage}% de tu presupuesto. Modera tus gastos.`;
+    } else {
+      status = 'HEALTHY';
+      message = `Vas bien. Llevas el ${percentage}% de tu presupuesto usado.`;
+    }
+    return { income, expenses, available, percentage, status, message, breakdown: {} };
   }
 
   private drawDonutChart(
