@@ -19,8 +19,7 @@ export class SimulatorService {
     return this.http.post<BackendGame>(`${this.base}/games`, payload);
   }
 
-  // startGame devuelve el estado completo con el primer evento ya asignado
-  // Los bots que van antes del primer humano se procesan en el backend automáticamente
+
   startGame(gameId: string): Observable<BackendGame> {
     return this.http.post<BackendGame>(`${this.base}/games/${gameId}/start`, {});
   }
@@ -29,7 +28,6 @@ export class SimulatorService {
     return this.http.get<BackendGame>(`${this.base}/games/${gameId}`);
   }
 
-  // Devuelve { result, gameState } — gameState ya tiene el próximo evento listo
   submitDecision(gameId: string, chosenOptionId: string): Observable<SubmitDecisionResponse> {
     return this.http.post<SubmitDecisionResponse>(
       `${this.base}/games/${gameId}/decision`,

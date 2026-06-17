@@ -41,6 +41,18 @@ export class UsersService {
   }
 
   async deleteAccount(userId: string) {
+    const playerIds = (
+      await this.prisma.simulatorPlayer.findMany({
+        where: { OR: [{ userId }, { game: { createdByUserId: userId } }] },
+        select: { id: true },
+      })
+    ).map(p => p.id);
+    if (playerIds.length) {
+      await this.prisma.simulatorPlayerRound.deleteMany({ where: { playerId: { in: playerIds } } });
+      await this.prisma.simulatorConsequence.deleteMany({ where: { playerId: { in: playerIds } } });
+      await this.prisma.simulatorPlayer.deleteMany({ where: { id: { in: playerIds } } });
+    }
+    await this.prisma.simulatorGame.deleteMany({ where: { createdByUserId: userId } });
     await this.prisma.user.delete({ where: { id: userId } });
     return { message: 'Cuenta eliminada correctamente' };
   }

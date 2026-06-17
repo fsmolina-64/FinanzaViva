@@ -450,7 +450,6 @@ async function main() {
   }
   console.log('✅ Módulos y quizzes creados');
 
-  // Eliminar eventos anteriores con cascade manual para evitar FK
   await prisma.simulatorPlayerRound.deleteMany({});
   await prisma.simulatorConsequence.deleteMany({});
   await prisma.simulatorEvent.deleteMany({});
@@ -482,7 +481,6 @@ async function main() {
 
   const events: SimulatorEventSeed[] = [
 
-    // ══════════════════════════════ EMPLEO ══════════════════════════════
 
     {
       name: 'Reduccion de personal',
@@ -577,7 +575,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EMPRENDIMIENTO ══════════════════════════════
 
     {
       name: 'Propuesta de negocio con un conocido',
@@ -641,7 +638,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ INVERSIONES ══════════════════════════════
 
     {
       name: 'Caida del mercado de valores',
@@ -736,7 +732,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EDUCACION ══════════════════════════════
 
     {
       name: 'Bootcamp de especializacion profesional',
@@ -769,7 +764,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ CREDITO ══════════════════════════════
 
     {
       name: 'Credito personal pre-aprobado',
@@ -833,7 +827,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ HIPOTECA ══════════════════════════════
 
     {
       name: 'Oportunidad de primera vivienda',
@@ -866,7 +859,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ VEHICULOS ══════════════════════════════
 
     {
       name: 'Falla mecanica del vehiculo',
@@ -930,7 +922,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EMERGENCIAS ══════════════════════════════
 
     {
       name: 'Emergencia medica con cobertura parcial',
@@ -994,7 +985,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ MACROECONOMIA ══════════════════════════════
 
     {
       name: 'Inflacion acelerada',
@@ -1058,7 +1048,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ OPORTUNIDADES INESPERADAS ══════════════════════════════
 
     {
       name: 'Herencia familiar inesperada',
@@ -1122,7 +1111,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ SEGUROS ══════════════════════════════
 
     {
       name: 'Propuesta de seguro integral',
@@ -1155,7 +1143,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ RIESGO Y FRAUDE ══════════════════════════════
 
     {
       name: 'Esquema de inversion con retornos garantizados',
@@ -1188,7 +1175,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ AHORRO ══════════════════════════════
 
     {
       name: 'Desafio de ahorro comunitario',
@@ -1221,7 +1207,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ GASTOS DEL HOGAR ══════════════════════════════
 
     {
       name: 'Dano en el lugar de residencia',

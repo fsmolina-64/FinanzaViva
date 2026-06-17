@@ -395,7 +395,7 @@ export class PdfExportService {
 
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Categoria', 'Monto', '% del total', 'Transacciones']],
+      head: [['#', 'Categoría', 'Monto', '% del total', 'Transacciones']],
       body: data.map((d, i) => [
         String(i + 1),
         d.name,
@@ -460,7 +460,7 @@ export class PdfExportService {
 
     autoTable(doc, {
       startY: 42,
-      head: [['Categoria', 'Presupuesto', 'Gastado', 'Disponible', '%', 'Estado']],
+      head: [['Categoría', 'Presupuesto', 'Gastado', 'Disponible', '%', 'Estado']],
       body: budgets.map(b => {
         const catName = categories.find(c => c.id === b.categoryId)?.name ?? 'Sin nombre';
         const budget  = parseFloat(String(b.amount));
@@ -525,9 +525,9 @@ export class PdfExportService {
 
     autoTable(doc, {
       startY: 42,
-      head: [['Fecha', 'Tipo', 'Categoria', 'Cuenta', 'Monto', 'Descripcion']],
+      head: [['Fecha', 'Tipo', 'Categoría', 'Cuenta', 'Monto', 'Descripción']],
       body: display.map(tx => {
-        const catName = categories.find(c => c.id === tx.categoryId)?.name ?? 'Sin categoria';
+        const catName = categories.find(c => c.id === tx.categoryId)?.name ?? 'Sin categoría';
         const accName = accounts.find(a => a.id === tx.accountId)?.name ?? '?';
         const typeLabel = tx.type === 'INCOME' ? 'Ingreso' : tx.type === 'EXPENSE' ? 'Gasto' : 'Transferencia';
         let sign = '';
@@ -751,7 +751,7 @@ export class PdfExportService {
   ): { name: string; amount: number; count: number }[] {
     const map = new Map<string, { name: string; amount: number; count: number }>();
     for (const tx of txs) {
-      const name = categories.find(c => c.id === tx.categoryId)?.name ?? 'Sin categoria';
+      const name = categories.find(c => c.id === tx.categoryId)?.name ?? 'Sin categoría';
       const prev = map.get(tx.categoryId) ?? { name, amount: 0, count: 0 };
       map.set(tx.categoryId, { name, amount: prev.amount + parseFloat(String(tx.amount)), count: prev.count + 1 });
     }

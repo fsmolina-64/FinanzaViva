@@ -6,6 +6,7 @@ import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
+import { ToastService } from '../../core/services/toast.service';
 import { FinanceSummary } from '../../core/models/finance.model';
 import { GamificationStats } from '../../core/models/gamification.model';
 import { Achievement, Reward } from '../../core/models/achievement.model';
@@ -46,11 +47,11 @@ export class Dashboard implements OnInit {
     private gamificationService: GamificationService,
     private achievementService: AchievementService,
     private api: ApiService,
+    private toast: ToastService,
     public authService: AuthService
   ) { }
 
   ngOnInit(): void {
-    // Streak primero; loadStats después para que el signal refleje la racha actualizada
     this.gamificationService.registerStreak().subscribe({
       next: () => this.loadStats(),
       error: () => this.loadStats()
@@ -64,39 +65,38 @@ export class Dashboard implements OnInit {
   private loadStats(): void {
     this.gamificationService.loadStats().subscribe({
       next: (data) => this.stats.set(data),
-      error: () => { }
+      error: () => this.toast.error('Error al cargar estadísticas')
     });
   }
 
   private loadSummary(): void {
     this.financeService.getSummary().subscribe({
       next: (data) => { this.summary.set(data); this.loading.set(false); },
-      error: () => this.loading.set(false)
+      error: () => { this.loading.set(false); this.toast.error('Error al cargar resumen financiero'); }
     });
   }
 
   private loadUserData(): void {
     this.api.get<{ statistics: UserStatistics }>('/users/me').subscribe({
       next: (data) => this.userStats.set(data.statistics),
-      error: () => { }
+      error: () => this.toast.error('Error al cargar datos del usuario')
     });
   }
 
   private loadAchievements(): void {
     this.achievementService.getAchievements().subscribe({
       next: (data) => this.achievements.set(data),
-      error: () => { }
+      error: () => this.toast.error('Error al cargar logros')
     });
   }
 
   private loadRewards(): void {
     this.achievementService.getRewards().subscribe({
       next: (data) => this.rewards.set(data),
-      error: () => { }
+      error: () => this.toast.error('Error al cargar recompensas')
     });
   }
 
-  // ── GAMIFICATION ─────────────────────────────────────────────────────────
 
   isMaxLevel(): boolean {
     return this.stats()?.rank === 'MASTER';
@@ -115,7 +115,6 @@ export class Dashboard implements OnInit {
     return labels[rank] ?? rank;
   }
 
-  // ── STATS ─────────────────────────────────────────────────────────────────
 
   getQuizApprovalRate(): number {
     const completed = this.userStats()?.quizzesCompleted ?? 0;
@@ -129,7 +128,6 @@ export class Dashboard implements OnInit {
     return played ? Math.round((won / played) * 100) : 0;
   }
 
-  // ── LOGROS Y RECOMPENSAS ─────────────────────────────────────────────────
 
   getUnlockedAchievements(): number { return this.userStats()?.achievementsCount ?? 0; }
   getTotalAchievements(): number { return this.achievements().length; }
@@ -146,7 +144,6 @@ export class Dashboard implements OnInit {
     return total ? Math.round((this.getUnlockedRewards() / total) * 100) : 0;
   }
 
-  // ── UTIL ──────────────────────────────────────────────────────────────────
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(amount);

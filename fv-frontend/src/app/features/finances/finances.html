@@ -20,12 +20,12 @@
   @if (showCategoryDeleteWarning()) {
   <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-[#1E293B] rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
-      <h4 class="text-white font-semibold">Categoria con datos asociados</h4>
+      <h4 class="text-white font-semibold">Categoría con datos asociados</h4>
       <p class="text-slate-400 text-sm">
-        La categoria "{{ categoryDeleteInfo()?.name }}" tiene
-        {{ categoryDeleteInfo()?.txCount }} transaccion(es) y
+        La categoría "{{ categoryDeleteInfo()?.name }}" tiene
+        {{ categoryDeleteInfo()?.txCount }} transacción(es) y
         {{ categoryDeleteInfo()?.budgetCount }} presupuesto(s).
-        Selecciona una categoria para reasignar los datos:
+        Selecciona una categoría para reasignar los datos:
       </p>
       <select [(ngModel)]="categoryReassignId"
         class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
@@ -148,8 +148,8 @@
       <!-- ULTIMAS TRANSACCIONES -->
       <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-white font-semibold">Ultimas transacciones</h3>
-          <button (click)="setTab('transacciones')"
+          <h3 class="text-white font-semibold">Últimas transacciones</h3>
+          <button (click)="setTab('transacciónes')"
             class="text-blue-400 text-xs hover:text-blue-300 transition-colors">Ver todas</button>
         </div>
         @if (recentTransactions().length === 0) {
@@ -246,7 +246,7 @@
                 </select>
               </div>
               <div>
-                <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+                <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
                 <select [(ngModel)]="editTx.categoryId"
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                   <option value="">Seleccionar...</option>
@@ -382,7 +382,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════════
          TAB: TRANSACCIONES
     ════════════════════════════════════════════════════════════════════════ -->
-    @if (activeTab() === 'transacciones') {
+    @if (activeTab() === 'transacciónes') {
     <div class="space-y-4">
 
       <!-- BARRA DE FILTROS -->
@@ -438,7 +438,7 @@
         <div class="flex items-center gap-2 flex-wrap">
           <div class="flex gap-1 bg-slate-800 rounded-lg p-1">
             @for (opt of [{k:'ALL',l:'Todo'},{k:'TODAY',l:'Hoy'},{k:'WEEK',l:'7
-            dias'},{k:'MONTH',l:'Mes'},{k:'YEAR',l:'Ano'}]; track opt.k) {
+            dias'},{k:'MONTH',l:'Mes'},{k:'YEAR',l:'Año'}]; track opt.k) {
             <button (click)="txDateMode.set($any(opt.k))"
               class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
               [class]="txDateMode() === opt.k ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'">
@@ -498,7 +498,7 @@
             </select>
           </div>
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+            <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
             <select [(ngModel)]="newTransaction.categoryId"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
               <option value="">Seleccionar...</option>
@@ -520,7 +520,7 @@
         </div>
         <button (click)="submitTransaction()" [disabled]="submittingTx()"
           class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ submittingTx() ? 'Guardando...' : 'Registrar transaccion' }}
+          {{ submittingTx() ? 'Guardando...' : 'Registrar transacción' }}
         </button>
       </div>
       }
@@ -629,7 +629,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+                  <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
                   <select [(ngModel)]="editTx.categoryId"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                     <option value="">Seleccionar...</option>
@@ -755,7 +755,7 @@
           <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 flex-shrink-0">
             <div>
               <h4 class="text-white font-semibold">{{ formatDateLabel(calendarDayKey()!) }}</h4>
-              <p class="text-slate-400 text-xs">{{ calendarDayTxs().length }} transaccion{{ calendarDayTxs().length !==
+              <p class="text-slate-400 text-xs">{{ calendarDayTxs().length }} transacción{{ calendarDayTxs().length !==
                 1 ? 'es' : '' }}</p>
             </div>
             <button (click)="closeCalendarDay()"
@@ -764,7 +764,7 @@
 
           <div class="overflow-y-auto flex-1 p-4 space-y-2">
             @if (calendarDayTxs().length === 0) {
-            <p class="text-slate-500 text-sm text-center py-8">Sin transacciones este dia</p>
+            <p class="text-slate-500 text-sm text-center py-8">Sin transacciones este día</p>
             } @else {
             @for (tx of calendarDayTxs(); track tx.id) {
             @if (confirmDeleteTransferGroupId() === $any(tx).groupId && $any(tx).type === 'TRANSFER') {
@@ -855,7 +855,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+                  <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
                   <select [(ngModel)]="editTx.categoryId"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                     <option value="">Seleccionar...</option>
@@ -942,7 +942,7 @@
     <div class="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4">
       <div class="bg-[#1E293B] rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
         <h4 class="text-white font-semibold">Saldo insuficiente</h4>
-        <p class="text-slate-400 text-sm">Registrar de todas formas dejara tu cuenta en negativo (deuda).</p>
+        <p class="text-slate-400 text-sm">Registrar de todas formas dejará tu cuenta en negativo (deuda).</p>
         <div class="flex gap-3">
           <button (click)="confirmDebt()"
             class="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Registrar
@@ -1004,7 +1004,7 @@
       <!-- PRESUPUESTOS POR CATEGORIA -->
       <div class="bg-[#1E293B] rounded-2xl p-4 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-white font-semibold">Por categoria</h3>
+          <h3 class="text-white font-semibold">Por categoría</h3>
           <button (click)="showBudgetForm.set(!showBudgetForm())"
             class="text-blue-400 text-xs hover:text-blue-300 transition-colors">
             {{ showBudgetForm() ? 'Cancelar' : '+ Nuevo' }}
@@ -1014,7 +1014,7 @@
         <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+              <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
               <select [(ngModel)]="newBudget.categoryId"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                 <option value="">Seleccionar...</option>
@@ -1037,7 +1037,7 @@
               </select>
             </div>
             <div>
-              <label class="text-slate-400 text-xs mb-1 block">Duracion (meses)</label>
+              <label class="text-slate-400 text-xs mb-1 block">Duración (meses)</label>
               <input [(ngModel)]="newBudget.months" type="number" min="1"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
@@ -1119,7 +1119,7 @@
               class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">
               #</div>
             <div class="text-left">
-              <h3 class="text-white font-semibold text-sm">Categorias</h3>
+              <h3 class="text-white font-semibold text-sm">Categorías</h3>
               <p class="text-slate-500 text-xs">{{ categories().length }} total · {{ userCategories().length }} personalizadas</p>
             </div>
           </div>
@@ -1131,7 +1131,7 @@
         <div class="border-t border-slate-800 p-5 space-y-4">
 
           <div class="flex items-center justify-between">
-            <p class="text-slate-500 text-xs">Todas las categorias</p>
+            <p class="text-slate-500 text-xs">Todas las categorías</p>
             <button (click)="showCategoryForm.set(!showCategoryForm())"
               class="text-blue-400 text-xs hover:text-blue-300 transition-colors font-medium">
               {{ showCategoryForm() ? 'Cancelar' : '+ Nueva' }}
@@ -1157,13 +1157,13 @@
             </div>
             <button (click)="submitCategory()"
               class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
-              Crear categoria
+              Crear categoría
             </button>
           </div>
           }
 
           @if (categories().length === 0) {
-          <p class="text-slate-500 text-sm text-center py-4">Sin categorias aun</p>
+          <p class="text-slate-500 text-sm text-center py-4">Sin categorías aun</p>
           } @else {
 
           @if (categories().filter(c => c.type === 'INCOME').length > 0) {

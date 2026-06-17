@@ -14,7 +14,7 @@ import {
   CreateTransactionPayload, CreateCategoryPayload, TransferDisplay
 } from '../../core/models/finance.model';
 
-type Tab = 'resumen' | 'transacciones' | 'presupuestos' | 'metas';
+type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
 type TxTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
 type TxDateMode = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'YEAR';
 type ViewMode = 'list' | 'calendar';
@@ -28,7 +28,7 @@ interface RecurringRule {
   type: 'INCOME' | 'EXPENSE';
   description?: string;
   recurrence: Exclude<Recurrence, 'NONE'>;
-  nextDate: string;   // YYYY-MM-DD
+  nextDate: string;
 }
 
 @Component({
@@ -40,7 +40,6 @@ interface RecurringRule {
 })
 export class Finances implements OnInit {
 
-  // ── GENERAL ──────────────────────────────────────────────────────────────
   activeTab = signal<Tab>('resumen');
   loading = signal(true);
   summary = signal<FinanceSummary | null>(null);
@@ -52,7 +51,6 @@ export class Finances implements OnInit {
   goals = signal<Goal[]>([]);
   lastAlert = signal<TransactionAlert | null>(null);
 
-  // ── FORMS: CREAR ─────────────────────────────────────────────────────────
   showAccountForm = signal(false);
   showTransactionForm = signal(false);
   showBudgetForm = signal(false);
@@ -70,7 +68,6 @@ export class Finances implements OnInit {
   newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', months: 1 };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
-  // ── EDICION TRANSACCION ───────────────────────────────────────────────────
   editingTxId = signal<string | null>(null);
   editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
   editTx = { categoryId: '', amount: 0, description: '', date: '', accountId: '' };
@@ -80,93 +77,78 @@ export class Finances implements OnInit {
   showEditDebtConfirm = signal(false);
   pendingEditId = signal<string | null>(null);
 
-  // ── EDICION PRESUPUESTO ───────────────────────────────────────────────────
   editingBudgetId = signal<string | null>(null);
   editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', indefinido: false, months: 1 };
   get editBudgetAmount(): number { return this.editBudget.amount; }
   set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
-  // ── EDICION META ──────────────────────────────────────────────────────────
   editingGoalId = signal<string | null>(null);
   editGoal = { name: '', targetAmount: 0, deadline: '' };
   addingProgressGoalId = signal<string | null>(null);
   progressAmount = 0;
   progressAccountId = '';
 
-  // ── EDICION CATEGORIA ─────────────────────────────────────────────────────
   showCategorySection = signal(false);
   showCategoryForm = signal(false);
   editingCategoryId = signal<string | null>(null);
   newCategory = { name: '', type: 'EXPENSE' as 'INCOME' | 'EXPENSE' };
   editCategory = { name: '' };
 
-  // ── CONFIRMACIONES ELIMINAR ───────────────────────────────────────────────
   confirmDeleteTxId = signal<string | null>(null);
   confirmDeleteTransferGroupId = signal<string | null>(null);
   confirmDeleteBudgetId = signal<string | null>(null);
   confirmDeleteGoalId = signal<string | null>(null);
   confirmDeleteCategoryId = signal<string | null>(null);
 
-  // ── LOADING STATES ────────────────────────────────────────────────────────
   submittingAccount = signal(false);
   submittingTx = signal(false);
   submittingBudget = signal(false);
   submittingGoal = signal(false);
 
-  // ── DEUDA ─────────────────────────────────────────────────────────────────
   showDebtConfirm = signal(false);
   private pendingDebtPayload: CreateTransactionPayload | null = null;
 
-  // ── FILTROS LISTA ─────────────────────────────────────────────────────────
   txFilter = signal<TxTypeFilter>('ALL');
   txDateMode = signal<TxDateMode>('MONTH');
   txMonth = signal(new Date().getMonth());
   txYear = signal(new Date().getFullYear());
   txViewMode = signal<ViewMode>('list');
 
-  // ── FILTROS CALENDARIO (independientes de la lista) ───────────────────────
   calMonth = signal(new Date().getMonth());
   calYear = signal(new Date().getFullYear());
   calTypeFilter = signal<TxTypeFilter>('ALL');
   calendarDayKey = signal<string | null>(null);
 
-  // ── PRESUPUESTO GENERAL ───────────────────────────────────────────────────
   globalBudgetLimit = signal<number>(parseFloat(localStorage.getItem('fv_global_budget') ?? '0'));
   showGlobalForm = signal(false);
   newGlobalLimit = 0;
 
-  // ── EXPORTAR PDF ──────────────────────────────────────────────────────────
   showExportModal = signal(false);
-  exportDateFrom  = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
-  exportDateTo    = signal(new Date().toISOString().split('T')[0]);
-  exporting       = signal(false);
+  exportDateFrom = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  exportDateTo = signal(new Date().toISOString().split('T')[0]);
+  exporting = signal(false);
 
-  // ── CONFIRMAR NAVEGACION ─────────────────────────────────────────────────
   confirmNavAction = signal<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
-  // ── CONFIRMAR ELIMINAR CATEGORIA ─────────────────────────────────────────
   showCategoryDeleteWarning = signal(false);
   categoryDeleteInfo = signal<{ id: string; name: string; txCount: number; budgetCount: number } | null>(null);
   categoryReassignId = signal('');
 
-  // ── BALANCES INICIALES (localStorage) ─────────────────────────────────────
   private readonly INIT_BAL_KEY = 'fv_init_balances';
   initialBalances = signal<{ accountId: string; amount: number; date: string }[]>(
     this.loadInitBalances()
   );
   private initBalanceInjected = false;
 
-  // ── REGLAS RECURRENTES (localStorage) ────────────────────────────────────
   private readonly RECURRING_KEY = 'fv_recurring';
   recurringRules = signal<RecurringRule[]>(this.loadRecurring());
 
-  // ── CONSTANTES ────────────────────────────────────────────────────────────
   readonly monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   readonly weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
   readonly tabs: { key: Tab; label: string }[] = [
     { key: 'resumen', label: 'Resumen' },
-    { key: 'transacciones', label: 'Transacciones' },
+    { key: 'transacciónes', label: 'Transacciones' },
     { key: 'presupuestos', label: 'Presupuestos' },
     { key: 'metas', label: 'Metas' }
   ];
@@ -178,7 +160,6 @@ export class Finances implements OnInit {
     { value: 'YEARLY', label: 'Cada ano' },
   ];
 
-  // ── COMPUTED ──────────────────────────────────────────────────────────────
   expenseCategories = computed(() => this.categories().filter(c => c.type === 'EXPENSE'));
   userCategories = computed(() => this.categories().filter(c => !c.isGlobal));
   globalCategories = computed(() => this.categories().filter(c => c.isGlobal));
@@ -190,7 +171,6 @@ export class Finances implements OnInit {
     return this.categories();
   });
 
-  // Lee editTxType como signal — el computed se recalcula cuando el tipo cambia
   editTxCategories = computed(() => {
     const t = this.editTxType();
     if (t === 'INCOME') return this.categories().filter(c => c.type === 'INCOME');
@@ -323,7 +303,6 @@ export class Finances implements OnInit {
     return this.recurringRules().filter(r => r.nextDate <= today);
   });
 
-  // ── CONSTRUCTOR ───────────────────────────────────────────────────────────
   constructor(
     private financeService: FinanceService,
     private toast: ToastService,
@@ -332,7 +311,6 @@ export class Finances implements OnInit {
     public authService: AuthService,
     private gamificationService: GamificationService
   ) {
-    // Effect 1: sincronizar con QuickModal
     effect(() => {
       const res = this.quickTxService.lastCreated();
       if (!res) return;
@@ -348,7 +326,6 @@ export class Finances implements OnInit {
       this.reloadAll();
     });
 
-    // Effect 2: cerrar edicion al cambiar cualquier filtro
     effect(() => {
       this.txFilter(); this.txDateMode(); this.txViewMode();
       this.calTypeFilter(); this.calMonth(); this.calYear();
@@ -377,13 +354,13 @@ export class Finances implements OnInit {
 
   hasEditingOpen(): boolean {
     return !!(this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
-              this.editingGoalId() || this.addingProgressGoalId() ||
-              this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
-              this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
-              this.showEditDebtConfirm() || this.showDebtConfirm() ||
-              this.showAccountForm() || this.showTransactionForm() ||
-              this.showBudgetForm() || this.showGoalForm() ||
-              this.showCategoryForm() || this.showGlobalForm());
+      this.editingGoalId() || this.addingProgressGoalId() ||
+      this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
+      this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
+      this.showEditDebtConfirm() || this.showDebtConfirm() ||
+      this.showAccountForm() || this.showTransactionForm() ||
+      this.showBudgetForm() || this.showGoalForm() ||
+      this.showCategoryForm() || this.showGlobalForm());
   }
 
   tryNavigate(action: () => void): void {
@@ -422,7 +399,6 @@ export class Finances implements OnInit {
     this.calendarDayKey.set(null);
   }
 
-  // ── CUENTAS ───────────────────────────────────────────────────────────────
   submitAccount(): void {
     if (!this.newAccount.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.submittingAccount.set(true);
@@ -438,7 +414,6 @@ export class Finances implements OnInit {
           const rec = { accountId: acc.id, amount: initAmt, date: ibDate };
           this.initialBalances.update(list => [...list, rec]);
           this.saveInitBalances(this.initialBalances());
-          // Inject synthetic tx
           this.initBalanceInjected = false;
           this.injectInitialBalanceTxs();
         }
@@ -459,10 +434,9 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── TRANSACCIONES — CREAR ─────────────────────────────────────────────────
   submitTransaction(): void {
     if (!this.newTransaction.accountId) { this.toast.warning('Selecciona una cuenta'); return; }
-    if (!this.newTransaction.categoryId) { this.toast.warning('Selecciona una categoria'); return; }
+    if (!this.newTransaction.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     if (Number(this.newTransaction.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     const payload: CreateTransactionPayload = {
       accountId: this.newTransaction.accountId,
@@ -495,7 +469,6 @@ export class Finances implements OnInit {
         if (res.alert) this.lastAlert.set(res.alert);
         this.gamificationService.registerStreak().subscribe();
 
-        // Guardar regla recurrente si aplica
         const rec = this.newTransaction.recurrence;
         if (rec !== 'NONE' && payload.type !== 'TRANSFER') {
           const rule: RecurringRule = {
@@ -510,9 +483,9 @@ export class Finances implements OnInit {
           };
           this.recurringRules.update(r => [...r, rule]);
           this.saveRecurring(this.recurringRules());
-          this.toast.success('Transaccion registrada y regla recurrente guardada');
+          this.toast.success('Transacción registrada y regla recurrente guardada');
         } else {
-          this.toast.success('Transaccion registrada');
+          this.toast.success('Transacción registrada');
         }
 
         this.refreshSummary();
@@ -527,7 +500,6 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── TRANSACCIONES — EDITAR ────────────────────────────────────────────────
   startEditTx(tx: Transaction | TransferDisplay): void {
     if (this.isInitBalanceTx(tx as Transaction)) {
       this.toast.warning('Los balances iniciales no se pueden editar');
@@ -561,7 +533,7 @@ export class Finances implements OnInit {
 
   onEditTxTypeChange(t: 'INCOME' | 'EXPENSE' | 'TRANSFER'): void {
     this.editTxType.set(t);
-    this.editTx.categoryId = '';   // resetear para forzar seleccion valida
+    this.editTx.categoryId = '';
   }
 
   saveEditTx(id: string): void {
@@ -624,16 +596,14 @@ export class Finances implements OnInit {
       next: updated => {
         this.transactions.update(l => l.map(t => t.id === id ? { ...t, ...updated } : t));
         this.editingTxId.set(null);
-        // Recargar cuentas porque los balances cambiaron
         this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
         this.refreshSummary();
-        this.toast.success('Transaccion actualizada');
+        this.toast.success('Transacción actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
     });
   }
 
-  // ── TRANSACCIONES — ELIMINAR ──────────────────────────────────────────────
   confirmDeleteTx(id: string): void { this.confirmDeleteTxId.set(id); this.confirmDeleteTransferGroupId.set(null); this.editingTxId.set(null); }
   cancelDeleteTx(): void { this.confirmDeleteTxId.set(null); this.confirmDeleteTransferGroupId.set(null); }
   confirmDeleteTransfer(groupId: string): void { this.confirmDeleteTransferGroupId.set(groupId); this.confirmDeleteTxId.set(null); this.editingTxId.set(null); }
@@ -658,13 +628,12 @@ export class Finances implements OnInit {
         this.confirmDeleteTxId.set(null);
         this.calendarDayKey.set(null);
         this.refreshSummary();
-        this.toast.success('Transaccion eliminada');
+        this.toast.success('Transacción eliminada');
       },
-      error: () => this.toast.error('Error al eliminar la transaccion')
+      error: () => this.toast.error('Error al eliminar la transacción')
     });
   }
 
-  // ── CALENDARIO ────────────────────────────────────────────────────────────
   setViewMode(mode: ViewMode): void {
     this.tryNavigate(() => {
       this.txViewMode.set(mode);
@@ -706,9 +675,8 @@ export class Finances implements OnInit {
   getDay(dateKey: string): string { return String(parseInt(dateKey.substring(8))); }
   isToday(dateKey: string): boolean { return dateKey === new Date().toISOString().split('T')[0]; }
 
-  // ── PRESUPUESTOS ──────────────────────────────────────────────────────────
   submitBudget(): void {
-    if (!this.newBudget.categoryId) { this.toast.warning('Selecciona una categoria'); return; }
+    if (!this.newBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     if (Number(this.newBudget.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     const now = new Date();
     const months = Math.max(1, this.newBudget.months);
@@ -755,7 +723,7 @@ export class Finances implements OnInit {
     this.financeService.updateBudget(id, {
       amount: this.editBudget.amount,
       period: this.editBudget.period as 'MONTHLY' | 'WEEKLY',
-      endDate  // null → indefinido, string → fecha fin
+      endDate
     }).subscribe({
       next: updated => {
         this.budgets.update(l => l.map(b => b.id === id ? { ...b, ...updated } : b));
@@ -790,7 +758,6 @@ export class Finances implements OnInit {
     this.toast.warning('Presupuesto general eliminado');
   }
 
-  // ── CATEGORIAS ────────────────────────────────────────────────────────────
   submitCategory(): void {
     if (!this.newCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.financeService.createCategory({ name: this.newCategory.name.trim(), type: this.newCategory.type }).subscribe({
@@ -798,9 +765,9 @@ export class Finances implements OnInit {
         this.categories.update(l => [...l, cat].sort((a, b) => a.name.localeCompare(b.name)));
         this.showCategoryForm.set(false);
         this.newCategory = { name: '', type: 'EXPENSE' };
-        this.toast.success('Categoria creada');
+        this.toast.success('Categoría creada');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoria'))
+      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoría'))
     });
   }
 
@@ -817,7 +784,7 @@ export class Finances implements OnInit {
       next: updated => {
         this.categories.update(l => l.map(c => c.id === id ? { ...c, ...updated } : c));
         this.editingCategoryId.set(null);
-        this.toast.success('Categoria actualizada');
+        this.toast.success('Categoría actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
     });
@@ -833,11 +800,11 @@ export class Finances implements OnInit {
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
-        this.toast.success('Categoria eliminada');
+        this.toast.success('Categoría eliminada');
       },
       error: err => {
         const msg = this.extractError(err, '');
-        const txMatch = msg.match(/tiene (\d+) transaccion/);
+        const txMatch = msg.match(/tiene (\d+) transacción/);
         const budgetMatch = msg.match(/y (\d+) presupuesto/);
         if (txMatch) {
           this.showCategoryDeleteWarning.set(true);
@@ -848,7 +815,7 @@ export class Finances implements OnInit {
           });
           this.categoryReassignId.set('');
         } else {
-          this.toast.error(msg || 'Error al eliminar la categoria');
+          this.toast.error(msg || 'Error al eliminar la categoría');
         }
       }
     });
@@ -858,7 +825,7 @@ export class Finances implements OnInit {
     const info = this.categoryDeleteInfo();
     if (!info) return;
     if (!this.categoryReassignId()) {
-      this.toast.warning('Selecciona una categoria de reasignacion');
+      this.toast.warning('Selecciona una categoría de reasignación');
       return;
     }
     this.deleteCategory(info.id, this.categoryReassignId());
@@ -870,7 +837,6 @@ export class Finances implements OnInit {
     this.confirmDeleteCategoryId.set(null);
   }
 
-  // ── METAS ─────────────────────────────────────────────────────────────────
   submitGoal(): void {
     if (!this.newGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     if (Number(this.newGoal.targetAmount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
@@ -939,7 +905,6 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── BALANCES INICIALES ──────────────────────────────────────────────────
   private loadInitBalances(): { accountId: string; amount: number; date: string }[] {
     try { return JSON.parse(localStorage.getItem(this.INIT_BAL_KEY) ?? '[]'); }
     catch { return []; }
@@ -981,7 +946,6 @@ export class Finances implements OnInit {
     return tx?.id?.startsWith('init-balance-') ?? false;
   }
 
-  // ── RECURRENTES ───────────────────────────────────────────────────────────
   private loadRecurring(): RecurringRule[] {
     try { return JSON.parse(localStorage.getItem(this.RECURRING_KEY) ?? '[]'); }
     catch { return []; }
@@ -1033,7 +997,6 @@ export class Finances implements OnInit {
     return this.recurrenceOptions.find(o => o.value === r)?.label ?? r;
   }
 
-  // ── UTILIDADES ────────────────────────────────────────────────────────────
   formatCurrency(value: number | string): string {
     const n = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(n)) return '0,00';
@@ -1050,7 +1013,7 @@ export class Finances implements OnInit {
   }
 
   getCategoryName(categoryId: string): string {
-    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoria';
+    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoría';
   }
 
   getAccountName(accountId: string): string {
@@ -1139,7 +1102,6 @@ export class Finances implements OnInit {
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
   }
 
-  // ── EXPORTAR PDF ─────────────────────────────────────────────────────────
   async triggerExport(): Promise<void> {
     if (!this.summary() || !this.health()) {
       this.toast.warning('Espera a que carguen los datos');
@@ -1169,14 +1131,14 @@ export class Finances implements OnInit {
 
       await this.pdfExport.generateReport(
         {
-          userName:     this.authService.currentUser()?.displayName ?? 'Usuario',
+          userName: this.authService.currentUser()?.displayName ?? 'Usuario',
           transactions: this.transactions(),
-          accounts:     this.accounts(),
-          budgets:      this.budgets(),
-          goals:        this.goals(),
-          categories:   this.categories(),
-          summary:      this.summary()!,
-          health:       this.health()!,
+          accounts: this.accounts(),
+          budgets: this.budgets(),
+          goals: this.goals(),
+          categories: this.categories(),
+          summary: this.summary()!,
+          health: this.health()!,
           accountInceptionDates: Object.fromEntries(
             this.initialBalances().map(ib => [ib.accountId, ib.date])
           ),

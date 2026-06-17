@@ -19,14 +19,11 @@ export class SimulatorController {
     return this.simulatorService.startGame(id, req.user.id);
   }
 
-  // GET /simulator/games/:id → ahora devuelve estado completo con evento activo
   @Get('games/:id')
   getGameState(@Param('id') id: string) {
     return this.simulatorService.getGameState(id);
   }
 
-  // POST /simulator/games/:id/decision → devuelve { result, gameState }
-  // next-round ya no existe — el avance de turno es automático en submitDecision
   @Post('games/:id/decision')
   submitDecision(@Param('id') id: string, @Body() dto: SubmitDecisionDto) {
     return this.simulatorService.submitDecision(id, dto);

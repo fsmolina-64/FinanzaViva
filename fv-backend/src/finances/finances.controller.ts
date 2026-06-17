@@ -23,7 +23,6 @@ export class FinancesController {
   @Get('budget-health')
   getBudgetHealth(@Request() req: any) { return this.financesService.getBudgetHealth(req.user.id); }
 
-  // ACCOUNTS
   @Post('accounts')
   createAccount(@Request() req: any, @Body() dto: CreateAccountDto) { return this.financesService.createAccount(req.user.id, dto); }
 
@@ -33,7 +32,6 @@ export class FinancesController {
   @Delete('accounts/:id')
   deleteAccount(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteAccount(req.user.id, id); }
 
-  // TRANSACTIONS
   @Post('transactions')
   createTransaction(@Request() req: any, @Body() dto: CreateTransactionDto) { return this.financesService.createTransaction(req.user.id, dto); }
 
@@ -46,7 +44,6 @@ export class FinancesController {
   @Delete('transactions/:id')
   deleteTransaction(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteTransaction(req.user.id, id); }
 
-  // CATEGORIES — los 3 que faltaban
   @Get('categories')
   getCategories(@Request() req: any) { return this.financesService.getCategories(req.user.id); }
 
@@ -59,7 +56,6 @@ export class FinancesController {
   @Delete('categories/:id')
   deleteCategory(@Request() req: any, @Param('id') id: string, @Query('reassignToId') reassignToId?: string) { return this.financesService.deleteCategory(req.user.id, id, reassignToId); }
 
-  // BUDGETS
   @Post('budgets')
   createBudget(@Request() req: any, @Body() dto: CreateBudgetDto) { return this.financesService.createBudget(req.user.id, dto); }
 
@@ -72,7 +68,6 @@ export class FinancesController {
   @Delete('budgets/:id')
   deleteBudget(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteBudget(req.user.id, id); }
 
-  // GOALS
   @Post('goals')
   createGoal(@Request() req: any, @Body() dto: CreateGoalDto) { return this.financesService.createGoal(req.user.id, dto); }
 
@@ -85,7 +80,6 @@ export class FinancesController {
   @Delete('goals/:id')
   deleteGoal(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteGoal(req.user.id, id); }
 
-  // TRANSFERS
   @Post('transfers')
   createTransfer(@Request() req: any, @Body() dto: CreateTransferDto) { return this.financesService.createTransfer(req.user.id, dto); }
 

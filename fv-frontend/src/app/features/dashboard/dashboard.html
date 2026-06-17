@@ -108,7 +108,7 @@
         <span class="text-slate-500 text-sm">/ {{ userStats()?.quizzesCompleted ?? 0 }} aprobados</span>
       </div>
       <div class="flex items-center justify-between mt-3">
-        <span class="text-slate-500 text-xs">Tasa de aprobacion</span>
+        <span class="text-slate-500 text-xs">Tasa de aprobación</span>
         <span class="font-semibold text-sm"
           [class]="getQuizApprovalRate() >= 70 ? 'text-emerald-400' : 'text-amber-400'">
           {{ getQuizApprovalRate() }}%
