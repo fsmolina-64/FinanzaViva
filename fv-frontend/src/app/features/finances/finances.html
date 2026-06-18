@@ -8,7 +8,8 @@
       <p class="text-slate-400 text-sm">{{ confirmNavAction()!.message }}</p>
       <div class="flex gap-3">
         <button (click)="confirmNavAction()!.onConfirm()"
-          class="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Descartar cambios</button>
+          class="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Descartar
+          cambios</button>
         <button (click)="confirmNavAction.set(null)"
           class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm py-2 rounded-lg transition-colors">Permanecer</button>
       </div>
@@ -16,7 +17,7 @@
   </div>
   }
 
-  <!-- CONFIRMAR ELIMINAR CATEGORIA CON REASIGNACION -->
+  <!-- CONFIRMAR ELIMINAR CATEGORIA CON DATOS ASOCIADOS -->
   @if (showCategoryDeleteWarning()) {
   <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-[#1E293B] rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
@@ -24,9 +25,15 @@
       <p class="text-slate-400 text-sm">
         La categoría "{{ categoryDeleteInfo()?.name }}" tiene
         {{ categoryDeleteInfo()?.txCount }} transacción(es) y
-        {{ categoryDeleteInfo()?.budgetCount }} presupuesto(s).
-        Selecciona una categoría para reasignar los datos:
+        {{ categoryDeleteInfo()?.budgetCount }} presupuesto(s) asociados.
       </p>
+      @if (categoryDeleteInfo()?.budgetCount ?? 0 > 0) {
+      <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+        <p class="text-yellow-300 text-xs font-medium">Los presupuestos asociados serán eliminados automáticamente, ya que dependen de esta categoría.</p>
+      </div>
+      }
+      @if ((categoryDeleteInfo()?.txCount ?? 0) > 0) {
+      <p class="text-slate-400 text-sm">Selecciona una categoría para reasignar las transacciones:</p>
       <select [(ngModel)]="categoryReassignId"
         class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
         <option value="">Seleccionar...</option>
@@ -34,9 +41,12 @@
         <option [value]="cat.id">{{ cat.name }}</option>
         }
       </select>
+      }
       <div class="flex gap-3">
         <button (click)="confirmDeleteCategoryWithReassign()"
-          class="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Reasignar y eliminar</button>
+          class="flex-1 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">
+          {{ (categoryDeleteInfo()?.txCount ?? 0) > 0 ? 'Reasignar y eliminar' : 'Eliminar de todas formas' }}
+        </button>
         <button (click)="cancelDeleteCategoryWithReassign()"
           class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm py-2 rounded-lg transition-colors">Cancelar</button>
       </div>
@@ -60,7 +70,8 @@
         <button (click)="showExportModal.set(true)"
           class="flex items-center gap-1.5 px-3 py-2 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-xs font-semibold rounded-xl transition-all">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
           PDF
         </button>
@@ -199,14 +210,15 @@
                 <select [(ngModel)]="editTxTransferToAccountId"
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                   <option value="">Seleccionar...</option>
-                  @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+                  @for (acc of getTransferDestinations(); track acc.id) { <option [value]="acc.id">{{ acc.name }}
+                  </option> }
                 </select>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                <input [(ngModel)]="editTx.amount" type="number"
+                <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
               <div>
@@ -221,6 +233,7 @@
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             } @else {
+            @if (!isInitBalanceTx(tx)) {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
@@ -232,10 +245,18 @@
               </div>
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                <input [(ngModel)]="editTx.amount" type="number"
+                <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
             </div>
+            } @else {
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+              <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+            }
+            @if (!isInitBalanceTx(tx)) {
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
@@ -254,6 +275,16 @@
                 </select>
               </div>
             </div>
+            } @else {
+            <div>
+              <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
+              <select [(ngModel)]="editTx.accountId"
+                class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                <option value="">Seleccionar...</option>
+                @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+              </select>
+            </div>
+            }
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
@@ -280,19 +311,20 @@
             class="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-slate-800/60 transition-colors group">
             <div class="flex items-center gap-3 min-w-0">
               <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                [ngClass]="getTransactionBg(tx.type)">
-                {{ tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : isInitBalanceTx(tx) ? '*' : '-' }}
+                [ngClass]="getTransactionBg(tx)">
+                {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
               </div>
               <div class="min-w-0">
                 <p class="text-white text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
-                <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) : (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date | date:'dd MMM' }}</p>
+                <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                  (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date |
+                  date:'dd MMM' }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx.type)">
-                {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
+              <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
               </span>
-              @if (!isInitBalanceTx(tx)) {
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                 <button (click)="startEditTx(tx)"
                   class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
@@ -304,7 +336,6 @@
                   class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">&times;</button>
                 }
               </div>
-              }
             </div>
           </div>
           }
@@ -348,6 +379,13 @@
             <input [(ngModel)]="newAccount.initialBalance" type="number" placeholder="0.00"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
+          @if (newAccount.initialBalance > 0) {
+          <div class="flex items-center gap-2">
+            <input [(ngModel)]="newAccount.countAsIncome" type="checkbox" id="countAsIncome"
+              class="rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500" />
+            <label for="countAsIncome" class="text-slate-400 text-xs cursor-pointer">Contabilizar como ingreso real en reportes</label>
+          </div>
+          }
           <button (click)="submitAccount()" [disabled]="submittingAccount()"
             class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
             {{ submittingAccount() ? 'Creando...' : 'Crear cuenta' }}
@@ -485,6 +523,7 @@
           <div>
             <label class="text-slate-400 text-xs mb-1 block">Monto</label>
             <input [(ngModel)]="newTransaction.amount" type="number" placeholder="0.00"
+              (keydown)="filterAmountKey($event)"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
         </div>
@@ -555,7 +594,8 @@
             }
             @else if (confirmDeleteTxId() === $any(tx).id) {
             <div class="form-slide bg-red-500/10 px-4 py-3 flex items-center justify-between">
-              <span class="text-red-300 text-sm truncate">Eliminar "{{ tx.description || getCategoryName($any(tx).categoryId)
+              <span class="text-red-300 text-sm truncate">Eliminar "{{ tx.description ||
+                getCategoryName($any(tx).categoryId)
                 }}"?</span>
               <div class="flex gap-2 flex-shrink-0 ml-2">
                 <button (click)="deleteTransaction($any(tx).id)"
@@ -582,14 +622,15 @@
                   <select [(ngModel)]="editTxTransferToAccountId"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                     <option value="">Seleccionar...</option>
-                    @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+                    @for (acc of getTransferDestinations(); track acc.id) { <option [value]="acc.id">{{ acc.name }}
+                    </option> }
                   </select>
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
@@ -604,6 +645,7 @@
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
               } @else {
+              @if (!isInitBalanceTx(tx)) {
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
@@ -615,10 +657,18 @@
                 </div>
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
               </div>
+              } @else {
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+                <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              </div>
+              }
+              @if (!isInitBalanceTx(tx)) {
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
@@ -637,6 +687,16 @@
                   </select>
                 </div>
               </div>
+              } @else {
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
+                <select [(ngModel)]="editTx.accountId"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                  <option value="">Seleccionar...</option>
+                  @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+                </select>
+              </div>
+              }
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
@@ -662,19 +722,20 @@
             <div class="flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors group">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  [ngClass]="getTransactionBg(tx.type)">
-                  {{ tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : isInitBalanceTx(tx) ? '*' : '-' }}
+                  [ngClass]="getTransactionBg(tx)">
+                  {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
                 </div>
                 <div class="min-w-0">
                   <p class="text-white text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
-                  <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) : (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date | date:'dd MMM' }}</p>
+                  <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                    (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date |
+                    date:'dd MMM' }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx.type)">
-                  {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
+                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                  {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
                 </span>
-                @if (!isInitBalanceTx(tx)) {
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                   <button (click)="startEditTx(tx)"
                     class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
@@ -686,7 +747,6 @@
                     class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">&times;</button>
                   }
                 </div>
-                }
               </div>
             </div>
             }
@@ -808,14 +868,15 @@
                   <select [(ngModel)]="editTxTransferToAccountId"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
                     <option value="">Seleccionar...</option>
-                    @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+                    @for (acc of getTransferDestinations(); track acc.id) { <option [value]="acc.id">{{ acc.name }}
+                    </option> }
                   </select>
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
                 <div>
@@ -830,6 +891,7 @@
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
               } @else {
+              @if (!isInitBalanceTx(tx)) {
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
@@ -841,10 +903,18 @@
                 </div>
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
               </div>
+              } @else {
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+                <input [(ngModel)]="editTx.amount" type="number" (keydown)="filterAmountKey($event)"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              </div>
+              }
+              @if (!isInitBalanceTx(tx)) {
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
@@ -863,6 +933,16 @@
                   </select>
                 </div>
               </div>
+              } @else {
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
+                <select [(ngModel)]="editTx.accountId"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                  <option value="">Seleccionar...</option>
+                  @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
+                </select>
+              </div>
+              }
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
@@ -888,19 +968,19 @@
             <div class="flex items-center justify-between bg-slate-800 rounded-xl px-3 py-2.5 group">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  [ngClass]="getTransactionBg(tx.type)">
-                  {{ tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : isInitBalanceTx(tx) ? '*' : '-' }}
+                  [ngClass]="getTransactionBg(tx)">
+                  {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
                 </div>
                 <div class="min-w-0">
                   <p class="text-white text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
-                  <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) : (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }}</p>
+                  <p class="text-slate-500 text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                    (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx.type)">
-                  {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
+                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                  {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
                 </span>
-                @if (!isInitBalanceTx(tx)) {
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                   <button (click)="startEditTx(tx)"
                     class="text-slate-400 hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
@@ -912,7 +992,6 @@
                     class="text-slate-400 hover:text-red-400 font-bold text-sm px-2 py-1 rounded-md hover:bg-red-500/10 transition-all">&times;</button>
                   }
                 </div>
-                }
               </div>
             </div>
             }
@@ -1056,7 +1135,7 @@
           @if (confirmDeleteBudgetId() === b.id) {
           <div
             class="form-slide bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center justify-between">
-            <span class="text-red-300 text-sm">Eliminar presupuesto de {{ b.category?.name }}?</span>
+            <span class="text-red-300 text-sm">Eliminar presupuesto de {{ b.category?.name ?? 'categoría eliminada' }}?</span>
             <div class="flex gap-2">
               <button (click)="deleteBudget(b.id)"
                 class="bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
@@ -1066,15 +1145,59 @@
           </div>
           }
           @else if (editingBudgetId() === b.id) {
-          <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-2">
-            <label class="text-slate-400 text-xs block">Nuevo monto para {{ b.category?.name }}</label>
+          <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Categoría</label>
+                @if (editBudgetCategoryDeleted()) {
+                <p class="text-yellow-400 text-xs mb-1">La categoría original fue eliminada. Selecciona una nueva.</p>
+                }
+                <select [(ngModel)]="editBudget.categoryId"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                  <option value="">Seleccionar...</option>
+                  @for (cat of expenseCategories(); track cat.id) { <option [value]="cat.id">{{ cat.name }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Monto</label>
+                <input [(ngModel)]="editBudget.amount" type="number" (keydown)="filterAmountKey($event)"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Periodo</label>
+                <select [(ngModel)]="editBudget.period"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+                  <option value="MONTHLY">Mensual</option>
+                  <option value="WEEKLY">Semanal</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Inicio</label>
+                <input [(ngModel)]="editBudget.startDate" type="date"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-slate-400 text-xs mb-1 block">Duración (meses)</label>
+                <input [(ngModel)]="editBudget.months" type="number" min="1" [disabled]="editBudget.indefinido"
+                  class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50" />
+              </div>
+              <div class="flex items-end pb-2">
+                <label class="flex items-center gap-2 text-slate-400 text-sm cursor-pointer">
+                  <input [(ngModel)]="editBudget.indefinido" type="checkbox"
+                    class="rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500" />
+                  Indefinido
+                </label>
+              </div>
+            </div>
             <div class="flex gap-2">
-              <input [(ngModel)]="editBudgetAmount" type="number"
-                class="flex-1 bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               <button (click)="saveEditBudget(b.id)"
-                class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 rounded-lg transition-all">Guardar</button>
+                class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
               <button (click)="cancelEditBudget()"
-                class="bg-slate-700 text-slate-300 text-sm px-3 rounded-lg transition-colors">Cancelar</button>
+                class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
             </div>
           </div>
           }
@@ -1082,7 +1205,7 @@
           <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
             <div class="flex items-center justify-between mb-2">
               <div>
-                <p class="text-white text-sm font-medium">{{ b.category?.name }}</p>
+                <p class="text-white text-sm font-medium">{{ b.category?.name ?? 'Categoría eliminada' }}</p>
                 <p class="text-slate-500 text-xs">{{ b.period === 'MONTHLY' ? 'Mensual' : 'Semanal' }}</p>
               </div>
               <div class="flex items-center gap-3">
@@ -1120,7 +1243,8 @@
               #</div>
             <div class="text-left">
               <h3 class="text-white font-semibold text-sm">Categorías</h3>
-              <p class="text-slate-500 text-xs">{{ categories().length }} total · {{ userCategories().length }} personalizadas</p>
+              <p class="text-slate-500 text-xs">{{ categories().length }} total · {{ userCategories().length }}
+                personalizadas</p>
             </div>
           </div>
           <span class="text-slate-500 text-xs transition-transform inline-block"
@@ -1199,7 +1323,7 @@
                   <div class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
                   <span class="text-white text-sm">{{ cat.name }}</span>
                   @if (cat.isGlobal) {
-                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Sistema</span>
+                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Predeterminado</span>
                   }
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -1248,7 +1372,7 @@
                   <div class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
                   <span class="text-white text-sm">{{ cat.name }}</span>
                   @if (cat.isGlobal) {
-                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Sistema</span>
+                  <span class="text-[10px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded">Predeterminado</span>
                   }
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -1272,9 +1396,6 @@
     </div>
     }
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         TAB: METAS
-    ════════════════════════════════════════════════════════════════════════ -->
     @if (activeTab() === 'metas') {
     <div class="space-y-4">
 
@@ -1444,39 +1565,40 @@
   <!-- MODAL EXPORTAR PDF -->
   @if (showExportModal()) {
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-       (click)="showExportModal.set(false)">
+    (click)="showExportModal.set(false)">
     <div class="bg-[#1E293B] rounded-xl border border-slate-700/60 w-full max-w-sm mx-4 form-slide"
-         (click)="$event.stopPropagation()">
+      (click)="$event.stopPropagation()">
 
       <div class="px-5 pt-4 pb-3 flex items-center justify-between border-b border-slate-800">
         <div>
           <h3 class="text-white font-semibold text-sm">Exportar reporte PDF</h3>
           <p class="text-slate-500 text-[11px] mt-0.5">Selecciona el periodo a analizar</p>
         </div>
-        <button (click)="showExportModal.set(false)" class="text-slate-500 hover:text-white text-lg leading-none transition-colors">&times;</button>
+        <button (click)="showExportModal.set(false)"
+          class="text-slate-500 hover:text-white text-lg leading-none transition-colors">&times;</button>
       </div>
 
       <div class="px-5 py-3 space-y-2.5">
         <div>
           <label class="text-slate-500 text-[11px] mb-1 block font-medium">Fecha inicio</label>
-          <input [ngModel]="exportDateFrom()" (ngModelChange)="exportDateFrom.set($event)"
-            type="date" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+          <input [ngModel]="exportDateFrom()" (ngModelChange)="exportDateFrom.set($event)" type="date"
+            class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
         <div>
           <label class="text-slate-500 text-[11px] mb-1 block font-medium">Fecha fin</label>
-          <input [ngModel]="exportDateTo()" (ngModelChange)="exportDateTo.set($event)"
-            type="date" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+          <input [ngModel]="exportDateTo()" (ngModelChange)="exportDateTo.set($event)" type="date"
+            class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
       </div>
 
       <div class="mx-5 mb-3 bg-slate-800/50 rounded-lg px-3 py-2.5 space-y-1">
         <p class="text-slate-400 text-[11px] font-semibold mb-1.5">El PDF incluira:</p>
         @for (item of [
-          'Portada con branding',
-          'Resumen ejecutivo con KPIs',
-          'Graficas de gastos e ingresos',
-          'Estado de cuentas',
-          'Presupuestos y metas'
+        'Portada con branding',
+        'Resumen ejecutivo con KPIs',
+        'Graficas de gastos e ingresos',
+        'Estado de cuentas',
+        'Presupuestos y metas'
         ]; track item) {
         <div class="flex items-center gap-2">
           <div class="w-1 h-1 rounded-full bg-blue-500 flex-shrink-0"></div>
@@ -1493,12 +1615,14 @@
           Generando...
           } @else {
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
           Descargar PDF
           }
         </button>
-        <button (click)="showExportModal.set(false)" class="px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors">Cancelar</button>
+        <button (click)="showExportModal.set(false)"
+          class="px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors">Cancelar</button>
       </div>
 
     </div>

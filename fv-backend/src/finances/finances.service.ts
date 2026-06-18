@@ -22,15 +22,44 @@ export class FinancesService {
 
 
   async createAccount(userId: string, dto: CreateAccountDto) {
-    return this.prisma.financialAccount.create({
+    const initAmt = dto.initialBalance ?? 0;
+
+    const account = await this.prisma.financialAccount.create({
       data: {
         userId,
         name: dto.name,
         type: dto.type,
         isDefault: dto.isDefault ?? false,
-        balance: dto.initialBalance ?? 0,
+        balance: 0,
       },
     });
+
+    if (initAmt > 0) {
+      const isRealIncome = dto.countAsIncome === true;
+      await this.prisma.$transaction([
+        this.prisma.transaction.create({
+          data: {
+            userId,
+            accountId: account.id,
+            amount: initAmt,
+            type: 'INCOME',
+            description: `Balance inicial de ${dto.name}`,
+            date: new Date(),
+            isInitialBalance: !isRealIncome,
+          },
+        }),
+        this.prisma.financialAccount.update({
+          where: { id: account.id },
+          data: { balance: { increment: initAmt } },
+        }),
+        this.prisma.userStatistics.update({
+          where: { userId },
+          data: { totalTransactions: { increment: 1 } },
+        }),
+      ]);
+    }
+
+    return this.prisma.financialAccount.findUnique({ where: { id: account.id } });
   }
 
   async getAccounts(userId: string) {
@@ -271,12 +300,11 @@ export class FinancesService {
     if (category.userId && category.userId !== userId) throw new ForbiddenException();
 
     const txCount = category._count.transactions;
-    const budgetCount = category._count.budgets;
 
-    if (txCount > 0 || budgetCount > 0) {
+    if (txCount > 0) {
       if (!reassignToId) {
         throw new BadRequestException(
-          `La categoría tiene ${txCount} transacción(es) y ${budgetCount} presupuesto(s) asociados. Proporciona reassignToId para reasignar`,
+          `La categoría tiene ${txCount} transacción(es) asociadas. Proporciona reassignToId para reasignarlas antes de eliminar`,
         );
       }
       const target = await this.prisma.category.findUnique({ where: { id: reassignToId } });
@@ -287,10 +315,9 @@ export class FinancesService {
           where: { categoryId },
           data: { categoryId: reassignToId },
         }),
-        this.prisma.budget.deleteMany({ where: { categoryId } }),
         this.prisma.category.delete({ where: { id: categoryId } }),
       ]);
-      return { message: 'Categoría eliminada y datos reasignados' };
+      return { message: 'Categoría eliminada y transacciones reasignadas' };
     }
 
     return this.prisma.category.delete({ where: { id: categoryId } });
@@ -322,9 +349,17 @@ export class FinancesService {
     if (!budget) throw new NotFoundException('Presupuesto no encontrado');
     if (budget.userId !== userId) throw new ForbiddenException();
 
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!category) throw new NotFoundException('Categoría no encontrada');
+      if (category.userId && category.userId !== userId) throw new ForbiddenException('La categoría no te pertenece');
+    }
+
     return this.prisma.budget.update({
       where: { id: budgetId },
       data: {
+        ...(dto.categoryId && { categoryId: dto.categoryId }),
+        ...(dto.startDate !== undefined && { startDate: dto.startDate ? new Date(dto.startDate) : undefined }),
         ...(dto.amount !== undefined && { amount: dto.amount }),
         ...(dto.period && { period: dto.period }),
         ...(dto.endDate !== undefined && { endDate: dto.endDate ? new Date(dto.endDate) : null }),
@@ -533,7 +568,7 @@ export class FinancesService {
       where: { userId, date: { gte: startOfMonth } },
     });
 
-    const income = monthlyTxs.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+    const income = monthlyTxs.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + Number(t.amount), 0);
     const expenses = monthlyTxs.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
 
     return { totalBalance, monthlyIncome: income, monthlyExpenses: expenses };
@@ -546,7 +581,7 @@ export class FinancesService {
       include: { category: true },
     });
 
-    const income = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+    const income = transactions.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + Number(t.amount), 0);
     const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
     const available = income - expenses;
     const percentage = income > 0 ? Math.round((expenses / income) * 100) : 0;

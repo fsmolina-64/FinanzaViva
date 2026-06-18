@@ -104,8 +104,8 @@
         </div>
       </div>
       <div class="flex items-baseline gap-1">
-        <span class="text-white text-2xl font-bold">{{ userStats()?.quizzesPassed ?? 0 }}</span>
-        <span class="text-slate-500 text-sm">/ {{ userStats()?.quizzesCompleted ?? 0 }} aprobados</span>
+        <span class="text-white text-2xl font-bold">{{ userStats()?.distinctPassedQuizzes ?? 0 }}</span>
+        <span class="text-slate-500 text-sm">/ {{ userStats()?.totalQuizzes ?? 0 }} aprobados</span>
       </div>
       <div class="flex items-center justify-between mt-3">
         <span class="text-slate-500 text-xs">Tasa de aprobación</span>

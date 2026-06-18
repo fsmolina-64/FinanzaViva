@@ -56,7 +56,7 @@ export class Finances implements OnInit {
   showBudgetForm = signal(false);
   showGoalForm = signal(false);
 
-  newAccount = { name: '', type: 'CASH' as AccountType, initialBalance: 0 };
+  newAccount = { name: '', type: 'CASH' as AccountType, initialBalance: 0, countAsIncome: false };
 
   newTransaction = {
     accountId: '', categoryId: '', amount: 0,
@@ -78,7 +78,7 @@ export class Finances implements OnInit {
   pendingEditId = signal<string | null>(null);
 
   editingBudgetId = signal<string | null>(null);
-  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', indefinido: false, months: 1 };
+  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', categoryId: '', startDate: '', indefinido: false, months: 1 };
   get editBudgetAmount(): number { return this.editBudget.amount; }
   set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
@@ -133,12 +133,6 @@ export class Finances implements OnInit {
   showCategoryDeleteWarning = signal(false);
   categoryDeleteInfo = signal<{ id: string; name: string; txCount: number; budgetCount: number } | null>(null);
   categoryReassignId = signal('');
-
-  private readonly INIT_BAL_KEY = 'fv_init_balances';
-  initialBalances = signal<{ accountId: string; amount: number; date: string }[]>(
-    this.loadInitBalances()
-  );
-  private initBalanceInjected = false;
 
   private readonly RECURRING_KEY = 'fv_recurring';
   recurringRules = signal<RecurringRule[]>(this.loadRecurring());
@@ -342,7 +336,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); this.injectInitialBalanceTxs(); done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
@@ -404,22 +398,15 @@ export class Finances implements OnInit {
     this.submittingAccount.set(true);
     this.financeService.createAccount({
       name: this.newAccount.name.trim(), type: this.newAccount.type,
-      initialBalance: Number(this.newAccount.initialBalance)
+      initialBalance: Number(this.newAccount.initialBalance),
+      countAsIncome: this.newAccount.countAsIncome
     }).subscribe({
       next: acc => {
         this.accounts.update(l => [acc, ...l]);
-        const initAmt = Number(this.newAccount.initialBalance);
-        if (initAmt !== 0) {
-          const ibDate = new Date().toISOString().split('T')[0];
-          const rec = { accountId: acc.id, amount: initAmt, date: ibDate };
-          this.initialBalances.update(list => [...list, rec]);
-          this.saveInitBalances(this.initialBalances());
-          this.initBalanceInjected = false;
-          this.injectInitialBalanceTxs();
-        }
+        this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
         this.refreshSummary();
         this.showAccountForm.set(false);
-        this.newAccount = { name: '', type: 'CASH', initialBalance: 0 };
+        this.newAccount = { name: '', type: 'CASH', initialBalance: 0, countAsIncome: false };
         this.submittingAccount.set(false);
         this.toast.success('Cuenta creada');
       },
@@ -501,10 +488,6 @@ export class Finances implements OnInit {
   }
 
   startEditTx(tx: Transaction | TransferDisplay): void {
-    if (this.isInitBalanceTx(tx as Transaction)) {
-      this.toast.warning('Los balances iniciales no se pueden editar');
-      return;
-    }
     this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : tx.id);
     this.confirmDeleteTxId.set(null);
     this.editTxType.set(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER');
@@ -706,6 +689,8 @@ export class Finances implements OnInit {
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
       period: b.period,
+      categoryId: b.categoryId,
+      startDate: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       indefinido: !b.endDate,
       months: 1
     };
@@ -714,13 +699,17 @@ export class Finances implements OnInit {
 
   saveEditBudget(id: string): void {
     if (this.editBudget.amount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    if (!this.editBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     let endDate: string | null = null;
     if (!this.editBudget.indefinido) {
-      const now = new Date();
-      const end = new Date(now.getFullYear(), now.getMonth() + Math.max(1, this.editBudget.months), 0);
+      const end = new Date(this.editBudget.startDate + 'T12:00:00');
+      end.setMonth(end.getMonth() + Math.max(1, this.editBudget.months));
+      end.setDate(end.getDate() - 1);
       endDate = end.toISOString().split('T')[0];
     }
     this.financeService.updateBudget(id, {
+      categoryId: this.editBudget.categoryId,
+      startDate: this.editBudget.startDate || null,
       amount: this.editBudget.amount,
       period: this.editBudget.period as 'MONTHLY' | 'WEEKLY',
       endDate
@@ -790,33 +779,38 @@ export class Finances implements OnInit {
     });
   }
 
-  confirmDeleteCategory(id: string): void { this.confirmDeleteCategoryId.set(id); this.editingCategoryId.set(null); }
+  confirmDeleteCategory(id: string): void {
+    const cat = this.categories().find(c => c.id === id);
+    if (!cat) return;
+    const txCount = this.transactions().filter(t => t.categoryId === id).length;
+    const budgetCount = this.budgets().filter(b => b.categoryId === id).length;
+    if (txCount > 0 || budgetCount > 0) {
+      this.showCategoryDeleteWarning.set(true);
+      this.categoryDeleteInfo.set({ id, name: cat.name, txCount, budgetCount });
+      this.categoryReassignId.set('');
+    } else {
+      this.confirmDeleteCategoryId.set(id);
+      this.editingCategoryId.set(null);
+    }
+  }
+
   cancelDeleteCategory(): void { this.confirmDeleteCategoryId.set(null); }
 
   deleteCategory(id: string, reassignToId?: string): void {
     this.financeService.deleteCategory(id, reassignToId).subscribe({
       next: () => {
         this.categories.update(l => l.filter(c => c.id !== id));
+        this.budgets.update(l => l.filter(b => b.categoryId !== id));
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
         this.toast.success('Categoría eliminada');
       },
       error: err => {
-        const msg = this.extractError(err, '');
-        const txMatch = msg.match(/tiene (\d+) transacción/);
-        const budgetMatch = msg.match(/y (\d+) presupuesto/);
-        if (txMatch) {
-          this.showCategoryDeleteWarning.set(true);
-          this.categoryDeleteInfo.set({
-            id, name: this.categories().find(c => c.id === id)?.name ?? '',
-            txCount: parseInt(txMatch[1]),
-            budgetCount: budgetMatch ? parseInt(budgetMatch[1]) : 0,
-          });
-          this.categoryReassignId.set('');
-        } else {
-          this.toast.error(msg || 'Error al eliminar la categoría');
-        }
+        this.toast.error(this.extractError(err, 'Error al eliminar la categoría'));
+        this.confirmDeleteCategoryId.set(null);
+        this.showCategoryDeleteWarning.set(false);
+        this.categoryDeleteInfo.set(null);
       }
     });
   }
@@ -824,11 +818,11 @@ export class Finances implements OnInit {
   confirmDeleteCategoryWithReassign(): void {
     const info = this.categoryDeleteInfo();
     if (!info) return;
-    if (!this.categoryReassignId()) {
+    if (info.txCount > 0 && !this.categoryReassignId()) {
       this.toast.warning('Selecciona una categoría de reasignación');
       return;
     }
-    this.deleteCategory(info.id, this.categoryReassignId());
+    this.deleteCategory(info.id, this.categoryReassignId() || undefined);
   }
 
   cancelDeleteCategoryWithReassign(): void {
@@ -905,45 +899,12 @@ export class Finances implements OnInit {
     });
   }
 
-  private loadInitBalances(): { accountId: string; amount: number; date: string }[] {
-    try { return JSON.parse(localStorage.getItem(this.INIT_BAL_KEY) ?? '[]'); }
-    catch { return []; }
-  }
-
-  private saveInitBalances(list: { accountId: string; amount: number; date: string }[]): void {
-    localStorage.setItem(this.INIT_BAL_KEY, JSON.stringify(list));
-  }
-
-  private injectInitialBalanceTxs(): void {
-    if (this.initBalanceInjected) return;
-    const ibs = this.initialBalances();
-    if (ibs.length === 0) return;
-    const existing = new Set(this.transactions().map(t => `${t.accountId}-${t.date.substring(0, 10)}-${t.type}`));
-    const newTxs: Transaction[] = [];
-    for (const ib of ibs) {
-      const key = `${ib.accountId}-${ib.date}-INCOME`;
-      if (existing.has(key)) continue;
-      const accName = this.accounts().find(a => a.id === ib.accountId)?.name ?? '';
-      newTxs.push({
-        id: `init-balance-${ib.accountId}`,
-        userId: '',
-        accountId: ib.accountId,
-        categoryId: '',
-        amount: String(ib.amount),
-        type: 'INCOME' as any,
-        description: `Balance inicial de ${accName}`,
-        date: ib.date + 'T00:00:00.000Z',
-        createdAt: ib.date + 'T00:00:00.000Z',
-      });
-    }
-    if (newTxs.length > 0) {
-      this.transactions.update(l => [...newTxs, ...l]);
-    }
-    this.initBalanceInjected = true;
-  }
-
   isInitBalanceTx(tx: any): boolean {
-    return tx?.id?.startsWith('init-balance-') ?? false;
+    return tx?.isInitialBalance === true;
+  }
+
+  editBudgetCategoryDeleted(): boolean {
+    return !!this.editingBudgetId() && !this.categories().some(c => c.id === this.editBudget.categoryId);
   }
 
   private loadRecurring(): RecurringRule[] {
@@ -1020,29 +981,29 @@ export class Finances implements OnInit {
     return this.accounts().find(a => a.id === accountId)?.name ?? '';
   }
 
-  getTransactionBg(type: string): string {
-    if (type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
-    if (type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
-    if (type === 'INITIAL_BALANCE') return 'bg-purple-500/20 text-purple-400';
+  getTransactionBg(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
+    if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
+    if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
     return 'bg-red-500/20 text-red-400';
   }
 
-  getTransactionColor(type: string): string {
-    if (type === 'INCOME') return 'text-emerald-400';
-    if (type === 'TRANSFER') return 'text-blue-400';
-    if (type === 'INITIAL_BALANCE') return 'text-purple-400';
+  getTransactionColor(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return 'text-purple-400';
+    if (tx.type === 'INCOME') return 'text-emerald-400';
+    if (tx.type === 'TRANSFER') return 'text-blue-400';
     return 'text-red-400';
   }
 
-  getTransactionSign(type: string): string {
-    if (type === 'INCOME') return '+$';
-    if (type === 'TRANSFER') return '$';
-    if (type === 'INITIAL_BALANCE') return '$';
+  getTransactionSign(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return '$';
+    if (tx.type === 'INCOME') return '+$';
+    if (tx.type === 'TRANSFER') return '$';
     return '-$';
   }
 
   getTransactionLabel(tx: Transaction | TransferDisplay): string {
-    if (this.isInitBalanceTx(tx as Transaction)) return 'Balance inicial';
+    if (this.isInitBalanceTx(tx)) return 'Balance inicial';
     if (tx.type === 'TRANSFER') {
       const td = tx as TransferDisplay;
       return `${td.fromAccountName} → ${td.toAccountName}`;
@@ -1096,7 +1057,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); this.injectInitialBalanceTxs(); done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
@@ -1139,9 +1100,6 @@ export class Finances implements OnInit {
           categories: this.categories(),
           summary: this.summary()!,
           health: this.health()!,
-          accountInceptionDates: Object.fromEntries(
-            this.initialBalances().map(ib => [ib.accountId, ib.date])
-          ),
           transferGroups,
         },
         { from: this.exportDateFrom(), to: this.exportDateTo() }
@@ -1154,5 +1112,18 @@ export class Finances implements OnInit {
     } finally {
       this.exporting.set(false);
     }
+  }
+
+  filterAmountKey(event: KeyboardEvent): void {
+    const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (allowed.includes(event.key)) return;
+    if (event.ctrlKey || event.metaKey) return;
+    if (/^\d$/.test(event.key)) return;
+    if (event.key === '.') return;
+    event.preventDefault();
+  }
+
+  getTransferDestinations(): Account[] {
+    return this.accounts().filter(a => a.id !== this.editTx.accountId);
   }
 }

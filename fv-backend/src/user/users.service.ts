@@ -17,7 +17,22 @@ export class UsersService {
     const { passwordHash, ...safeUser } = user;
     const actualCount = await this.prisma.userAchievement.count({ where: { userId } });
     if (safeUser.statistics) safeUser.statistics.achievementsCount = actualCount;
-    return safeUser;
+
+    const totalQuizzes = await this.prisma.quiz.count();
+    const distinctPassed = await this.prisma.quizAttempt.groupBy({
+      by: ['quizId'],
+      where: { userId, passed: true },
+    });
+
+    return {
+      ...safeUser,
+      statistics: {
+        ...(safeUser.statistics ?? {}),
+        achievementsCount: actualCount,
+        totalQuizzes,
+        distinctPassedQuizzes: distinctPassed.length,
+      },
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

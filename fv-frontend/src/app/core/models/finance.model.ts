@@ -36,6 +36,7 @@ export interface Transaction {
   description: string | null;
   date: string;
   transferGroupId?: string | null;
+  isInitialBalance?: boolean;
   createdAt: string;
   category?: Category;
   account?: Account;
@@ -119,6 +120,7 @@ export interface CreateAccountPayload {
   name: string;
   type: AccountType;
   initialBalance?: number;
+  countAsIncome?: boolean;
 }
 
 export interface CreateTransactionPayload {
@@ -156,6 +158,8 @@ export interface UpdateTransactionPayload {
 }
 
 export interface UpdateBudgetPayload {
+  categoryId?: string;
+  startDate?: string | null;
   amount?: number;
   period?: BudgetPeriod;
   endDate?: string | null;

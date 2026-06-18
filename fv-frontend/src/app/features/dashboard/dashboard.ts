@@ -21,6 +21,8 @@ interface UserStatistics {
   gamesWon: number;
   totalTransactions: number;
   achievementsCount: number;
+  totalQuizzes: number;
+  distinctPassedQuizzes: number;
 }
 
 @Component({
@@ -118,7 +120,7 @@ export class Dashboard implements OnInit {
 
   getQuizApprovalRate(): number {
     const completed = this.userStats()?.quizzesCompleted ?? 0;
-    const passed = this.userStats()?.quizzesPassed ?? 0;
+    const passed = this.userStats()?.distinctPassedQuizzes ?? 0;
     return completed ? Math.round((passed / completed) * 100) : 0;
   }
 

@@ -178,7 +178,7 @@ export class Profile implements OnInit {
   getPassRate(): number {
     const s = this.user()?.statistics;
     if (!s?.quizzesCompleted) return 0;
-    return Math.round((s.quizzesPassed / s.quizzesCompleted) * 100);
+    return Math.round((s.distinctPassedQuizzes ?? 0) / s.quizzesCompleted * 100);
   }
 
   getWinRate(): number {
