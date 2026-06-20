@@ -20,18 +20,46 @@ export class FinancesService {
     private gamification: GamificationService,
   ) { }
 
-  // ── CUENTAS ──────────────────────────────────────────────────────────────
 
   async createAccount(userId: string, dto: CreateAccountDto) {
-    return this.prisma.financialAccount.create({
+    const initAmt = dto.initialBalance ?? 0;
+
+    const account = await this.prisma.financialAccount.create({
       data: {
         userId,
         name: dto.name,
         type: dto.type,
         isDefault: dto.isDefault ?? false,
-        balance: dto.initialBalance ?? 0,
+        balance: 0,
       },
     });
+
+    if (initAmt > 0) {
+      const isRealIncome = dto.countAsIncome === true;
+      await this.prisma.$transaction([
+        this.prisma.transaction.create({
+          data: {
+            userId,
+            accountId: account.id,
+            amount: initAmt,
+            type: 'INCOME',
+            description: `Balance inicial de ${dto.name}`,
+            date: new Date(),
+            isInitialBalance: !isRealIncome,
+          },
+        }),
+        this.prisma.financialAccount.update({
+          where: { id: account.id },
+          data: { balance: { increment: initAmt } },
+        }),
+        this.prisma.userStatistics.update({
+          where: { userId },
+          data: { totalTransactions: { increment: 1 } },
+        }),
+      ]);
+    }
+
+    return this.prisma.financialAccount.findUnique({ where: { id: account.id } });
   }
 
   async getAccounts(userId: string) {
@@ -50,13 +78,12 @@ export class FinancesService {
     if (account.userId !== userId) throw new ForbiddenException();
     if (account._count.transactions > 0) {
       throw new BadRequestException(
-        `No puedes eliminar esta cuenta porque tiene ${account._count.transactions} transaccion(es) asociada(s).`,
+        `No puedes eliminar esta cuenta porque tiene ${account._count.transactions} transacción(es) asociada(s).`,
       );
     }
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
 
-  // ── TRANSACCIONES ─────────────────────────────────────────────────────────
 
   async createTransaction(userId: string, dto: CreateTransactionDto) {
     const account = await this.prisma.financialAccount.findUnique({
@@ -100,7 +127,7 @@ export class FinancesService {
       amount: 10,
       source: XpSource.TRANSACTION_LOGGED,
       referenceId: transaction.id,
-      description: 'Transaccion registrada',
+      description: 'Transacción registrada',
     });
 
     let alert: { type: string; message: string; percentage: number } | null = null;
@@ -129,13 +156,13 @@ export class FinancesService {
         if (totalSpent > budgetAmount) {
           alert = {
             type: 'BUDGET_EXCEEDED',
-            message: `Superaste tu presupuesto en esta categoria. Gastaste $${totalSpent.toFixed(2)} de $${budgetAmount.toFixed(2)}`,
+            message: `Superaste tu presupuesto en esta categoría. Gastaste $${totalSpent.toFixed(2)} de $${budgetAmount.toFixed(2)}`,
             percentage,
           };
         } else if (percentage >= 80) {
           alert = {
             type: 'BUDGET_WARNING',
-            message: `Llevas el ${percentage}% de tu presupuesto en esta categoria.`,
+            message: `Llevas el ${percentage}% de tu presupuesto en esta categoría.`,
             percentage,
           };
         }
@@ -147,12 +174,12 @@ export class FinancesService {
 
   async updateTransaction(userId: string, transactionId: string, dto: UpdateTransactionDto) {
     const tx = await this.prisma.transaction.findUnique({ where: { id: transactionId } });
-    if (!tx) throw new NotFoundException('Transaccion no encontrada');
+    if (!tx) throw new NotFoundException('Transacción no encontrada');
     if (tx.userId !== userId) throw new ForbiddenException();
 
     const newAccountId = dto.accountId ?? tx.accountId;
-    const newType     = dto.type   ?? tx.type;
-    const newAmount   = dto.amount ?? Number(tx.amount);
+    const newType = dto.type ?? tx.type;
+    const newAmount = dto.amount ?? Number(tx.amount);
     const sameAccount = newAccountId === tx.accountId;
 
     if (!sameAccount) {
@@ -160,37 +187,35 @@ export class FinancesService {
       if (!newAcc || newAcc.userId !== userId) throw new ForbiddenException('Cuenta no valida');
     }
 
-    // revertDelta: deshace el balance de la transaccion original
     const revertDelta = tx.type === 'INCOME' ? -Number(tx.amount) : Number(tx.amount);
-    // applyDelta: aplica el nuevo valor
-    const applyDelta  = newType  === 'INCOME' ? newAmount : -newAmount;
+    const applyDelta = newType === 'INCOME' ? newAmount : -newAmount;
 
     const balanceOps = sameAccount
       ? [this.prisma.financialAccount.update({
-          where: { id: tx.accountId },
-          data:  { balance: { increment: revertDelta + applyDelta } },
-        })]
+        where: { id: tx.accountId },
+        data: { balance: { increment: revertDelta + applyDelta } },
+      })]
       : [
-          this.prisma.financialAccount.update({
-            where: { id: tx.accountId },
-            data:  { balance: { increment: revertDelta } },
-          }),
-          this.prisma.financialAccount.update({
-            where: { id: newAccountId },
-            data:  { balance: { increment: applyDelta } },
-          }),
-        ];
+        this.prisma.financialAccount.update({
+          where: { id: tx.accountId },
+          data: { balance: { increment: revertDelta } },
+        }),
+        this.prisma.financialAccount.update({
+          where: { id: newAccountId },
+          data: { balance: { increment: applyDelta } },
+        }),
+      ];
 
     const results = await this.prisma.$transaction([
       this.prisma.transaction.update({
         where: { id: transactionId },
         data: {
-          ...(dto.accountId  && { accountId:   dto.accountId }),
-          ...(dto.categoryId && { categoryId:  dto.categoryId }),
-          ...(dto.amount  !== undefined && { amount:       dto.amount }),
-          ...(dto.type       && { type:         dto.type }),
+          ...(dto.accountId && { accountId: dto.accountId }),
+          ...(dto.categoryId && { categoryId: dto.categoryId }),
+          ...(dto.amount !== undefined && { amount: dto.amount }),
+          ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.date       && { date:         new Date(dto.date) }),
+          ...(dto.date && { date: new Date(dto.date) }),
         },
         include: { category: true, account: true },
       }),
@@ -210,7 +235,7 @@ export class FinancesService {
 
   async deleteTransaction(userId: string, transactionId: string) {
     const tx = await this.prisma.transaction.findUnique({ where: { id: transactionId } });
-    if (!tx) throw new NotFoundException('Transaccion no encontrada');
+    if (!tx) throw new NotFoundException('Transacción no encontrada');
     if (tx.userId !== userId) throw new ForbiddenException();
 
     const balanceDelta = tx.type === 'INCOME' ? -Number(tx.amount) : Number(tx.amount);
@@ -227,10 +252,9 @@ export class FinancesService {
       }),
     ]);
 
-    return { message: 'Transaccion eliminada' };
+    return { message: 'Transacción eliminada' };
   }
 
-  // ── CATEGORIAS ────────────────────────────────────────────────────────────
 
   async getCategories(userId: string) {
     return this.prisma.category.findMany({
@@ -254,9 +278,8 @@ export class FinancesService {
 
   async updateCategory(userId: string, categoryId: string, dto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
-    if (!category) throw new NotFoundException('Categoria no encontrada');
-    if (category.isGlobal) throw new ForbiddenException('No puedes modificar categorias globales');
-    if (category.userId !== userId) throw new ForbiddenException();
+    if (!category) throw new NotFoundException('Categoría no encontrada');
+    if (category.userId && category.userId !== userId) throw new ForbiddenException();
 
     return this.prisma.category.update({
       where: { id: categoryId },
@@ -268,26 +291,38 @@ export class FinancesService {
     });
   }
 
-  async deleteCategory(userId: string, categoryId: string) {
+  async deleteCategory(userId: string, categoryId: string, reassignToId?: string) {
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
       include: { _count: { select: { transactions: true, budgets: true } } },
     });
-    if (!category) throw new NotFoundException('Categoria no encontrada');
-    if (category.isGlobal) throw new ForbiddenException('No puedes eliminar categorias globales');
-    if (category.userId !== userId) throw new ForbiddenException();
+    if (!category) throw new NotFoundException('Categoría no encontrada');
+    if (category.userId && category.userId !== userId) throw new ForbiddenException();
 
-    const totalRefs = category._count.transactions + category._count.budgets;
-    if (totalRefs > 0) {
-      throw new BadRequestException(
-        `No puedes eliminar esta categoria porque tiene ${category._count.transactions} transaccion(es) y ${category._count.budgets} presupuesto(s) asociados.`,
-      );
+    const txCount = category._count.transactions;
+
+    if (txCount > 0) {
+      if (!reassignToId) {
+        throw new BadRequestException(
+          `La categoría tiene ${txCount} transacción(es) asociadas. Proporciona reassignToId para reasignarlas antes de eliminar`,
+        );
+      }
+      const target = await this.prisma.category.findUnique({ where: { id: reassignToId } });
+      if (!target) throw new BadRequestException('La categoría de reasignación no existe');
+
+      await this.prisma.$transaction([
+        this.prisma.transaction.updateMany({
+          where: { categoryId },
+          data: { categoryId: reassignToId },
+        }),
+        this.prisma.category.delete({ where: { id: categoryId } }),
+      ]);
+      return { message: 'Categoría eliminada y transacciones reasignadas' };
     }
 
     return this.prisma.category.delete({ where: { id: categoryId } });
   }
 
-  // ── PRESUPUESTOS ──────────────────────────────────────────────────────────
 
   async createBudget(userId: string, dto: CreateBudgetDto) {
     return this.prisma.budget.create({
@@ -314,9 +349,17 @@ export class FinancesService {
     if (!budget) throw new NotFoundException('Presupuesto no encontrado');
     if (budget.userId !== userId) throw new ForbiddenException();
 
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!category) throw new NotFoundException('Categoría no encontrada');
+      if (category.userId && category.userId !== userId) throw new ForbiddenException('La categoría no te pertenece');
+    }
+
     return this.prisma.budget.update({
       where: { id: budgetId },
       data: {
+        ...(dto.categoryId && { categoryId: dto.categoryId }),
+        ...(dto.startDate !== undefined && { startDate: dto.startDate ? new Date(dto.startDate) : undefined }),
         ...(dto.amount !== undefined && { amount: dto.amount }),
         ...(dto.period && { period: dto.period }),
         ...(dto.endDate !== undefined && { endDate: dto.endDate ? new Date(dto.endDate) : null }),
@@ -334,7 +377,6 @@ export class FinancesService {
     return { message: 'Presupuesto eliminado' };
   }
 
-  // ── METAS ─────────────────────────────────────────────────────────────────
 
   async createGoal(userId: string, dto: CreateGoalDto) {
     return this.prisma.financialGoal.create({
@@ -401,7 +443,6 @@ export class FinancesService {
     return { message: 'Meta eliminada' };
   }
 
-  // ── TRANSFERENCIAS ────────────────────────────────────────────────────────
 
   async createTransfer(userId: string, dto: CreateTransferDto) {
     if (dto.fromAccountId === dto.toAccountId) {
@@ -416,9 +457,10 @@ export class FinancesService {
     if (!fromAccount || fromAccount.userId !== userId) throw new ForbiddenException();
     if (!toAccount || toAccount.userId !== userId) throw new ForbiddenException();
 
-    // Categoría placeholder — las transferencias no tienen categoría propia
     const systemCategory = await this.prisma.category.findFirst({ where: { isGlobal: true } });
-    if (!systemCategory) throw new BadRequestException('No hay categorias disponibles');
+    if (!systemCategory) throw new BadRequestException('No hay categorías disponibles');
+
+    const groupId = crypto.randomUUID();
 
     const results = await this.prisma.$transaction([
       this.prisma.transaction.create({
@@ -430,6 +472,7 @@ export class FinancesService {
           type: 'TRANSFER',
           description: dto.description ?? `Transferencia a ${toAccount.name}`,
           date: new Date(dto.date),
+          transferGroupId: groupId,
         },
       }),
       this.prisma.transaction.create({
@@ -441,6 +484,7 @@ export class FinancesService {
           type: 'TRANSFER',
           description: dto.description ?? `Transferencia desde ${fromAccount.name}`,
           date: new Date(dto.date),
+          transferGroupId: groupId,
         },
       }),
       this.prisma.financialAccount.update({
@@ -456,7 +500,64 @@ export class FinancesService {
     return { fromTransaction: results[0], toTransaction: results[1] };
   }
 
-  // ── RESUMEN Y SALUD ───────────────────────────────────────────────────────
+  async deleteTransferByGroup(userId: string, groupId: string) {
+    const txs = await this.prisma.transaction.findMany({ where: { transferGroupId: groupId, userId } });
+    if (txs.length === 0) throw new NotFoundException('Transferencia no encontrada');
+
+    const fromTx = txs.find(t => {
+      const acc = txs.find(other => other.id !== t.id);
+      return acc && t.accountId !== acc.accountId;
+    });
+    const revertOps = txs.map(tx => {
+      const other = txs.find(t2 => t2.id !== tx.id);
+      const isFrom = other ? tx.accountId !== other.accountId : true;
+      return this.prisma.financialAccount.update({
+        where: { id: tx.accountId },
+        data: { balance: { increment: isFrom ? Number(tx.amount) : -Number(tx.amount) } },
+      });
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.transaction.deleteMany({ where: { transferGroupId: groupId } }),
+      ...revertOps,
+    ]);
+    return { message: 'Transferencia eliminada' };
+  }
+
+  async updateTransfer(userId: string, groupId: string, dto: { fromAccountId?: string; toAccountId?: string; amount?: number; description?: string; date?: string }) {
+    const txs = await this.prisma.transaction.findMany({
+      where: { transferGroupId: groupId, userId },
+      orderBy: { date: 'asc' },
+    });
+    if (txs.length !== 2) throw new NotFoundException('Transferencia no encontrada');
+
+    const oldFromTx = txs.find(t => t.accountId === dto.fromAccountId || !txs.find(other => other.id !== t.id && other.accountId === dto.fromAccountId)) ?? txs[0];
+    const oldToTx = txs.find(t => t.id !== oldFromTx.id)!;
+    const oldFromAcc = oldFromTx.accountId;
+    const oldToAcc = oldToTx.accountId;
+    const newFromAcc = dto.fromAccountId ?? oldFromAcc;
+    const newToAcc = dto.toAccountId ?? oldToAcc;
+    const newAmt = dto.amount ?? Number(oldFromTx.amount);
+
+    const ops: any[] = [];
+
+    ops.push(this.prisma.financialAccount.update({ where: { id: oldFromAcc }, data: { balance: { increment: Number(oldFromTx.amount) } } }));
+    ops.push(this.prisma.financialAccount.update({ where: { id: oldToAcc }, data: { balance: { decrement: Number(oldToTx.amount) } } }));
+
+    const fromData: any = { accountId: newFromAcc, amount: newAmt, description: dto.description !== undefined ? dto.description : oldFromTx.description };
+    const toData: any = { accountId: newToAcc, amount: newAmt, description: dto.description !== undefined ? dto.description : undefined };
+    if (dto.date) { fromData.date = new Date(dto.date); toData.date = new Date(dto.date); }
+
+    ops.push(this.prisma.transaction.update({ where: { id: oldFromTx.id }, data: fromData }));
+    ops.push(this.prisma.transaction.update({ where: { id: oldToTx.id }, data: toData }));
+
+    ops.push(this.prisma.financialAccount.update({ where: { id: newFromAcc }, data: { balance: { decrement: newAmt } } }));
+    ops.push(this.prisma.financialAccount.update({ where: { id: newToAcc }, data: { balance: { increment: newAmt } } }));
+
+    const results = await this.prisma.$transaction(ops);
+    return { fromTransaction: results[2], toTransaction: results[3] };
+  }
+
 
   async getSummary(userId: string) {
     const accounts = await this.prisma.financialAccount.findMany({ where: { userId } });
@@ -467,7 +568,7 @@ export class FinancesService {
       where: { userId, date: { gte: startOfMonth } },
     });
 
-    const income = monthlyTxs.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+    const income = monthlyTxs.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + Number(t.amount), 0);
     const expenses = monthlyTxs.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
 
     return { totalBalance, monthlyIncome: income, monthlyExpenses: expenses };
@@ -480,7 +581,7 @@ export class FinancesService {
       include: { category: true },
     });
 
-    const income = transactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + Number(t.amount), 0);
+    const income = transactions.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + Number(t.amount), 0);
     const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
     const available = income - expenses;
     const percentage = income > 0 ? Math.round((expenses / income) * 100) : 0;
@@ -505,6 +606,7 @@ export class FinancesService {
     const breakdown = transactions
       .filter(t => t.type === 'EXPENSE')
       .reduce((acc: Record<string, number>, t) => {
+        if (!t.category) return acc;
         const cat = t.category.name;
         acc[cat] = (acc[cat] || 0) + Number(t.amount);
         return acc;

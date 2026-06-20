@@ -12,7 +12,6 @@ export class SimulatorService {
     private readonly gamification: GamificationService,
   ) { }
 
-  // ─────────────────────────── API PÚBLICA ───────────────────────────
 
   async createGame(userId: string, dto: CreateGameDto) {
     const humanCount = dto.humanPlayers?.length ?? 0;
@@ -23,13 +22,12 @@ export class SimulatorService {
       throw new BadRequestException('La partida requiere entre 1 y 4 participantes en total');
     }
 
-    // Interleave humanos y bots para que el orden sea variado
     const humanInputs = (dto.humanPlayers ?? []).map((p, i) => ({
       displayName: p.displayName,
       userId: i === 0 ? userId : null,
       isBot: false as const,
       botPersonality: null,
-      sortKey: i * 2, // posiciones pares → humanos primero
+      sortKey: i * 2,
     }));
 
     const botInputs = (dto.botPlayers ?? []).map((b, i) => ({
@@ -37,7 +35,7 @@ export class SimulatorService {
       userId: null,
       isBot: true as const,
       botPersonality: b.personality,
-      sortKey: i * 2 + 1, // posiciones impares → bots intercalados
+      sortKey: i * 2 + 1,
     }));
 
     const allPlayers = [...humanInputs, ...botInputs]
@@ -48,8 +46,7 @@ export class SimulatorService {
       data: {
         createdByUserId: userId,
         maxRounds: dto.maxRounds,
-        // TODO: verificar el valor correcto del enum RoundType en schema.prisma
-        // Si lanza error, busca `enum RoundType {` y reemplaza 'STANDARD' con el primer valor
+
         roundType: 'MONTHLY',
         mode: dto.mode,
         status: 'WAITING',
@@ -61,7 +58,6 @@ export class SimulatorService {
             isBot: p.isBot,
             botPersonality: p.botPersonality,
             turnOrder: p.turnOrder,
-            // Valores iniciales realistas para un joven profesional
             money: 1500,
             income: 2000,
             expenses: 1200,
@@ -94,7 +90,6 @@ export class SimulatorService {
       data: { status: 'IN_PROGRESS', startedAt: new Date() },
     });
 
-    // Asignar primer jugador y avanzar hasta el primer turno humano
     await this.assignEventToPlayer(gameId, game.players[0].id);
     return this.advanceUntilHumanTurn(gameId);
   }
@@ -112,7 +107,6 @@ export class SimulatorService {
 
     if (!game) throw new NotFoundException('Partida no encontrada');
 
-    // Cargar evento del jugador activo
     let currentEvent: Awaited<ReturnType<typeof this.prisma.simulatorEvent.findUnique>> = null;
     if (game.currentPlayerId) {
       const activePlayer = game.players.find(p => p.id === game.currentPlayerId);
@@ -154,10 +148,8 @@ export class SimulatorService {
       throw new BadRequestException('La opción no corresponde al evento activo del jugador');
     }
 
-    // Aplicar efectos y registrar
     const result = await this.applyOptionToPlayer(activePlayer, option, gameId, game.currentRound);
 
-    // Avanzar turno (procesando bots automáticamente hasta el siguiente humano)
     const gameState = await this.advanceUntilHumanTurn(gameId);
 
     return { result, gameState };
@@ -191,15 +183,8 @@ export class SimulatorService {
     }));
   }
 
-  // ─────────────────────────── TURNO ───────────────────────────────
-
-  /**
-   * Loop principal del juego.
-   * Avanza turno tras turno hasta que le toca a un humano (o el juego termina).
-   * Los bots se resuelven automáticamente en esta misma llamada.
-   */
   private async advanceUntilHumanTurn(gameId: string) {
-    const MAX_ITERATIONS = 200; // válvula de seguridad para evitar bucles infinitos
+    const MAX_ITERATIONS = 200;
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       const game = await this.prisma.simulatorGame.findUnique({
@@ -212,22 +197,18 @@ export class SimulatorService {
       const pendingPlayers = game.players.filter(p => !p.hasActed && !p.isEliminated);
 
       if (pendingPlayers.length === 0) {
-        // Todos actuaron → cerrar ronda
         const isGameOver = await this.processEndOfRound(gameId, game);
         if (isGameOver) break;
-        continue; // siguiente iteración carga el estado nuevo de la ronda siguiente
+        continue;
       }
 
       const nextPlayer = pendingPlayers[0];
 
-      // Asignar evento al siguiente jugador y marcarlo como activo
       await this.assignEventToPlayer(gameId, nextPlayer.id);
 
-      if (!nextPlayer.isBot) break; // Turno humano → salir del loop
+      if (!nextPlayer.isBot) break;
 
-      // Turno de bot → decidir automáticamente
       await this.processBotTurn(gameId, nextPlayer.id);
-      // El loop continúa: el bot ya actuó (hasActed=true), buscará el siguiente
     }
 
     return this.getGameState(gameId);
@@ -248,10 +229,8 @@ export class SimulatorService {
     ]);
   }
 
-  // ─────────────────────────── BOTS ────────────────────────────────
 
   private async processBotTurn(gameId: string, botPlayerId: string) {
-    // Cargar datos frescos (el evento fue asignado justo antes)
     const [bot, game] = await Promise.all([
       this.prisma.simulatorPlayer.findUnique({ where: { id: botPlayerId }, include: { consequences: true } }),
       this.prisma.simulatorGame.findUnique({ where: { id: gameId } }),
@@ -291,31 +270,24 @@ export class SimulatorService {
 
       switch (personality) {
         case 'CONSERVATIVE':
-          // Prioriza: evitar deuda, aumentar ahorros, ingresos estables
           weight = money * 1.5 - debt * 3 + savings * 2 + income * 1.5 - expenses * 2 + score * 0.8;
-          // Penalizar fuerte si ya tiene deuda
           if (currentDebt > 500 && debt > 0) weight -= 50;
           break;
 
         case 'RISKY':
-          // Prioriza: inversiones y ganancias, ignora deuda moderada
           weight = money * 0.8 + investments * 3 + income * 2 - debt * 0.3 + score * 0.3;
           break;
 
         case 'IMPULSIVE':
-          // Decisiones aleatorias con ligero sesgo hacia ganancias inmediatas
           weight = Math.random() * 100 + money * 0.3;
           break;
 
         case 'INVESTOR':
-          // Prioriza: inversiones y activos, acepta gastos altos si hay retorno
           weight = investments * 4 + savings * 1.5 + income * 2 - debt * 1 + money * 0.4;
           break;
 
         case 'SAVER':
-          // Prioriza: ahorros, reducir gastos, evitar cualquier deuda
           weight = savings * 4 + money * 1.5 - expenses * 3 - debt * 4 + income * 1;
-          // Pánico si el dinero está bajo
           if (currentMoney < 500 && savings > 0) weight += savings * 2;
           break;
 
@@ -329,16 +301,13 @@ export class SimulatorService {
     return scored.sort((a, b) => b.weight - a.weight)[0].opt;
   }
 
-  // ─────────────────────────── RONDAS ──────────────────────────────
 
   private async processEndOfRound(gameId: string, game: any): Promise<boolean> {
-    // Cerrar el registro de la ronda
     await this.prisma.simulatorRound.updateMany({
       where: { gameId, roundNumber: game.currentRound },
       data: { finishedAt: new Date() },
     });
 
-    // Aplicar ciclo de ingresos/gastos y consecuencias a todos los jugadores activos
     const players = await this.prisma.simulatorPlayer.findMany({
       where: { gameId, isEliminated: false },
       include: { consequences: true },
@@ -350,7 +319,6 @@ export class SimulatorService {
       let expensesDelta = 0;
       let scoreDelta = 0;
 
-      // Procesar consecuencias persistentes
       for (const consequence of player.consequences) {
         if (consequence.roundsRemaining <= 0) continue;
         moneyDelta += Number(consequence.effectMoney);
@@ -368,7 +336,6 @@ export class SimulatorService {
         }
       }
 
-      // Ciclo mensual: ingresos - gastos + efectos de consecuencias
       const monthlyNet =
         (Number(player.income) + incomeDelta) -
         (Number(player.expenses) + expensesDelta);
@@ -381,7 +348,7 @@ export class SimulatorService {
         data: {
           money: newMoney,
           financialScore: newScore,
-          hasActed: false,      // reset para la siguiente ronda
+          hasActed: false,
           currentEventId: null,
         },
       });
@@ -389,10 +356,9 @@ export class SimulatorService {
 
     const nextRound = game.currentRound + 1;
 
-    // ¿Fue la última ronda?
     if (nextRound > game.maxRounds) {
       await this.finishGame(gameId, game.createdByUserId);
-      return true; // juego terminado
+      return true;
     }
 
     await this.prisma.simulatorGame.update({
@@ -400,10 +366,9 @@ export class SimulatorService {
       data: { currentRound: nextRound, currentPlayerId: null },
     });
 
-    return false; // continuar
+    return false;
   }
 
-  // ─────────────────────────── OPCIÓN A JUGADOR ───────────────────
 
   private async applyOptionToPlayer(player: any, option: any, gameId: string, roundNumber: number) {
     const moneyBefore = Number(player.money);
@@ -418,11 +383,9 @@ export class SimulatorService {
     const savingsAfter = Math.max(0, savingsBefore + Number(option.effectSavings ?? 0));
     const investmentsAfter = Math.max(0, investmentsBefore + Number(option.effectInvestments ?? 0));
     const assetsAfter = Math.max(0, Number(player.assets ?? 0) + Number(option.effectAssets ?? 0));
-    // income y expenses cambian permanentemente (representan cambios laborales/contractuales)
     const incomeAfter = Math.max(0, Number(player.income) + Number(option.effectIncome ?? 0));
     const expensesAfter = Math.max(0, Number(player.expenses) + Number(option.effectExpenses ?? 0));
 
-    // Asegurar que existe el registro de ronda
     let round = await this.prisma.simulatorRound.findUnique({
       where: { gameId_roundNumber: { gameId, roundNumber } },
     });
@@ -432,7 +395,6 @@ export class SimulatorService {
       });
     }
 
-    // Registrar la acción del jugador
     await this.prisma.simulatorPlayerRound.create({
       data: {
         roundId: round.id,
@@ -448,7 +410,6 @@ export class SimulatorService {
       },
     });
 
-    // Crear consecuencia persistente si la opción la genera
     const consequenceRounds = Number(option.consequenceRounds ?? 0);
     if (consequenceRounds > 0 && option.consequenceDesc) {
       await this.prisma.simulatorConsequence.create({
@@ -465,7 +426,6 @@ export class SimulatorService {
       });
     }
 
-    // Actualizar estado del jugador
     await this.prisma.simulatorPlayer.update({
       where: { id: player.id },
       data: {
@@ -506,7 +466,6 @@ export class SimulatorService {
     };
   }
 
-  // ─────────────────────────── FINAL ───────────────────────────────
 
   private async finishGame(gameId: string, userId: string) {
     const game = await this.prisma.simulatorGame.findUnique({
@@ -515,7 +474,6 @@ export class SimulatorService {
     });
     if (!game) return;
 
-    // Rankear todos los jugadores por score financiero
     for (let i = 0; i < game.players.length; i++) {
       await this.prisma.simulatorPlayer.update({
         where: { id: game.players[i].id },
@@ -523,7 +481,6 @@ export class SimulatorService {
       });
     }
 
-    // XP al recipiente designado, basada en el mejor jugador humano
     const recipientId = (game as any).xpRecipientId ?? userId;
     const humanPlayers = game.players.filter((p: any) => !p.isBot);
     const bestHuman = humanPlayers[0] ?? game.players[0];
@@ -556,10 +513,10 @@ export class SimulatorService {
 
     const netWorth = money + savings + investments - debt;
 
-    const scoreXP = Math.floor((score / 1000) * 100);                          // 0–100 pts
-    const netWorthXP = Math.max(0, Math.min(50, Math.floor(netWorth / 100)));  // 0–50 pts
-    const roundsBonus = maxRounds * 5;                                          // 15–50 pts
-    const debtPenalty = debt > 3000 ? 30 : debt > 1500 ? 15 : 0;              // 0–30 pts
+    const scoreXP = Math.floor((score / 1000) * 100);
+    const netWorthXP = Math.max(0, Math.min(50, Math.floor(netWorth / 100)));
+    const roundsBonus = maxRounds * 5;
+    const debtPenalty = debt > 3000 ? 30 : debt > 1500 ? 15 : 0;
 
     return Math.max(10, scoreXP + netWorthXP + roundsBonus - debtPenalty);
   }

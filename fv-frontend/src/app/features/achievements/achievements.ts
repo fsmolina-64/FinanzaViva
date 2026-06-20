@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
+import { ToastService } from '../../core/services/toast.service';
 import { Achievement, Reward } from '../../core/models/achievement.model';
 import { UserProfile } from '../../core/models/user.model';
 
@@ -55,16 +56,17 @@ export class Achievements implements OnInit {
 
   constructor(
     private achievementService: AchievementService,
-    private api: ApiService
+    private api: ApiService,
+    private toast: ToastService
   ) { }
 
   ngOnInit(): void {
     let done = 0;
     const check = () => { if (++done >= 3) this.loading.set(false); };
 
-    this.achievementService.getAchievements().subscribe({ next: d => { this.achievements.set(d); check(); }, error: check });
-    this.achievementService.getRewards().subscribe({ next: d => { this.rewards.set(d); check(); }, error: check });
-    this.api.get<UserProfile>('/users/me').subscribe({ next: d => { this.userProfile.set(d); check(); }, error: check });
+    this.achievementService.getAchievements().subscribe({ next: d => { this.achievements.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar logros'); } });
+    this.achievementService.getRewards().subscribe({ next: d => { this.rewards.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar recompensas'); } });
+    this.api.get<UserProfile>('/users/me').subscribe({ next: d => { this.userProfile.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar perfil'); } });
   }
 
   private groupByCategory(list: Achievement[]): Record<string, Achievement[]> {
@@ -99,8 +101,9 @@ export class Achievements implements OnInit {
           isEquipped: r.id === res.rewardId ? true : r.type === equipped?.type ? false : r.isEquipped
         })));
         this.equipping.set(null);
+        this.toast.success('Recompensa equipada');
       },
-      error: () => this.equipping.set(null)
+      error: () => { this.equipping.set(null); this.toast.error('Error al equipar la recompensa'); }
     });
   }
 

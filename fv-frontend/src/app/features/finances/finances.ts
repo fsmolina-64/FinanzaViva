@@ -5,13 +5,16 @@ import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../core/services/finance.service';
 import { ToastService } from '../../core/services/toast.service';
 import { QuickTransactionService } from '../../core/services/quick-transaction.service';
+import { PdfExportService } from '../../shared/services/pdf-export.service';
+import { AuthService } from '../../core/services/auth.service';
+import { GamificationService } from '../../core/services/gamification.service';
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
-  CreateTransactionPayload, CreateCategoryPayload
+  CreateTransactionPayload, CreateCategoryPayload, TransferDisplay
 } from '../../core/models/finance.model';
 
-type Tab = 'resumen' | 'transacciones' | 'presupuestos' | 'metas';
+type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
 type TxTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
 type TxDateMode = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'YEAR';
 type ViewMode = 'list' | 'calendar';
@@ -25,7 +28,7 @@ interface RecurringRule {
   type: 'INCOME' | 'EXPENSE';
   description?: string;
   recurrence: Exclude<Recurrence, 'NONE'>;
-  nextDate: string;   // YYYY-MM-DD
+  nextDate: string;
 }
 
 @Component({
@@ -37,7 +40,6 @@ interface RecurringRule {
 })
 export class Finances implements OnInit {
 
-  // ── GENERAL ──────────────────────────────────────────────────────────────
   activeTab = signal<Tab>('resumen');
   loading = signal(true);
   summary = signal<FinanceSummary | null>(null);
@@ -49,13 +51,12 @@ export class Finances implements OnInit {
   goals = signal<Goal[]>([]);
   lastAlert = signal<TransactionAlert | null>(null);
 
-  // ── FORMS: CREAR ─────────────────────────────────────────────────────────
   showAccountForm = signal(false);
   showTransactionForm = signal(false);
   showBudgetForm = signal(false);
   showGoalForm = signal(false);
 
-  newAccount = { name: '', type: 'CASH' as AccountType, initialBalance: 0 };
+  newAccount = { name: '', type: 'CASH' as AccountType, initialBalance: 0, countAsIncome: false };
 
   newTransaction = {
     accountId: '', categoryId: '', amount: 0,
@@ -67,79 +68,81 @@ export class Finances implements OnInit {
   newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', months: 1 };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
-  // ── EDICION TRANSACCION ───────────────────────────────────────────────────
   editingTxId = signal<string | null>(null);
-  editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');   // signal reactivo para computed
+  editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
   editTx = { categoryId: '', amount: 0, description: '', date: '', accountId: '' };
+  editTxTransferToAccountId = '';
+  editTxTransferGroupId = '';
 
   showEditDebtConfirm = signal(false);
   pendingEditId = signal<string | null>(null);
 
-  // ── EDICION PRESUPUESTO ───────────────────────────────────────────────────
   editingBudgetId = signal<string | null>(null);
-  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', indefinido: false, months: 1 };
+  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', categoryId: '', startDate: '', indefinido: false, months: 1 };
   get editBudgetAmount(): number { return this.editBudget.amount; }
   set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
-  // ── EDICION META ──────────────────────────────────────────────────────────
   editingGoalId = signal<string | null>(null);
   editGoal = { name: '', targetAmount: 0, deadline: '' };
   addingProgressGoalId = signal<string | null>(null);
   progressAmount = 0;
   progressAccountId = '';
 
-  // ── EDICION CATEGORIA ─────────────────────────────────────────────────────
   showCategorySection = signal(false);
   showCategoryForm = signal(false);
   editingCategoryId = signal<string | null>(null);
   newCategory = { name: '', type: 'EXPENSE' as 'INCOME' | 'EXPENSE' };
   editCategory = { name: '' };
 
-  // ── CONFIRMACIONES ELIMINAR ───────────────────────────────────────────────
   confirmDeleteTxId = signal<string | null>(null);
+  confirmDeleteTransferGroupId = signal<string | null>(null);
   confirmDeleteBudgetId = signal<string | null>(null);
   confirmDeleteGoalId = signal<string | null>(null);
   confirmDeleteCategoryId = signal<string | null>(null);
 
-  // ── LOADING STATES ────────────────────────────────────────────────────────
   submittingAccount = signal(false);
   submittingTx = signal(false);
   submittingBudget = signal(false);
   submittingGoal = signal(false);
 
-  // ── DEUDA ─────────────────────────────────────────────────────────────────
   showDebtConfirm = signal(false);
   private pendingDebtPayload: CreateTransactionPayload | null = null;
 
-  // ── FILTROS LISTA ─────────────────────────────────────────────────────────
   txFilter = signal<TxTypeFilter>('ALL');
   txDateMode = signal<TxDateMode>('MONTH');
   txMonth = signal(new Date().getMonth());
   txYear = signal(new Date().getFullYear());
   txViewMode = signal<ViewMode>('list');
 
-  // ── FILTROS CALENDARIO (independientes de la lista) ───────────────────────
   calMonth = signal(new Date().getMonth());
   calYear = signal(new Date().getFullYear());
   calTypeFilter = signal<TxTypeFilter>('ALL');
   calendarDayKey = signal<string | null>(null);
 
-  // ── PRESUPUESTO GENERAL ───────────────────────────────────────────────────
   globalBudgetLimit = signal<number>(parseFloat(localStorage.getItem('fv_global_budget') ?? '0'));
   showGlobalForm = signal(false);
   newGlobalLimit = 0;
 
-  // ── REGLAS RECURRENTES (localStorage) ────────────────────────────────────
+  showExportModal = signal(false);
+  exportDateFrom = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+  exportDateTo = signal(new Date().toISOString().split('T')[0]);
+  exporting = signal(false);
+
+  confirmNavAction = signal<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
+  showCategoryDeleteWarning = signal(false);
+  categoryDeleteInfo = signal<{ id: string; name: string; txCount: number; budgetCount: number } | null>(null);
+  categoryReassignId = signal('');
+
   private readonly RECURRING_KEY = 'fv_recurring';
   recurringRules = signal<RecurringRule[]>(this.loadRecurring());
 
-  // ── CONSTANTES ────────────────────────────────────────────────────────────
   readonly monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   readonly weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
   readonly tabs: { key: Tab; label: string }[] = [
     { key: 'resumen', label: 'Resumen' },
-    { key: 'transacciones', label: 'Transacciones' },
+    { key: 'transacciónes', label: 'Transacciones' },
     { key: 'presupuestos', label: 'Presupuestos' },
     { key: 'metas', label: 'Metas' }
   ];
@@ -151,7 +154,6 @@ export class Finances implements OnInit {
     { value: 'YEARLY', label: 'Cada ano' },
   ];
 
-  // ── COMPUTED ──────────────────────────────────────────────────────────────
   expenseCategories = computed(() => this.categories().filter(c => c.type === 'EXPENSE'));
   userCategories = computed(() => this.categories().filter(c => !c.isGlobal));
   globalCategories = computed(() => this.categories().filter(c => c.isGlobal));
@@ -163,7 +165,6 @@ export class Finances implements OnInit {
     return this.categories();
   });
 
-  // Lee editTxType como signal — el computed se recalcula cuando el tipo cambia
   editTxCategories = computed(() => {
     const t = this.editTxType();
     if (t === 'INCOME') return this.categories().filter(c => c.type === 'INCOME');
@@ -195,11 +196,56 @@ export class Finances implements OnInit {
     return txs;
   });
 
+  visibleTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
+    const txs = this.filteredTransactions();
+    const transferGroups = new Map<string, Transaction[]>();
+    const nonTransfers: (Transaction | TransferDisplay)[] = [];
+
+    for (const tx of txs) {
+      if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+        const g = transferGroups.get(tx.transferGroupId) || [];
+        g.push(tx);
+        transferGroups.set(tx.transferGroupId, g);
+      } else {
+        nonTransfers.push(tx);
+      }
+    }
+
+    for (const [, group] of transferGroups) {
+      if (group.length >= 2) {
+        const from = group.find(t => {
+          const other = group.find(o => o.id !== t.id);
+          return other && t.accountId !== other.accountId;
+        }) ?? group[0];
+        const to = group.find(t => t.id !== from.id)!;
+        const fromAcc = this.accounts().find(a => a.id === from.accountId);
+        const toAcc = this.accounts().find(a => a.id === to.accountId);
+        nonTransfers.push({
+          groupId: from.transferGroupId!,
+          type: 'TRANSFER',
+          fromAccountId: from.accountId,
+          toAccountId: to.accountId,
+          fromAccountName: fromAcc?.name ?? 'Cuenta origen',
+          toAccountName: toAcc?.name ?? 'Cuenta destino',
+          amount: parseFloat(String(from.amount)),
+          description: from.description || to.description,
+          date: from.date,
+          fromTxId: from.id,
+          toTxId: to.id,
+        });
+      } else if (group.length === 1) {
+        nonTransfers.push(group[0]);
+      }
+    }
+
+    return nonTransfers;
+  });
+
   recentTransactions = computed(() => this.transactions().slice(0, 5));
 
   groupedTransactions = computed(() => {
-    const map = new Map<string, Transaction[]>();
-    for (const tx of this.filteredTransactions()) {
+    const map = new Map<string, (Transaction | TransferDisplay)[]>();
+    for (const tx of this.visibleTransactions()) {
       const key = tx.date.substring(0, 10);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(tx);
@@ -251,13 +297,14 @@ export class Finances implements OnInit {
     return this.recurringRules().filter(r => r.nextDate <= today);
   });
 
-  // ── CONSTRUCTOR ───────────────────────────────────────────────────────────
   constructor(
     private financeService: FinanceService,
     private toast: ToastService,
-    private quickTxService: QuickTransactionService
+    private quickTxService: QuickTransactionService,
+    private pdfExport: PdfExportService,
+    public authService: AuthService,
+    private gamificationService: GamificationService
   ) {
-    // Effect 1: sincronizar con QuickModal
     effect(() => {
       const res = this.quickTxService.lastCreated();
       if (!res) return;
@@ -273,16 +320,12 @@ export class Finances implements OnInit {
       this.reloadAll();
     });
 
-    // Effect 2: cerrar edicion al cambiar cualquier filtro (Fix #4)
     effect(() => {
       this.txFilter(); this.txDateMode(); this.txViewMode();
       this.calTypeFilter(); this.calMonth(); this.calYear();
       this.txMonth(); this.txYear();
       untracked(() => {
-        this.editingTxId.set(null);
-        this.confirmDeleteTxId.set(null);
-        this.editingBudgetId.set(null);
-        this.confirmDeleteBudgetId.set(null);
+        this.resetAllFormState();
       });
     });
   }
@@ -293,29 +336,77 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
   }
 
-  setTab(t: Tab) { this.activeTab.set(t); }
+  setTab(t: Tab) { this.tryNavigate(() => { this.activeTab.set(t); this.resetAllFormState(); }); }
   dismissAlert() { this.lastAlert.set(null); }
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
 
-  // ── CUENTAS ───────────────────────────────────────────────────────────────
+  hasEditingOpen(): boolean {
+    return !!(this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
+      this.editingGoalId() || this.addingProgressGoalId() ||
+      this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
+      this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
+      this.showEditDebtConfirm() || this.showDebtConfirm() ||
+      this.showAccountForm() || this.showTransactionForm() ||
+      this.showBudgetForm() || this.showGoalForm() ||
+      this.showCategoryForm() || this.showGlobalForm());
+  }
+
+  tryNavigate(action: () => void): void {
+    if (this.hasEditingOpen()) {
+      this.confirmNavAction.set({
+        title: 'Cambios sin guardar',
+        message: 'Hay formularios abiertos. ¿Deseas descartarlos?',
+        onConfirm: () => { this.resetAllFormState(); this.confirmNavAction.set(null); action(); }
+      });
+    } else {
+      action();
+    }
+  }
+
+  resetAllFormState(): void {
+    this.showAccountForm.set(false);
+    this.showTransactionForm.set(false);
+    this.showBudgetForm.set(false);
+    this.showGoalForm.set(false);
+    this.showCategoryForm.set(false);
+    this.showGlobalForm.set(false);
+    this.editingTxId.set(null);
+    this.editingCategoryId.set(null);
+    this.editingBudgetId.set(null);
+    this.editingGoalId.set(null);
+    this.addingProgressGoalId.set(null);
+    this.confirmDeleteTxId.set(null);
+    this.confirmDeleteCategoryId.set(null);
+    this.confirmDeleteBudgetId.set(null);
+    this.confirmDeleteGoalId.set(null);
+    this.showEditDebtConfirm.set(false);
+    this.pendingEditId.set(null);
+    this.showDebtConfirm.set(false);
+    this.pendingDebtPayload = null;
+    this.pendingEditId.set(null);
+    this.calendarDayKey.set(null);
+  }
+
   submitAccount(): void {
     if (!this.newAccount.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.submittingAccount.set(true);
     this.financeService.createAccount({
       name: this.newAccount.name.trim(), type: this.newAccount.type,
-      initialBalance: Number(this.newAccount.initialBalance)
+      initialBalance: Number(this.newAccount.initialBalance),
+      countAsIncome: this.newAccount.countAsIncome
     }).subscribe({
       next: acc => {
         this.accounts.update(l => [acc, ...l]);
+        this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
         this.refreshSummary();
         this.showAccountForm.set(false);
-        this.newAccount = { name: '', type: 'CASH', initialBalance: 0 };
+        this.newAccount = { name: '', type: 'CASH', initialBalance: 0, countAsIncome: false };
         this.submittingAccount.set(false);
         this.toast.success('Cuenta creada');
       },
@@ -330,10 +421,9 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── TRANSACCIONES — CREAR ─────────────────────────────────────────────────
   submitTransaction(): void {
     if (!this.newTransaction.accountId) { this.toast.warning('Selecciona una cuenta'); return; }
-    if (!this.newTransaction.categoryId) { this.toast.warning('Selecciona una categoria'); return; }
+    if (!this.newTransaction.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     if (Number(this.newTransaction.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     const payload: CreateTransactionPayload = {
       accountId: this.newTransaction.accountId,
@@ -364,8 +454,8 @@ export class Finances implements OnInit {
       next: res => {
         this.transactions.update(l => [res.transaction, ...l]);
         if (res.alert) this.lastAlert.set(res.alert);
+        this.gamificationService.registerStreak().subscribe();
 
-        // Guardar regla recurrente si aplica
         const rec = this.newTransaction.recurrence;
         if (rec !== 'NONE' && payload.type !== 'TRANSFER') {
           const rule: RecurringRule = {
@@ -380,9 +470,9 @@ export class Finances implements OnInit {
           };
           this.recurringRules.update(r => [...r, rule]);
           this.saveRecurring(this.recurringRules());
-          this.toast.success('Transaccion registrada y regla recurrente guardada');
+          this.toast.success('Transacción registrada y regla recurrente guardada');
         } else {
-          this.toast.success('Transaccion registrada');
+          this.toast.success('Transacción registrada');
         }
 
         this.refreshSummary();
@@ -397,35 +487,64 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── TRANSACCIONES — EDITAR ────────────────────────────────────────────────
-  startEditTx(tx: Transaction): void {
-    if (tx.type === 'TRANSFER') {
-      this.toast.warning('Las transferencias no se pueden editar. Eliminalas y vuelve a crearlas.');
-      return;
-    }
-    this.editingTxId.set(tx.id);
+  startEditTx(tx: Transaction | TransferDisplay): void {
+    this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : tx.id);
     this.confirmDeleteTxId.set(null);
     this.editTxType.set(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER');
-    this.editTx = {
-      categoryId: tx.categoryId,
-      amount: parseFloat(String(tx.amount)),
-      description: tx.description ?? '',
-      date: new Date(tx.date).toISOString().split('T')[0],
-      accountId: tx.accountId
-    };
+    if (tx.type === 'TRANSFER') {
+      const td = tx as TransferDisplay;
+      this.editTx = {
+        categoryId: '',
+        amount: td.amount,
+        description: td.description ?? '',
+        date: new Date(td.date).toISOString().split('T')[0],
+        accountId: td.fromAccountId,
+      };
+      this.editTxTransferToAccountId = td.toAccountId;
+      this.editTxTransferGroupId = td.groupId;
+    } else {
+      this.editTx = {
+        categoryId: tx.categoryId,
+        amount: parseFloat(String(tx.amount)),
+        description: tx.description ?? '',
+        date: new Date(tx.date).toISOString().split('T')[0],
+        accountId: tx.accountId
+      };
+    }
   }
   cancelEditTx(): void { this.editingTxId.set(null); }
 
   onEditTxTypeChange(t: 'INCOME' | 'EXPENSE' | 'TRANSFER'): void {
     this.editTxType.set(t);
-    this.editTx.categoryId = '';   // resetear para forzar seleccion valida
+    this.editTx.categoryId = '';
   }
 
   saveEditTx(id: string): void {
     if (Number(this.editTx.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+
+    if (this.editTxType() === 'TRANSFER') {
+      if (!this.editTx.accountId) { this.toast.warning('Selecciona cuenta origen'); return; }
+      if (!this.editTxTransferToAccountId) { this.toast.warning('Selecciona cuenta destino'); return; }
+      if (this.editTx.accountId === this.editTxTransferToAccountId) { this.toast.warning('Las cuentas deben ser diferentes'); return; }
+      this.financeService.updateTransfer(this.editTxTransferGroupId, {
+        fromAccountId: this.editTx.accountId,
+        toAccountId: this.editTxTransferToAccountId,
+        amount: Number(this.editTx.amount),
+        description: this.editTx.description.trim() || undefined,
+        date: this.editTx.date || undefined,
+      }).subscribe({
+        next: () => {
+          this.toast.success('Transferencia actualizada');
+          this.editingTxId.set(null);
+          this.reloadAll();
+        },
+        error: err => this.toast.error(this.extractError(err, 'Error al actualizar transferencia'))
+      });
+      return;
+    }
+
     if (!this.editTx.accountId) { this.toast.warning('Selecciona una cuenta'); return; }
 
-    // Verificar deuda en edicion
     if (this.editTxType() === 'EXPENSE') {
       const acc = this.accounts().find(a => a.id === this.editTx.accountId);
       const balance = parseFloat(String(acc?.balance ?? '0'));
@@ -460,39 +579,52 @@ export class Finances implements OnInit {
       next: updated => {
         this.transactions.update(l => l.map(t => t.id === id ? { ...t, ...updated } : t));
         this.editingTxId.set(null);
-        // Recargar cuentas porque los balances cambiaron
         this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
         this.refreshSummary();
-        this.toast.success('Transaccion actualizada');
+        this.toast.success('Transacción actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
     });
   }
 
-  // ── TRANSACCIONES — ELIMINAR ──────────────────────────────────────────────
-  confirmDeleteTx(id: string): void { this.confirmDeleteTxId.set(id); this.editingTxId.set(null); }
-  cancelDeleteTx(): void { this.confirmDeleteTxId.set(null); }
+  confirmDeleteTx(id: string): void { this.confirmDeleteTxId.set(id); this.confirmDeleteTransferGroupId.set(null); this.editingTxId.set(null); }
+  cancelDeleteTx(): void { this.confirmDeleteTxId.set(null); this.confirmDeleteTransferGroupId.set(null); }
+  confirmDeleteTransfer(groupId: string): void { this.confirmDeleteTransferGroupId.set(groupId); this.confirmDeleteTxId.set(null); this.editingTxId.set(null); }
+  cancelDeleteTransfer(): void { this.confirmDeleteTransferGroupId.set(null); }
 
-  deleteTransaction(id: string): void {
-    this.financeService.deleteTransaction(id).subscribe({
+  deleteTransaction(idOrGroup: string, isTransferGroup = false): void {
+    if (isTransferGroup) {
+      this.financeService.deleteTransfer(idOrGroup).subscribe({
+        next: () => {
+          this.transactions.update(l => l.filter(t => t.transferGroupId !== idOrGroup));
+          this.confirmDeleteTxId.set(null);
+          this.refreshSummary();
+          this.toast.success('Transferencia eliminada');
+        },
+        error: () => this.toast.error('Error al eliminar la transferencia')
+      });
+      return;
+    }
+    this.financeService.deleteTransaction(idOrGroup).subscribe({
       next: () => {
-        this.transactions.update(l => l.filter(t => t.id !== id));
+        this.transactions.update(l => l.filter(t => t.id !== idOrGroup));
         this.confirmDeleteTxId.set(null);
         this.calendarDayKey.set(null);
         this.refreshSummary();
-        this.toast.success('Transaccion eliminada');
+        this.toast.success('Transacción eliminada');
       },
-      error: () => this.toast.error('Error al eliminar la transaccion')
+      error: () => this.toast.error('Error al eliminar la transacción')
     });
   }
 
-  // ── CALENDARIO ────────────────────────────────────────────────────────────
   setViewMode(mode: ViewMode): void {
-    this.txViewMode.set(mode);
-    if (mode === 'calendar') {
-      this.calMonth.set(this.txDateMode() === 'MONTH' ? this.txMonth() : new Date().getMonth());
-      this.calYear.set(this.txDateMode() === 'MONTH' ? this.txYear() : new Date().getFullYear());
-    }
+    this.tryNavigate(() => {
+      this.txViewMode.set(mode);
+      if (mode === 'calendar') {
+        this.calMonth.set(this.txDateMode() === 'MONTH' ? this.txMonth() : new Date().getMonth());
+        this.calYear.set(this.txDateMode() === 'MONTH' ? this.txYear() : new Date().getFullYear());
+      }
+    });
   }
 
   prevMonth(): void {
@@ -526,9 +658,8 @@ export class Finances implements OnInit {
   getDay(dateKey: string): string { return String(parseInt(dateKey.substring(8))); }
   isToday(dateKey: string): boolean { return dateKey === new Date().toISOString().split('T')[0]; }
 
-  // ── PRESUPUESTOS ──────────────────────────────────────────────────────────
   submitBudget(): void {
-    if (!this.newBudget.categoryId) { this.toast.warning('Selecciona una categoria'); return; }
+    if (!this.newBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     if (Number(this.newBudget.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     const now = new Date();
     const months = Math.max(1, this.newBudget.months);
@@ -558,6 +689,8 @@ export class Finances implements OnInit {
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
       period: b.period,
+      categoryId: b.categoryId,
+      startDate: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       indefinido: !b.endDate,
       months: 1
     };
@@ -566,16 +699,20 @@ export class Finances implements OnInit {
 
   saveEditBudget(id: string): void {
     if (this.editBudget.amount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    if (!this.editBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     let endDate: string | null = null;
     if (!this.editBudget.indefinido) {
-      const now = new Date();
-      const end = new Date(now.getFullYear(), now.getMonth() + Math.max(1, this.editBudget.months), 0);
+      const end = new Date(this.editBudget.startDate + 'T12:00:00');
+      end.setMonth(end.getMonth() + Math.max(1, this.editBudget.months));
+      end.setDate(end.getDate() - 1);
       endDate = end.toISOString().split('T')[0];
     }
     this.financeService.updateBudget(id, {
+      categoryId: this.editBudget.categoryId,
+      startDate: this.editBudget.startDate || null,
       amount: this.editBudget.amount,
       period: this.editBudget.period as 'MONTHLY' | 'WEEKLY',
-      endDate  // null → indefinido, string → fecha fin
+      endDate
     }).subscribe({
       next: updated => {
         this.budgets.update(l => l.map(b => b.id === id ? { ...b, ...updated } : b));
@@ -610,7 +747,6 @@ export class Finances implements OnInit {
     this.toast.warning('Presupuesto general eliminado');
   }
 
-  // ── CATEGORIAS ────────────────────────────────────────────────────────────
   submitCategory(): void {
     if (!this.newCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.financeService.createCategory({ name: this.newCategory.name.trim(), type: this.newCategory.type }).subscribe({
@@ -618,9 +754,9 @@ export class Finances implements OnInit {
         this.categories.update(l => [...l, cat].sort((a, b) => a.name.localeCompare(b.name)));
         this.showCategoryForm.set(false);
         this.newCategory = { name: '', type: 'EXPENSE' };
-        this.toast.success('Categoria creada');
+        this.toast.success('Categoría creada');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoria'))
+      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoría'))
     });
   }
 
@@ -637,23 +773,64 @@ export class Finances implements OnInit {
       next: updated => {
         this.categories.update(l => l.map(c => c.id === id ? { ...c, ...updated } : c));
         this.editingCategoryId.set(null);
-        this.toast.success('Categoria actualizada');
+        this.toast.success('Categoría actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
     });
   }
 
-  confirmDeleteCategory(id: string): void { this.confirmDeleteCategoryId.set(id); this.editingCategoryId.set(null); }
+  confirmDeleteCategory(id: string): void {
+    const cat = this.categories().find(c => c.id === id);
+    if (!cat) return;
+    const txCount = this.transactions().filter(t => t.categoryId === id).length;
+    const budgetCount = this.budgets().filter(b => b.categoryId === id).length;
+    if (txCount > 0 || budgetCount > 0) {
+      this.showCategoryDeleteWarning.set(true);
+      this.categoryDeleteInfo.set({ id, name: cat.name, txCount, budgetCount });
+      this.categoryReassignId.set('');
+    } else {
+      this.confirmDeleteCategoryId.set(id);
+      this.editingCategoryId.set(null);
+    }
+  }
+
   cancelDeleteCategory(): void { this.confirmDeleteCategoryId.set(null); }
 
-  deleteCategory(id: string): void {
-    this.financeService.deleteCategory(id).subscribe({
-      next: () => { this.categories.update(l => l.filter(c => c.id !== id)); this.confirmDeleteCategoryId.set(null); this.toast.success('Categoria eliminada'); },
-      error: err => this.toast.error(this.extractError(err, 'Error al eliminar la categoria'))
+  deleteCategory(id: string, reassignToId?: string): void {
+    this.financeService.deleteCategory(id, reassignToId).subscribe({
+      next: () => {
+        this.categories.update(l => l.filter(c => c.id !== id));
+        this.budgets.update(l => l.filter(b => b.categoryId !== id));
+        this.confirmDeleteCategoryId.set(null);
+        this.showCategoryDeleteWarning.set(false);
+        this.categoryDeleteInfo.set(null);
+        this.toast.success('Categoría eliminada');
+      },
+      error: err => {
+        this.toast.error(this.extractError(err, 'Error al eliminar la categoría'));
+        this.confirmDeleteCategoryId.set(null);
+        this.showCategoryDeleteWarning.set(false);
+        this.categoryDeleteInfo.set(null);
+      }
     });
   }
 
-  // ── METAS ─────────────────────────────────────────────────────────────────
+  confirmDeleteCategoryWithReassign(): void {
+    const info = this.categoryDeleteInfo();
+    if (!info) return;
+    if (info.txCount > 0 && !this.categoryReassignId()) {
+      this.toast.warning('Selecciona una categoría de reasignación');
+      return;
+    }
+    this.deleteCategory(info.id, this.categoryReassignId() || undefined);
+  }
+
+  cancelDeleteCategoryWithReassign(): void {
+    this.showCategoryDeleteWarning.set(false);
+    this.categoryDeleteInfo.set(null);
+    this.confirmDeleteCategoryId.set(null);
+  }
+
   submitGoal(): void {
     if (!this.newGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     if (Number(this.newGoal.targetAmount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
@@ -722,7 +899,14 @@ export class Finances implements OnInit {
     });
   }
 
-  // ── RECURRENTES ───────────────────────────────────────────────────────────
+  isInitBalanceTx(tx: any): boolean {
+    return tx?.isInitialBalance === true;
+  }
+
+  editBudgetCategoryDeleted(): boolean {
+    return !!this.editingBudgetId() && !this.categories().some(c => c.id === this.editBudget.categoryId);
+  }
+
   private loadRecurring(): RecurringRule[] {
     try { return JSON.parse(localStorage.getItem(this.RECURRING_KEY) ?? '[]'); }
     catch { return []; }
@@ -774,7 +958,6 @@ export class Finances implements OnInit {
     return this.recurrenceOptions.find(o => o.value === r)?.label ?? r;
   }
 
-  // ── UTILIDADES ────────────────────────────────────────────────────────────
   formatCurrency(value: number | string): string {
     const n = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(n)) return '0,00';
@@ -791,29 +974,41 @@ export class Finances implements OnInit {
   }
 
   getCategoryName(categoryId: string): string {
-    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoria';
+    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoría';
   }
 
   getAccountName(accountId: string): string {
     return this.accounts().find(a => a.id === accountId)?.name ?? '';
   }
 
-  getTransactionBg(type: string): string {
-    if (type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
-    if (type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
+  getTransactionBg(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
+    if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
+    if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
     return 'bg-red-500/20 text-red-400';
   }
 
-  getTransactionColor(type: string): string {
-    if (type === 'INCOME') return 'text-emerald-400';
-    if (type === 'TRANSFER') return 'text-blue-400';
+  getTransactionColor(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return 'text-purple-400';
+    if (tx.type === 'INCOME') return 'text-emerald-400';
+    if (tx.type === 'TRANSFER') return 'text-blue-400';
     return 'text-red-400';
   }
 
-  getTransactionSign(type: string): string {
-    if (type === 'INCOME') return '+$';
-    if (type === 'TRANSFER') return '$';
+  getTransactionSign(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return '$';
+    if (tx.type === 'INCOME') return '+$';
+    if (tx.type === 'TRANSFER') return '$';
     return '-$';
+  }
+
+  getTransactionLabel(tx: Transaction | TransferDisplay): string {
+    if (this.isInitBalanceTx(tx)) return 'Balance inicial';
+    if (tx.type === 'TRANSFER') {
+      const td = tx as TransferDisplay;
+      return `${td.fromAccountName} → ${td.toAccountName}`;
+    }
+    return this.getCategoryName(tx.categoryId);
   }
 
   getAccountTypeLabel(type: AccountType): string {
@@ -862,9 +1057,73 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
+  }
+
+  async triggerExport(): Promise<void> {
+    if (!this.summary() || !this.health()) {
+      this.toast.warning('Espera a que carguen los datos');
+      return;
+    }
+    this.exporting.set(true);
+    try {
+      const transferGroups: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[] = [];
+      const transferMap = new Map<string, Transaction[]>();
+      for (const tx of this.transactions()) {
+        if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+          const g = transferMap.get(tx.transferGroupId) || [];
+          g.push(tx);
+          transferMap.set(tx.transferGroupId, g);
+        }
+      }
+      for (const [, g] of transferMap) {
+        if (g.length >= 2) {
+          const from = g.find(t => {
+            const other = g.find(o => o.id !== t.id);
+            return other && t.accountId !== other.accountId;
+          }) ?? g[0];
+          const to = g.find(t => t.id !== from.id)!;
+          transferGroups.push({ groupId: from.transferGroupId!, fromAccountId: from.accountId, toAccountId: to.accountId, amount: parseFloat(String(from.amount)), description: from.description || to.description, date: from.date });
+        }
+      }
+
+      await this.pdfExport.generateReport(
+        {
+          userName: this.authService.currentUser()?.displayName ?? 'Usuario',
+          transactions: this.transactions(),
+          accounts: this.accounts(),
+          budgets: this.budgets(),
+          goals: this.goals(),
+          categories: this.categories(),
+          summary: this.summary()!,
+          health: this.health()!,
+          transferGroups,
+        },
+        { from: this.exportDateFrom(), to: this.exportDateTo() }
+      );
+      this.showExportModal.set(false);
+      this.toast.success('PDF generado correctamente');
+    } catch (e) {
+      this.toast.error('Error al generar el PDF');
+      console.error(e);
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  filterAmountKey(event: KeyboardEvent): void {
+    const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (allowed.includes(event.key)) return;
+    if (event.ctrlKey || event.metaKey) return;
+    if (/^\d$/.test(event.key)) return;
+    if (event.key === '.') return;
+    event.preventDefault();
+  }
+
+  getTransferDestinations(): Account[] {
+    return this.accounts().filter(a => a.id !== this.editTx.accountId);
   }
 }

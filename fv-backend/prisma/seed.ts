@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, UserRank, QuizDifficulty, QuestionType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { seedLessons } from './seed-lessons';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -449,7 +450,6 @@ async function main() {
   }
   console.log('✅ Módulos y quizzes creados');
 
-  // Eliminar eventos anteriores con cascade manual para evitar FK
   await prisma.simulatorPlayerRound.deleteMany({});
   await prisma.simulatorConsequence.deleteMany({});
   await prisma.simulatorEvent.deleteMany({});
@@ -481,7 +481,6 @@ async function main() {
 
   const events: SimulatorEventSeed[] = [
 
-    // ══════════════════════════════ EMPLEO ══════════════════════════════
 
     {
       name: 'Reduccion de personal',
@@ -576,7 +575,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EMPRENDIMIENTO ══════════════════════════════
 
     {
       name: 'Propuesta de negocio con un conocido',
@@ -640,7 +638,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ INVERSIONES ══════════════════════════════
 
     {
       name: 'Caida del mercado de valores',
@@ -735,7 +732,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EDUCACION ══════════════════════════════
 
     {
       name: 'Bootcamp de especializacion profesional',
@@ -768,7 +764,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ CREDITO ══════════════════════════════
 
     {
       name: 'Credito personal pre-aprobado',
@@ -832,7 +827,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ HIPOTECA ══════════════════════════════
 
     {
       name: 'Oportunidad de primera vivienda',
@@ -865,7 +859,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ VEHICULOS ══════════════════════════════
 
     {
       name: 'Falla mecanica del vehiculo',
@@ -929,7 +922,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ EMERGENCIAS ══════════════════════════════
 
     {
       name: 'Emergencia medica con cobertura parcial',
@@ -993,7 +985,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ MACROECONOMIA ══════════════════════════════
 
     {
       name: 'Inflacion acelerada',
@@ -1057,7 +1048,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ OPORTUNIDADES INESPERADAS ══════════════════════════════
 
     {
       name: 'Herencia familiar inesperada',
@@ -1121,7 +1111,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ SEGUROS ══════════════════════════════
 
     {
       name: 'Propuesta de seguro integral',
@@ -1154,7 +1143,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ RIESGO Y FRAUDE ══════════════════════════════
 
     {
       name: 'Esquema de inversion con retornos garantizados',
@@ -1187,7 +1175,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ AHORRO ══════════════════════════════
 
     {
       name: 'Desafio de ahorro comunitario',
@@ -1220,7 +1207,6 @@ async function main() {
       ]
     },
 
-    // ══════════════════════════════ GASTOS DEL HOGAR ══════════════════════════════
 
     {
       name: 'Dano en el lugar de residencia',
@@ -1291,17 +1277,31 @@ async function main() {
     { key: 'unstoppable', name: 'Imparable', description: 'Alcanza una racha máxima de 30 días.', icon: '⚡', category: 'STREAK', xpReward: 300, condition: { metric: 'longest_streak', threshold: 30 } },
     { key: 'accumulator', name: 'Acumulador', description: 'Gana 500 XP en total.', icon: '⭐', category: 'GENERAL', xpReward: 50, condition: { metric: 'total_xp', threshold: 500 } },
     { key: 'knowledge_investor', name: 'Inversor de Conocimiento', description: 'Gana 2000 XP en total.', icon: '👑', category: 'GENERAL', xpReward: 200, condition: { metric: 'total_xp', threshold: 2000 } },
+    { key: 'quiz_master', name: 'Quiz Master', description: 'Aprueba los 7 quizzes.', icon: '🏅', category: 'LEARNING', xpReward: 150, condition: { metric: 'quizzes_passed', threshold: 7 } },
   ];
 
+  const knownKeys = new Set(achievements.map(a => a.key));
+  await prisma.achievement.updateMany({
+    where: { key: { notIn: Array.from(knownKeys) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const achievement of achievements) {
-    const exists = await prisma.achievement.findUnique({ where: { key: achievement.key } });
-    if (!exists) {
-      await prisma.achievement.create({
-        data: { ...achievement, category: achievement.category as any },
-      });
-    }
+    await prisma.achievement.upsert({
+      where: { key: achievement.key },
+      update: {
+        name: achievement.name,
+        description: achievement.description,
+        icon: achievement.icon,
+        category: achievement.category as any,
+        xpReward: achievement.xpReward,
+        condition: achievement.condition,
+        isActive: true,
+      },
+      create: { ...achievement, category: achievement.category as any, isActive: true },
+    });
   }
-  console.log('✅ Logros creados');
+  console.log('✅ Logros sincronizados');
 
   const rewards = [
     { name: 'Novato Financiero', description: 'Título inicial de bienvenida.', icon: '🌱', type: 'TITLE', unlockType: 'LEVEL', unlockValue: '2' },
@@ -1326,15 +1326,44 @@ async function main() {
     { name: 'Insignia Campeón', description: 'Insignia por ganar 5 partidas.', icon: '⚔️', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'champion' },
   ];
 
+  const knownRewardNames = new Set(rewards.map(r => r.name));
+  await prisma.reward.updateMany({
+    where: { name: { notIn: Array.from(knownRewardNames) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const reward of rewards) {
-    const exists = await prisma.reward.findFirst({ where: { name: reward.name } });
-    if (!exists) {
+    const achievement = reward.unlockType === 'ACHIEVEMENT'
+      ? await prisma.achievement.findUnique({ where: { key: reward.unlockValue } })
+      : null;
+    const existing = await prisma.reward.findFirst({ where: { name: reward.name } });
+    if (existing) {
+      await prisma.reward.update({
+        where: { id: existing.id },
+        data: {
+          description: reward.description,
+          icon: reward.icon,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          unlockValue: reward.unlockValue,
+          achievementId: achievement?.id ?? null,
+          isActive: true,
+        },
+      });
+    } else {
       await prisma.reward.create({
-        data: { ...reward, type: reward.type as any, unlockType: reward.unlockType as any },
+        data: {
+          ...reward,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          achievementId: achievement?.id ?? null,
+        },
       });
     }
   }
-  console.log('✅ Recompensas creadas');
+  console.log('✅ Recompensas sincronizadas');
+
+  await seedLessons(prisma);
 }
 
 main()

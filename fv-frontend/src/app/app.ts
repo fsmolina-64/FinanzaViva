@@ -66,7 +66,7 @@ export class App {
   constructor() {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       const url: string = e.urlAfterRedirects;
-      this.isAuthRoute.set(url === '/' || url.startsWith('/login') || url.startsWith('/register'));
+      this.isAuthRoute.set(url === '/' || url.startsWith('/auth/'));
       this.fabMenuOpen.set(false);
     });
   }

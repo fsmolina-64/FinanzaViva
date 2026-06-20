@@ -79,6 +79,11 @@ export const routes: Routes = [
           import('./features/simulator/game/game').then(m => m.Game)
       },
       {
+        path: 'quizzes',
+        loadComponent: () =>
+          import('./features/quizzes/quizzes').then(m => m.Quizzes)
+      },
+      {
         path: 'achievements',
         loadComponent: () =>
           import('./features/achievements/achievements').then(m => m.Achievements)

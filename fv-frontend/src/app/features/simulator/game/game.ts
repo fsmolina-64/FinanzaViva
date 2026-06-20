@@ -20,22 +20,18 @@ export class Game implements OnInit {
   lastResult = signal<DecisionResult | null>(null);
   selectedOption = signal<BackendEventOption | null>(null);
   errorMessage = signal<string | null>(null);
-  // Quién tomó la última decisión (para mostrar en pantalla de resultado)
   actingPlayer = signal<BackendPlayer | null>(null);
 
-  // currentPlayerId previo — para detectar cambio de turno
   private prevPlayerId: string | null = null;
 
   gameId!: string;
 
-  // Jugador activo según el backend
   currentPlayer = computed<BackendPlayer | null>(() => {
     const g = this.gameState();
     if (!g?.players || !g.currentPlayerId) return null;
     return g.players.find(p => p.id === g.currentPlayerId) ?? null;
   });
 
-  // Ranking final por score
   rankedPlayers = computed<BackendPlayer[]>(() => {
     const g = this.gameState();
     if (!g?.players) return [];
@@ -63,13 +59,10 @@ export class Game implements OnInit {
     this.gameId = this.route.snapshot.params['id'];
     if (!this.gameId) { this.router.navigate(['/simulator']); return; }
 
-    // startGame: cambia status a IN_PROGRESS, asigna primer evento al primer humano
-    // Los bots con turnOrder anterior se procesan automáticamente en el backend
     this.simulatorService.startGame(this.gameId).subscribe({
       next: gs => this.applyGameState(gs),
       error: err => {
         const msg = err?.error?.message;
-        // Si la partida ya inició (recarga de página), obtener estado actual
         if (err?.status === 400) {
           this.simulatorService.getGameState(this.gameId).subscribe({
             next: gs => this.applyGameState(gs),
@@ -111,7 +104,6 @@ export class Game implements OnInit {
     const opt = this.selectedOption();
     if (!opt || this.phase() === 'deciding') return;
 
-    // Guardar quién estaba jugando antes de que el estado cambie
     this.actingPlayer.set(this.currentPlayer());
     this.phase.set('deciding');
     this.errorMessage.set(null);
@@ -124,7 +116,7 @@ export class Game implements OnInit {
       },
       error: err => {
         const msg = err?.error?.message;
-        this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al procesar la decision.'));
+        this.errorMessage.set(Array.isArray(msg) ? msg[0] : (msg ?? 'Error al procesar la decisión.'));
         this.phase.set('event');
       }
     });
@@ -159,9 +151,7 @@ export class Game implements OnInit {
     this.phase.set('event');
   }
 
-  // ─── Helpers visuales ───────────────────────────────────────────────────────
 
-  // Convierte Decimal de Prisma (viene como string del JSON) a number
   n(v: any): number { return parseFloat(String(v)) || 0; }
 
   patrimonio(p: BackendPlayer): number {

@@ -342,19 +342,21 @@ model Category {
 }
 
 model Transaction {
-  id          String          @id @default(uuid())
-  userId      String
-  accountId   String
-  categoryId  String
-  amount      Decimal         @db.Decimal(12, 2)
-  type        TransactionType
-  description String?
-  date        DateTime
-  createdAt   DateTime        @default(now())
+  id                String          @id @default(uuid())
+  userId            String
+  accountId         String
+  categoryId        String?
+  amount            Decimal         @db.Decimal(12, 2)
+  type              TransactionType
+  description       String?
+  date              DateTime
+  transferGroupId   String?         @map("transfer_group_id")
+  isInitialBalance  Boolean         @default(false)
+  createdAt         DateTime        @default(now())
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   account  FinancialAccount @relation(fields: [accountId], references: [id])
-  category Category         @relation(fields: [categoryId], references: [id])
+  category Category?        @relation(fields: [categoryId], references: [id])
 
   @@index([userId])
   @@index([date])
@@ -372,7 +374,7 @@ model Budget {
   createdAt  DateTime     @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("budgets")
@@ -562,7 +564,7 @@ model SimulatorGame {
   finishedAt      DateTime?
   createdAt       DateTime        @default(now())
 
-  createdBy User              @relation(fields: [createdByUserId], references: [id])
+  createdBy User              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   players   SimulatorPlayer[]
   rounds    SimulatorRound[]
 
@@ -593,7 +595,7 @@ model SimulatorPlayer {
   createdAt      DateTime @default(now())
 
   game         SimulatorGame          @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user         User?                  @relation(fields: [userId], references: [id])
+  user         User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   roundEvents  SimulatorPlayerRound[]
   consequences SimulatorConsequence[]
 
@@ -686,7 +688,7 @@ model SimulatorPlayerRound {
   decidedAt      DateTime @default(now())
 
   round        SimulatorRound       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  player       SimulatorPlayer      @relation(fields: [playerId], references: [id])
+  player       SimulatorPlayer      @relation(fields: [playerId], references: [id], onDelete: Cascade)
   event        SimulatorEvent       @relation(fields: [eventId], references: [id])
   chosenOption SimulatorEventOption @relation(fields: [chosenOptionId], references: [id])
 
