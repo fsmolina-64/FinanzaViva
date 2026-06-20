@@ -24,29 +24,31 @@ export interface PdfReportData {
 
 // ── Design palette ────────────────────────────────────────────────────────────
 const C = {
-  blue: [37, 99, 235] as [number, number, number],
-  green: [16, 185, 129] as [number, number, number],
-  red: [220, 38, 38] as [number, number, number],
-  orange: [245, 158, 11] as [number, number, number],
-  purple: [124, 58, 237] as [number, number, number],
-  slate: [30, 41, 59] as [number, number, number],
-  gray: [100, 116, 139] as [number, number, number],
+  blue: [96, 165, 250] as [number, number, number],        // softer blue
+  dark: [30, 41, 59] as [number, number, number],          // slate-800 — less dark
+  green: [52, 211, 153] as [number, number, number],       // softer green
+  red: [248, 113, 113] as [number, number, number],        // softer red
+  orange: [251, 191, 36] as [number, number, number],      // softer orange
+  purple: [167, 139, 250] as [number, number, number],     // softer purple
+  slate: [51, 65, 85] as [number, number, number],
+  gray: [148, 163, 184] as [number, number, number],
   muted: [148, 163, 184] as [number, number, number],
   border: [226, 232, 240] as [number, number, number],
   bgGray: [248, 250, 252] as [number, number, number],
+  bgNeutral: [243, 244, 246] as [number, number, number],
   bgBlue: [239, 246, 255] as [number, number, number],
   bgGreen: [240, 253, 244] as [number, number, number],
   bgRed: [254, 242, 242] as [number, number, number],
   bgPurple: [245, 243, 255] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  blueAcc: [186, 210, 255] as [number, number, number],
-  bdrBlue: [191, 219, 254] as [number, number, number],
+  blueAcc: [191, 219, 254] as [number, number, number],
+  bdrBlue: [147, 197, 253] as [number, number, number],
 };
 
 const CHART_COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
-  '#14B8A6', '#A855F7',
+  '#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA',
+  '#F472B6', '#22D3EE', '#A3E635', '#FB923C', '#818CF8',
+  '#2DD4BF', '#C084FC',
 ];
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -102,6 +104,25 @@ export class PdfExportService {
     const kpis = { income, expenses, savings, savingsRate, totalBal, txCount: txs.length };
 
     const periodGoals = data.goals.filter(g => g.createdAt.substring(0, 10) <= period.to);
+    const tfs = (data.transferGroups ?? []).filter(tf => {
+      const d = tf.date.substring(0, 10);
+      return d >= period.from && d <= period.to;
+    });
+    const nonTransferTxs = txs.filter(t => t.type !== 'TRANSFER');
+
+    // ── Dynamic TOC
+    const tocItems: string[] = [
+      '1. Resumen ejecutivo',
+      '2. Analisis de gastos',
+      '3. Analisis de ingresos',
+      '4. Estado de cuentas',
+    ];
+    let pg = 5;
+    if (data.budgets.length > 0) tocItems.push(`${pg++}. Presupuestos`);
+    if (periodGoals.length > 0) tocItems.push(`${pg++}. Metas financieras`);
+    if (tfs.length > 0) tocItems.push(`${pg++}. Transferencias`);
+    if (nonTransferTxs.length > 0) tocItems.push(`${pg++}. Detalle de transacciones`);
+
     const incCat = this.groupByCategory(txs.filter(t => t.type === 'INCOME' && !t.isInitialBalance), data.categories);
     const expCat = this.groupByCategory(txs.filter(t => t.type === 'EXPENSE'), data.categories);
 
@@ -111,7 +132,7 @@ export class PdfExportService {
     const compareChart = this.drawCompareChart(income, expenses);
 
     // ── Pages
-    this.buildCover(doc, data.userName, period, kpis, PW, PH, logoUrl);
+    this.buildCover(doc, data.userName, period, kpis, PW, PH, logoUrl, tocItems);
 
     doc.addPage();
     this.buildSummary(doc, kpis, health, incCat, expCat, compareChart, PW);
@@ -135,24 +156,19 @@ export class PdfExportService {
       this.buildGoals(doc, periodGoals, PW);
     }
 
-    const tfs = (data.transferGroups ?? []).filter(tf => {
-      const d = tf.date.substring(0, 10);
-      return d >= period.from && d <= period.to;
-    });
     if (tfs.length > 0) {
       doc.addPage();
       this.buildTransfers(doc, tfs, data.accounts, PW);
     }
 
-    const nonTransferTxs = txs.filter(t => t.type !== 'TRANSFER');
     if (nonTransferTxs.length > 0) {
       doc.addPage();
       this.buildTransactionDetail(doc, nonTransferTxs, data.categories, data.accounts, PW);
     }
 
-    // ── Stamp footers on every page
+    // ── Stamp footers on every page except cover (page 1 has its own branded footer)
     const totalPages = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = 2; i <= totalPages; i++) {
       doc.setPage(i);
       this.buildFooter(doc, i, totalPages, period, PW, PH);
     }
@@ -177,10 +193,8 @@ export class PdfExportService {
         return;
       } catch (e: any) {
         if (e?.name === 'AbortError') return; // user cancelled
-        // Other errors (permissions, etc.) fall through to auto-download
       }
     }
-    // Firefox / Safari / unsecure context: trigger browser download dialog
     doc.save(filename);
   }
 
@@ -322,13 +336,11 @@ export class PdfExportService {
       const color = CHART_COLORS[i % CHART_COLORS.length];
       if (useTwoCols && i === half) { lx = 696; ly = 28; }
 
-      // Color swatch
       ctx.fillStyle = color;
       ctx.beginPath();
       this.rrectCanvas(ctx, lx, ly, 18, 18, 3);
       ctx.fill();
 
-      // Category name
       const label = item.name.length > 19 ? item.name.substring(0, 18) + '.' : item.name;
       ctx.fillStyle = '#1E293B';
       ctx.font = 'bold 14px Arial';
@@ -336,7 +348,6 @@ export class PdfExportService {
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(label, lx + 26, ly + 14);
 
-      // Amount + percentage
       ctx.fillStyle = '#64748B';
       ctx.font = '12px Arial';
       ctx.fillText(`$${item.amount.toFixed(2)}   ${pct}%`, lx + 26, ly + 30);
@@ -363,7 +374,7 @@ export class PdfExportService {
     const trackW = 590;
     const trackX = 236;
 
-    // ── Income bar
+    // Income bar
     ctx.fillStyle = '#E2E8F0';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 16, trackW, barH, 15); ctx.fill();
     const incW = Math.max(10, (income / maxVal) * trackW);
@@ -382,7 +393,7 @@ export class PdfExportService {
     const incLabelX = Math.min(trackX + incW + 10, trackX + trackW - 70);
     ctx.fillText(`$${income.toFixed(2)}`, incLabelX, 16 + barH / 2);
 
-    // ── Expenses bar
+    // Expenses bar
     ctx.fillStyle = '#E2E8F0';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 70, trackW, barH, 15); ctx.fill();
     const expW = Math.max(10, (expenses / maxVal) * trackW);
@@ -418,7 +429,8 @@ export class PdfExportService {
   // ── Shared page elements ──────────────────────────────────────────────────────
 
   private buildHeader(doc: jsPDF, title: string, PW: number): void {
-    doc.setFillColor(...C.blue);
+    // Dark band — matches the app's sidebar/navbar tone
+    doc.setFillColor(...C.dark);
     doc.rect(0, 0, PW, 16, 'F');
 
     doc.setTextColor(...C.white);
@@ -461,17 +473,16 @@ export class PdfExportService {
     period: { from: string; to: string },
     kpis: { income: number; expenses: number; savings: number; savingsRate: number; totalBal: number; txCount: number },
     PW: number, PH: number,
-    logoUrl: string | null
+    logoUrl: string | null,
+    tocItems: string[]
   ): void {
-    // ── Blue header banner
-    doc.setFillColor(...C.blue);
+    // Dark header band — consistent with app sidebar
+    doc.setFillColor(...C.dark);
     doc.rect(0, 0, PW, 80, 'F');
 
-    // Decorative circles
-    doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.3);
-    doc.circle(PW - 16, 14, 28, 'S');
-    doc.circle(PW - 4, 55, 20, 'S');
-    doc.circle(10, 68, 16, 'S');
+    // Subtle bottom separator of header band
+    doc.setDrawColor(...C.white); doc.setLineWidth(0.15);
+    doc.line(16, 76, PW - 16, 76);
 
     // Logo
     if (logoUrl) {
@@ -488,9 +499,9 @@ export class PdfExportService {
     doc.setFontSize(8); doc.setTextColor(...C.blueAcc);
     doc.text('Educacion financiera gamificada', PW / 2, 68, { align: 'center' });
 
-    // ── KPI tiles row
+    // ── KPI tiles (left accent bars — document-like, not UI-like)
     const tileGap = 4;
-    const tW = (PW - 32 - tileGap * 3) / 4; // ~41.5 mm
+    const tW = (PW - 32 - tileGap * 3) / 4;
     const tY = 88;
     const tiles = [
       { label: 'BALANCE', value: this.fmt(kpis.totalBal), clr: C.blue },
@@ -505,9 +516,9 @@ export class PdfExportService {
       doc.roundedRect(tx, tY, tW, 26, 2.5, 2.5, 'F');
       doc.setDrawColor(...C.border); doc.setLineWidth(0.15);
       doc.roundedRect(tx, tY, tW, 26, 2.5, 2.5, 'S');
-      // Accent top
+      // Left accent bar
       doc.setFillColor(...t.clr);
-      doc.roundedRect(tx, tY, tW, 2.5, 1, 1, 'F');
+      doc.roundedRect(tx, tY, 3, 26, 1, 1, 'F');
       // Label
       doc.setTextColor(...C.muted); doc.setFontSize(6); doc.setFont('helvetica', 'bold');
       doc.text(t.label, tx + tW / 2, tY + 10, { align: 'center' });
@@ -552,22 +563,18 @@ export class PdfExportService {
 
     // ── Table of contents
     const tocY = uY + 22;
-    doc.setFillColor(...C.bgBlue);
+    doc.setFillColor(...C.bgGray);
     doc.roundedRect(16, tocY, PW - 32, 72, 4, 4, 'F');
-    doc.setDrawColor(...C.bdrBlue); doc.setLineWidth(0.2);
+    doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(16, tocY, PW - 32, 72, 4, 4, 'S');
+    // Dark left accent — visual anchor for the TOC block
+    doc.setFillColor(...C.dark);
+    doc.roundedRect(16, tocY, 3, 72, 2, 2, 'F');
 
-    doc.setTextColor(...C.blue); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.slate); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
     doc.text('CONTENIDO DEL REPORTE', 26, tocY + 12);
 
-    const tocItems = [
-      '1. Resumen ejecutivo',
-      '4. Estado de cuentas',
-      '2. Analisis de gastos',
-      '5. Presupuestos',
-      '3. Analisis de ingresos',
-      '6. Metas financieras',
-    ];
+
     doc.setFontSize(8.5); doc.setFont('helvetica', 'normal');
     tocItems.forEach((item, i) => {
       const col = i % 2 === 0 ? 26 : PW / 2 + 4;
@@ -578,8 +585,8 @@ export class PdfExportService {
       doc.text(item, col + 8, row);
     });
 
-    // ── Bottom footer bar
-    doc.setFillColor(...C.blue);
+    // ── Bottom footer bar — dark to match header, creates bookend effect
+    doc.setFillColor(...C.dark);
     doc.rect(0, PH - 14, PW, 14, 'F');
     doc.setTextColor(...C.white); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
     doc.text('FinanzaViva  |  Tu camino hacia la libertad financiera', PW / 2, PH - 5.5, { align: 'center' });
@@ -599,7 +606,7 @@ export class PdfExportService {
     this.buildHeader(doc, 'Resumen Ejecutivo', PW);
     let y = 38;
 
-    // ── 2 x 2 KPI cards
+    // ── 2 x 2 KPI cards (left accent bars)
     const W2 = (PW - 40) / 2;
     const cards: { label: string; value: string; sub: string; rgb: [number, number, number] }[] = [
       { label: 'BALANCE TOTAL', value: this.fmt(kpis.totalBal), sub: 'Patrimonio neto', rgb: C.blue },
@@ -613,43 +620,45 @@ export class PdfExportService {
       const cy = y + Math.floor(i / 2) * 34;
       doc.setFillColor(...C.bgGray);
       doc.roundedRect(cx, cy, W2, 28, 3, 3, 'F');
-      // Top accent
+      // Left accent bar
       doc.setFillColor(...c.rgb);
-      doc.roundedRect(cx, cy, W2, 2.5, 1, 1, 'F');
-      // Label
+      doc.roundedRect(cx, cy, 3, 28, 1, 1, 'F');
+      // Label (2mm right shift to clear accent bar)
       doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
-      doc.text(c.label, cx + 7, cy + 10);
+      doc.text(c.label, cx + 9, cy + 10);
       // Value
       doc.setTextColor(...c.rgb); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-      doc.text(c.value, cx + 7, cy + 22);
+      doc.text(c.value, cx + 9, cy + 22);
       // Sub-label right-aligned
       doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'normal');
       doc.text(c.sub, cx + W2 - 7, cy + 22, { align: 'right' });
     });
 
-    y += 2 * 34 + 6; // 110 mm
+    y += 2 * 34 + 6;
 
-    // ── Transaction count badge
-    doc.setFillColor(...C.bgBlue);
+    // ── Transaction count badge (neutral — avoids the blue-on-blue look)
+    doc.setFillColor(...C.bgGray);
     doc.roundedRect(16, y, PW - 32, 9, 2, 2, 'F');
-    doc.setTextColor(...C.blue); doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+    doc.setDrawColor(...C.border); doc.setLineWidth(0.15);
+    doc.roundedRect(16, y, PW - 32, 9, 2, 2, 'S');
+    doc.setTextColor(...C.slate); doc.setFontSize(7); doc.setFont('helvetica', 'bold');
     doc.text(`${kpis.txCount} transacciones registradas en el periodo`, PW / 2, y + 6.5, { align: 'center' });
-    y += 13; // 123
+    y += 13;
 
     // ── Income vs Expenses comparison chart
     doc.setTextColor(...C.slate); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
     doc.text('Comparacion de Flujo Financiero', 16, y);
-    y += 5; // 128
+    y += 5;
     doc.addImage(compareChart, 'PNG', 16, y, PW - 32, 26);
-    y += 30; // 158
+    y += 30;
 
     // ── Financial health
     doc.setTextColor(...C.slate); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
     doc.text('Salud Financiera', 16, y);
-    y += 5; // 163
+    y += 5;
     doc.setTextColor(...C.gray); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
     doc.text(health.message, 16, y);
-    y += 5; // 168
+    y += 5;
 
     const [hr, hg, hb] = this.healthRgb(health.status);
     const barW = PW - 32;
@@ -657,15 +666,15 @@ export class PdfExportService {
     doc.roundedRect(16, y, barW, 5.5, 2.5, 2.5, 'F');
     doc.setFillColor(hr, hg, hb);
     doc.roundedRect(16, y, barW * Math.min(100, health.percentage) / 100, 5.5, 2.5, 2.5, 'F');
-    y += 8; // 176
+    y += 8;
     doc.setFontSize(7); doc.setTextColor(hr, hg, hb); doc.setFont('helvetica', 'bold');
     doc.text(`${health.percentage}% usado  |  ${health.status}`, PW - 16, y, { align: 'right' });
-    y += 12; // 188
+    y += 12;
 
     // ── Bottom row: savings rate + top categories
     const hw = (PW - 40) / 2;
 
-    // LEFT: savings rate
+    // LEFT: savings rate card
     const rClr: [number, number, number] = kpis.savingsRate >= 20 ? C.green : kpis.savingsRate >= 10 ? C.orange : C.red;
     const rLbl = kpis.savingsRate >= 20 ? 'Excelente' : kpis.savingsRate >= 10 ? 'Aceptable' : kpis.savingsRate > 0 ? 'Mejorable' : 'Deficit';
     const rTip = kpis.savingsRate >= 20
@@ -678,8 +687,9 @@ export class PdfExportService {
     doc.roundedRect(16, y, hw, 36, 3, 3, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(16, y, hw, 36, 3, 3, 'S');
+    // Left accent
     doc.setFillColor(...rClr);
-    doc.roundedRect(16, y, hw, 2.5, 1, 1, 'F');
+    doc.roundedRect(16, y, 3, 36, 1, 1, 'F');
 
     doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
     doc.text('TASA DE AHORRO', 24, y + 11);
@@ -693,12 +703,15 @@ export class PdfExportService {
     doc.setTextColor(...C.muted);
     doc.text(rTip, 24, y + 33);
 
-    // RIGHT: top categories
+    // RIGHT: top categories card
     const rx = 16 + hw + 8;
     doc.setFillColor(...C.bgGray);
     doc.roundedRect(rx, y, hw, 36, 3, 3, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(rx, y, hw, 36, 3, 3, 'S');
+    // Left accent (dark — neutral category)
+    doc.setFillColor(...C.dark);
+    doc.roundedRect(rx, y, 3, 36, 1, 1, 'F');
 
     doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
     doc.text('PRINCIPALES MOVIMIENTOS', rx + 8, y + 11);
@@ -752,6 +765,7 @@ export class PdfExportService {
     }
 
     // Category breakdown table
+    // Tinted alternating rows kept — semantic context (red=expenses, green=income)
     autoTable(doc, {
       startY: y,
       head: [['#', 'Categoria', 'Monto', '% del total', 'Transacciones']],
@@ -773,7 +787,7 @@ export class PdfExportService {
         3: { cellWidth: 24, halign: 'center' },
         4: { cellWidth: 30, halign: 'center' },
       },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, bottom: 15 },
       styles: { cellPadding: 3.5, overflow: 'linebreak' },
       didParseCell: (d) => {
         if (d.section === 'body' && d.column.index === 0) {
@@ -797,7 +811,7 @@ export class PdfExportService {
     this.buildHeader(doc, 'Estado de Cuentas', PW);
     let y = 38;
 
-    // ── Visual account cards (max 3 per row)
+    // ── Visual account cards (left accent bars)
     const renderCardRow = (accts: Account[], startY: number): number => {
       const n = Math.min(accts.length, 3);
       if (n === 0) return startY;
@@ -811,9 +825,9 @@ export class PdfExportService {
         doc.roundedRect(cx, startY, cW, 32, 3, 3, 'F');
         doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
         doc.roundedRect(cx, startY, cW, 32, 3, 3, 'S');
-        // Accent top
+        // Left accent bar
         doc.setFillColor(...clr);
-        doc.roundedRect(cx, startY, cW, 3, 1.5, 1.5, 'F');
+        doc.roundedRect(cx, startY, 3, 32, 1.5, 1.5, 'F');
         // Account name
         doc.setTextColor(...C.slate); doc.setFontSize(8.5); doc.setFont('helvetica', 'bold');
         doc.text(a.name, cx + cW / 2, startY + 14, { align: 'center', maxWidth: cW - 6 });
@@ -831,7 +845,7 @@ export class PdfExportService {
     if (accounts.length > 3) y = renderCardRow(accounts.slice(3, 6), y);
     y += 4;
 
-    // ── Summary table with historical balances
+    // ── Summary table
     const total = accounts.reduce((s, a) => s + (histBal[a.id] ?? parseFloat(String(a.balance))), 0);
     autoTable(doc, {
       startY: y,
@@ -841,15 +855,15 @@ export class PdfExportService {
         return [a.name, ACCOUNT_TYPE_LABEL[a.type] ?? a.type, this.fmt(bal), `${total ? Math.round((bal / total) * 100) : 0}%`];
       }),
       foot: [['TOTAL CONSOLIDADO', '', this.fmt(total), '100%']],
-      headStyles: { fillColor: C.blue, textColor: 255, fontStyle: 'bold', fontSize: 9 },
-      footStyles: { fillColor: C.bgBlue, textColor: C.blue, fontStyle: 'bold', fontSize: 9 },
+      headStyles: { fillColor: C.dark, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+      footStyles: { fillColor: C.bgNeutral, textColor: C.dark, fontStyle: 'bold', fontSize: 9 },
       bodyStyles: { textColor: [51, 65, 85] as [number, number, number], fontSize: 9 },
-      alternateRowStyles: { fillColor: C.bgBlue },
+      alternateRowStyles: { fillColor: C.bgNeutral },
       columnStyles: {
         2: { halign: 'right', fontStyle: 'bold' },
         3: { halign: 'center' },
       },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, bottom: 15 },
       styles: { cellPadding: 4 },
     });
   }
@@ -888,7 +902,7 @@ export class PdfExportService {
       body: rows,
       headStyles: { fillColor: C.purple, textColor: 255, fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { textColor: [51, 65, 85] as [number, number, number], fontSize: 8 },
-      alternateRowStyles: { fillColor: C.bgPurple },
+      alternateRowStyles: { fillColor: C.bgNeutral },
       columnStyles: {
         1: { halign: 'right' },
         2: { halign: 'right', fontStyle: 'bold' },
@@ -896,14 +910,12 @@ export class PdfExportService {
         4: { halign: 'center', cellWidth: 32 },
         5: { halign: 'center', fontStyle: 'bold', cellWidth: 22 },
       },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, bottom: 15 },
       styles: { cellPadding: 3.5, minCellHeight: 12 },
       didParseCell: (d) => {
-        // Clear text in progress column — drawn manually
         if (d.column.index === 4 && d.section === 'body') {
           d.cell.text = [];
         }
-        // Color status column
         if (d.column.index === 5 && d.section === 'body') {
           const v = String(d.cell.raw);
           d.cell.styles.textColor = v === 'Excedido' ? C.red : v === 'Alerta' ? C.orange : C.green;
@@ -952,7 +964,7 @@ export class PdfExportService {
       body: rows,
       headStyles: { fillColor: C.green, textColor: 255, fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { textColor: [51, 65, 85] as [number, number, number], fontSize: 8 },
-      alternateRowStyles: { fillColor: C.bgGreen },
+      alternateRowStyles: { fillColor: C.bgNeutral },
       columnStyles: {
         1: { halign: 'right' },
         2: { halign: 'right', fontStyle: 'bold' },
@@ -960,7 +972,7 @@ export class PdfExportService {
         4: { halign: 'center' },
         5: { halign: 'center', fontStyle: 'bold' },
       },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, bottom: 15 },
       styles: { cellPadding: 3.5, minCellHeight: 12 },
       didParseCell: (d) => {
         if (d.column.index === 3 && d.section === 'body') {
@@ -1011,14 +1023,14 @@ export class PdfExportService {
         const to = accounts.find(a => a.id === tf.toAccountId)?.name ?? '?';
         return [String(i + 1), this.fmtDate(tf.date.substring(0, 10)), from, to, this.fmt(tf.amount), tf.description ?? '-'];
       }),
-      headStyles: { fillColor: C.blue, textColor: 255, fontStyle: 'bold', fontSize: 8 },
+      headStyles: { fillColor: C.dark, textColor: 255, fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { textColor: [51, 65, 85] as [number, number, number], fontSize: 8 },
-      alternateRowStyles: { fillColor: C.bgBlue },
+      alternateRowStyles: { fillColor: C.bgNeutral },
       columnStyles: {
         0: { cellWidth: 8, halign: 'center' },
         4: { halign: 'right', fontStyle: 'bold' },
       },
-      margin: { left: 16, right: 16 },
+      margin: { left: 16, right: 16, bottom: 15 },
       styles: { cellPadding: 3.5 },
     });
   }
@@ -1052,16 +1064,16 @@ export class PdfExportService {
           tx.description ?? '-',
         ];
       }),
-      headStyles: { fillColor: C.blue, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+      headStyles: { fillColor: C.dark, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
       bodyStyles: { textColor: [51, 65, 85] as [number, number, number], fontSize: 7.5 },
       alternateRowStyles: { fillColor: C.bgGray },
       columnStyles: {
         1: { cellWidth: 20, halign: 'center' },
         4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
       },
-      margin: { left: 12, right: 12 },
+      margin: { left: 12, right: 12, bottom: 15 },
       styles: { cellPadding: 2.5, overflow: 'linebreak' },
-      // Color each row by transaction type; tint amount column with type color
+      // Per-row semantic tinting — useful for a financial statement
       didParseCell: (d) => {
         if (d.section !== 'body') return;
         const type = (d.row.raw as string[])?.[1] ?? '';
