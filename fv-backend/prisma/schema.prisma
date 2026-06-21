@@ -46,6 +46,7 @@ enum XpSource {
   QUIZ_PASSED
   TRANSACTION_LOGGED
   SIMULATOR_ROUND
+  SIMULATOR_GAME_FINISHED
   STREAK_BONUS
   ACHIEVEMENT_UNLOCKED
   GOAL_COMPLETED
@@ -87,11 +88,40 @@ enum SimulatorStatus {
   WAITING
   IN_PROGRESS
   FINISHED
+  ABANDONED
 }
 
-enum RoundType {
-  WEEKLY
-  MONTHLY
+enum CellType {
+  INICIO
+  PROPERTY
+  TAX
+  LOTTERY
+  WILDCARD
+  SCAM
+  PENSION
+  PENSION_ESPECIAL
+  JAIL
+  GO_TO_JAIL
+}
+
+enum WildcardType {
+  POSITIVE
+  NEGATIVE
+  GO_TO_JAIL
+  COLLECT_FROM_ALL
+  PAY_TO_ALL
+}
+
+enum GamePhase {
+  WAITING
+  ROLLING
+  MOVING
+  ACTION
+  BUYING
+  WILDCARD_REVEAL
+  BETWEEN_TURNS
+  FINISHED
+  ABANDONED
 }
 
 enum BotPersonality {
@@ -107,19 +137,6 @@ enum GameMode {
   SOLO
   SIMULATION
   MIXED
-}
-
-enum EventCategory {
-  RISK
-  OPPORTUNITY
-  NEUTRAL
-  CRISIS
-  MARKET
-  EDUCATION
-  CREDIT
-  MORTGAGE
-  INSURANCE
-  SAVINGS
 }
 
 enum RewardType {
@@ -548,25 +565,28 @@ model QuizAttemptAnswer {
   @@map("quiz_attempt_answers")
 }
 
-// SIMULADOR FINANCIERO
+// SIMULADOR FINANCIERO — TABLERO
 
 model SimulatorGame {
   id              String          @id @default(uuid())
   createdByUserId String
   status          SimulatorStatus @default(WAITING)
   currentRound    Int             @default(0)
-  maxRounds       Int
-  roundType       RoundType
+  maxRounds       Int             @default(0)
   mode            GameMode        @default(MULTIPLAYER)
-  currentPlayerId String?         // SimulatorPlayer.id activo
-  xpRecipientId   String?         // userId que recibe XP al finalizar
+  initialMoney    Int             @default(1500)
+  gamePhase       GamePhase       @default(WAITING)
+  currentPlayerIdx Int            @default(0)
+  currentDice1    Int?
+  currentDice2    Int?
+  xpRecipientId   String?
+  abandonedAt     DateTime?
   startedAt       DateTime?
   finishedAt      DateTime?
   createdAt       DateTime        @default(now())
 
   createdBy User              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   players   SimulatorPlayer[]
-  rounds    SimulatorRound[]
 
   @@map("simulator_games")
 }
@@ -574,125 +594,61 @@ model SimulatorGame {
 model SimulatorPlayer {
   id             String   @id @default(uuid())
   gameId         String
-  userId         String?  // null = jugador local sin cuenta
+  userId         String?  // null = bot
   displayName    String
-  money          Decimal  @default(1000) @db.Decimal(12, 2)
-  income         Decimal  @default(0)   @db.Decimal(12, 2)
-  expenses       Decimal  @default(0)   @db.Decimal(12, 2)
-  debt           Decimal  @default(0)   @db.Decimal(12, 2)
-  financialScore Int      @default(500)
+  money          Int      @default(1500)
   isEliminated   Boolean  @default(false)
-  finalRank      Int?     // posición final al terminar la partida
-  savings        Decimal  @default(0) @db.Decimal(12, 2)
-  investments    Decimal  @default(0) @db.Decimal(12, 2)
-  assets         Decimal  @default(0) @db.Decimal(12, 2)
   isBot          Boolean  @default(false)
   botPersonality BotPersonality?
   turnOrder      Int      @default(0)
-  hasActed       Boolean  @default(false)
-  currentEventId String?  // evento asignado para este turno
-  xpEarned       Int      @default(0)
+  position       Int      @default(0)
+  isInJail       Boolean  @default(false)
+  jailTurnsLeft  Int      @default(0)
+  hasRolled      Boolean  @default(false)
   createdAt      DateTime @default(now())
 
-  game         SimulatorGame          @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user         User?                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roundEvents  SimulatorPlayerRound[]
-  consequences SimulatorConsequence[]
+  game       SimulatorGame    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties PlayerProperty[]
 
   @@index([gameId])
   @@map("simulator_players")
 }
 
-model SimulatorConsequence {
-  id              String          @id @default(uuid())
-  playerId        String
-  player          SimulatorPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  description     String
-  effectMoney     Decimal         @default(0) @db.Decimal(12, 2)
-  effectIncome    Decimal         @default(0) @db.Decimal(12, 2)
-  effectExpenses  Decimal         @default(0) @db.Decimal(12, 2)
-  effectScore     Int             @default(0)
-  roundsRemaining Int
-  sourceEventId   String?
-  createdAt       DateTime        @default(now())
+model PlayerProperty {
+  id           String   @id @default(uuid())
+  gameId       String
+  playerId     String
+  cellPosition Int
+  purchasedAt  DateTime @default(now())
 
-  @@map("simulator_consequences")
+  player SimulatorPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, cellPosition])
+  @@map("player_properties")
 }
 
-model SimulatorEvent {
-  id          String        @id @default(uuid())
+model BoardCell {
+  position    Int      @id
   name        String
+  type        CellType
+  group       String?
+  price       Int?
+  rent        Int?
+  amount      Int?
   description String
-  category    EventCategory
-  probability Decimal       @db.Decimal(3, 2) // 0.00 a 1.00
-  isGlobal    Boolean       @default(false)   // true = afecta a todos los jugadores
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
 
-  options      SimulatorEventOption[]
-  playerRounds SimulatorPlayerRound[]
-
-  @@map("simulator_events")
+  @@map("board_cells")
 }
 
-model SimulatorEventOption {
-  id            String  @id @default(uuid())
-  eventId       String
-  text          String  // texto de la opción que ve el jugador
-  effectMoney      Decimal @db.Decimal(12, 2)
-  effectIncome     Decimal @default(0) @db.Decimal(12, 2)
-  effectExpenses   Decimal @default(0) @db.Decimal(12, 2)
-  effectDebt       Decimal @db.Decimal(12, 2)
-  effectSavings    Decimal @default(0) @db.Decimal(12, 2)
-  effectAssets     Decimal @default(0) @db.Decimal(12, 2)
-  effectInvestments Decimal @default(0) @db.Decimal(12, 2)
-  effectScore      Int
-  consequenceRounds Int    @default(0)
-  consequenceDesc   String?
-  explanation      String  // retroalimentación educativa al elegir esta opción
+model BoardWildcard {
+  id           String       @id @default(uuid())
+  text         String
+  type         WildcardType
+  effectAmount Int          @default(0)
+  explanation  String
 
-  event        SimulatorEvent       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  playerRounds SimulatorPlayerRound[]
-
-  @@index([eventId])
-  @@map("simulator_event_options")
-}
-
-model SimulatorRound {
-  id          String    @id @default(uuid())
-  gameId      String
-  roundNumber Int
-  startedAt   DateTime  @default(now())
-  finishedAt  DateTime?
-
-  game         SimulatorGame          @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  playerRounds SimulatorPlayerRound[]
-
-  @@unique([gameId, roundNumber])
-  @@index([gameId])
-  @@map("simulator_rounds")
-}
-
-model SimulatorPlayerRound {
-  id             String   @id @default(uuid())
-  roundId        String
-  playerId       String
-  eventId        String
-  chosenOptionId String
-  moneyBefore    Decimal  @db.Decimal(12, 2)
-  moneyAfter     Decimal  @db.Decimal(12, 2)
-  debtBefore     Decimal  @db.Decimal(12, 2)
-  debtAfter      Decimal  @db.Decimal(12, 2)
-  scoreBefore    Int
-  scoreAfter     Int
-  decidedAt      DateTime @default(now())
-
-  round        SimulatorRound       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  player       SimulatorPlayer      @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  event        SimulatorEvent       @relation(fields: [eventId], references: [id])
-  chosenOption SimulatorEventOption @relation(fields: [chosenOptionId], references: [id])
-
-  @@map("simulator_player_rounds")
+  @@map("board_wildcards")
 }
 
 // ESTADÍSTICAS AGREGADAS

@@ -207,6 +207,6 @@ export class Simulator implements OnInit {
   }
 
   formatCurrency(v: number): string {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(v);
+    return `$${v.toLocaleString('es-EC')}`;
   }
 }

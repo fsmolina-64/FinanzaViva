@@ -1,16 +1,13 @@
-import {
-  IsEnum, IsInt, IsArray, IsString,
-  IsOptional, IsUUID, Min, Max, ValidateNested
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsInt, Min, Max, IsArray, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BotPersonality, GameMode } from '@prisma/client';
+import { GameMode, BotPersonality } from '@prisma/client';
 
 export class HumanPlayerDto {
   @IsString()
   displayName!: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   userId?: string;
 }
 
@@ -23,13 +20,19 @@ export class BotPlayerDto {
 }
 
 export class CreateGameDto {
+  @IsEnum(GameMode)
+  mode!: GameMode;
+
   @IsInt()
   @Min(3)
   @Max(10)
   maxRounds!: number;
 
-  @IsEnum(GameMode)
-  mode!: GameMode;
+  @IsOptional()
+  @IsInt()
+  @Min(1000)
+  @Max(5000)
+  initialMoney?: number;
 
   @IsArray()
   @ValidateNested({ each: true })
