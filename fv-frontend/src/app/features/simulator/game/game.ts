@@ -1,391 +1,495 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component, OnInit, OnDestroy, signal, computed, HostListener
+} from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, firstValueFrom, of } from 'rxjs';
 import { SimulatorService } from '../../../core/services/simulator.service';
 import {
-  GameStateResponse, RollDiceResponse, DecideBuyResponse,
-  DismissWildcardResponse, BackendPlayer, BoardCell, BackendGame,
-  PlayerProperty, GamePhase
+  GameStateResponse, BackendPlayer, BoardCell,
+  GamePhase, BotMove
 } from '../../../core/models/simulator.model';
+
+interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' | 'error'; }
 
 @Component({
   selector: 'app-game',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './game.html'
+  templateUrl: './game.html',
+  styles: [`
+    @keyframes diceShake {
+      0%,100%{ transform:scale(1) rotate(0deg); }
+      20%    { transform:scale(1.25) rotate(-18deg); }
+      40%    { transform:scale(0.88) rotate(22deg); }
+      60%    { transform:scale(1.18) rotate(-12deg); }
+      80%    { transform:scale(0.94) rotate(10deg); }
+    }
+    .dice-roll { animation: diceShake 0.09s ease-in-out infinite; }
+
+    @keyframes tokenJump {
+      0%,100%{ transform:translateY(0) scale(1); }
+      45%    { transform:translateY(-9px) scale(1.3); }
+    }
+    .token-jump { animation: tokenJump 0.27s ease-out; }
+
+    @keyframes toastSlide {
+      from { opacity:0; transform:translateX(110%); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .toast-in { animation: toastSlide 0.28s ease-out; }
+
+    @keyframes diceReveal {
+      0%  { transform:scale(0.6) rotate(-10deg); opacity:0; }
+      100%{ transform:scale(1) rotate(0deg);   opacity:1; }
+    }
+    .dice-reveal { animation: diceReveal 0.25s ease-out; }
+  `]
 })
-export class Game implements OnInit {
-  gameState = signal<GameStateResponse | null>(null);
-  loading = signal(true);
-  error = signal<string | null>(null);
-  actionLog = signal<string[]>([]);
+export class Game implements OnInit, OnDestroy {
+  gameState       = signal<GameStateResponse | null>(null);
+  loading         = signal(true);
+  error           = signal<string | null>(null);
 
-  dice1 = signal<number | null>(null);
-  dice2 = signal<number | null>(null);
+  dice1           = signal<number | null>(null);
+  dice2           = signal<number | null>(null);
+  isDiceRolling   = signal(false);
+  diceRevealed    = signal(false);
 
-  showBuyModal = signal(false);
-  buyCell = signal<BoardCell | null>(null);
+  isAnimating     = signal(false);
+  animatingId     = signal<string | null>(null);
+  animatingPos    = signal<number>(0);
+  bouncingId      = signal<string | null>(null);
 
+  showBuyModal      = signal(false);
+  buyCell           = signal<BoardCell | null>(null);
   showWildcardModal = signal(false);
-  wildcardText = signal('');
-  wildcardExplanation = signal('');
+  wildcardText      = signal('');
+  wildcardExpl      = signal('');
+  showExitModal     = signal(false);
+  showTooltip       = signal<BoardCell | null>(null);
 
-  showFinishModal = signal(false);
+  botMsg = signal<string | null>(null);
 
-  showTooltip = signal<BoardCell | null>(null);
-  tooltipPos = signal({ x: 0, y: 0 });
+  toasts = signal<Toast[]>([]);
+
+  private leaveCallback: ((v: boolean) => void) | null = null;
+  private diceInterval: ReturnType<typeof setInterval> | null = null;
 
   gameId!: string;
 
-  game = computed(() => this.gameState()?.game ?? null);
+  game    = computed(() => this.gameState()?.game ?? null);
   players = computed(() => this.gameState()?.players ?? []);
-  boardCells = computed(() => this.gameState()?.boardCells ?? []);
+  cells   = computed(() => this.gameState()?.boardCells ?? []);
 
-  currentPlayer = computed(() => {
-    const state = this.gameState();
-    if (state?.currentPlayer) return state.currentPlayer;
-    const g = state?.game;
-    const ps = state?.players ?? [];
-    if (g && ps.length > 0) return ps[g.currentPlayerIdx] ?? null;
-    return null;
+  currentPlayer = computed<BackendPlayer | null>(() => {
+    const s = this.gameState();
+    if (s?.currentPlayer) return s.currentPlayer;
+    const ps = s?.players ?? [];
+    const g  = s?.game;
+    return (g && ps.length) ? (ps[g.currentPlayerIdx] ?? null) : null;
   });
 
-  sortedPlayers = computed(() =>
-    [...this.players()].sort((a, b) => a.turnOrder - b.turnOrder)
-  );
+  sortedPlayers = computed(() => [...this.players()].sort((a, b) => a.turnOrder - b.turnOrder));
+
+  rankedPlayers = computed(() => [...this.players()].sort((a, b) => {
+    if (a.isEliminated && !b.isEliminated) return 1;
+    if (!a.isEliminated && b.isEliminated) return -1;
+    return b.money - a.money;
+  }));
 
   isMyTurn = computed(() => {
     const cp = this.currentPlayer();
-    return cp && !cp.isBot;
+    return !!(cp && !cp.isBot);
   });
 
-  isInJail = computed(() => this.currentPlayer()?.isInJail ?? false);
+  currentLap = computed(() => {
+    const ps = this.players();
+    return ps.length ? Math.min(...ps.map(p => p.lapsCompleted ?? 0)) + 1 : 1;
+  });
+
+  isGameActive = (): boolean => {
+    const ph = this.game()?.gamePhase;
+    return !!(ph && ph !== 'WAITING' && ph !== 'FINISHED' && ph !== 'ABANDONED');
+  };
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private simulatorService: SimulatorService
+    public router: Router,
+    private svc: SimulatorService,
   ) {}
 
   ngOnInit(): void {
     this.gameId = this.route.snapshot.params['id'];
     if (!this.gameId) { this.router.navigate(['/simulator']); return; }
-    this.startGame();
+    this.init();
   }
 
-  private startGame(): void {
-    this.simulatorService.startGame(this.gameId).subscribe({
-      next: (state) => {
-        this.applyGameState(state);
-      },
-      error: (err) => {
+  ngOnDestroy(): void {
+    this.clearDiceInterval();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(e: BeforeUnloadEvent): void {
+    if (this.isGameActive()) e.preventDefault();
+  }
+
+  canLeave(): boolean | Observable<boolean> {
+    if (!this.isGameActive()) return true;
+    this.showExitModal.set(true);
+    return new Observable(obs => {
+      this.leaveCallback = (v: boolean) => { obs.next(v); obs.complete(); };
+    });
+  }
+
+  confirmLeave(): void {
+    this.showExitModal.set(false);
+    this.svc.abandonGame(this.gameId).subscribe({ error: () => {} });
+    this.leaveCallback?.(true);
+    this.leaveCallback = null;
+  }
+
+  cancelLeave(): void {
+    this.showExitModal.set(false);
+    this.leaveCallback?.(false);
+    this.leaveCallback = null;
+  }
+
+  private init(): void {
+    this.svc.startGame(this.gameId).subscribe({
+      next: s => this.applyState(s),
+      error: err => {
         if (err?.status === 400) {
-          this.simulatorService.getGameState(this.gameId).subscribe({
-            next: (state) => this.applyGameState(state),
-            error: () => {
-              this.error.set('Error al cargar la partida');
-              this.loading.set(false);
-            }
+          this.svc.getGameState(this.gameId).subscribe({
+            next: s => this.applyState(s),
+            error: () => { this.error.set('Error al cargar la partida'); this.loading.set(false); },
           });
         } else {
           this.error.set('Error al iniciar la partida');
           this.loading.set(false);
         }
-      }
+      },
     });
-  }
-
-  private applyGameState(state: GameStateResponse): void {
-    this.gameState.set(state);
-    this.dice1.set(state.game.currentDice1);
-    this.dice2.set(state.game.currentDice2);
-    this.loading.set(false);
-
-    if (state.game.gamePhase === 'FINISHED') {
-      this.showFinishModal.set(true);
-    }
   }
 
   handleStartGame(): void {
-    this.simulatorService.startGame(this.gameId).subscribe({
-      next: (state) => this.applyGameState(state),
-      error: (err) => {
-        this.addLog(`Error: ${err?.error?.message ?? 'No se pudo iniciar'}`);
-      }
+    this.svc.startGame(this.gameId).subscribe({
+      next: s => this.applyState(s),
+      error: err => this.toast(err?.error?.message ?? 'Error', 'error'),
     });
   }
 
-  rollDice(): void {
-    this.simulatorService.rollDice(this.gameId).subscribe({
-      next: (res) => {
-        this.dice1.set(res.dice1);
-        this.dice2.set(res.dice2);
-        this.gameState.set(res.gameState);
-        this.addLog(`\u{1F3B2} ${res.dice1} + ${res.dice2}`);
+  private applyState(s: GameStateResponse): void {
+    this.gameState.set(s);
+    if (!this.isDiceRolling() && !this.isAnimating()) {
+      this.dice1.set(s.game.currentDice1 ?? null);
+      this.dice2.set(s.game.currentDice2 ?? null);
+    }
+    this.loading.set(false);
+  }
 
-        if (res.passedGo) {
-          this.addLog('Pas\u00f3 por la casilla de INICIO');
-        }
+  // ──── Lanzar dados ────────────────────────────────────────────────────
 
-        const cell = res.gameState.boardCells.find(c => c.position === res.newPosition);
+  async rollDice(): Promise<void> {
+    if (this.isAnimating() || this.isDiceRolling()) return;
 
-        switch (res.action) {
-          case 'BUY':
-            if (cell) {
-              this.buyCell.set(cell);
-              this.showBuyModal.set(true);
-            }
-            break;
-          case 'WILDCARD':
-            this.wildcardText.set(res.actionDetails?.text ?? '');
-            this.wildcardExplanation.set(res.actionDetails?.explanation ?? '');
-            this.showWildcardModal.set(true);
-            break;
-          case 'PAY_RENT':
-            this.addLog(`Pag\u00f3 renta $${res.actionDetails?.rent ?? 0} a ${res.actionDetails?.ownerName ?? 'desconocido'}`);
-            break;
-          case 'PAY_TAX':
-            this.addLog(`Pag\u00f3 impuesto $${res.actionDetails?.amount ?? 0}`);
-            break;
-          case 'LOTTERY':
-            this.addLog(`Gan\u00f3 la loter\u00eda $${res.actionDetails?.amount ?? 0}`);
-            break;
-          case 'PENSION':
-            this.addLog(`Cobr\u00f3 pensi\u00f3n $${res.actionDetails?.amount ?? 0}`);
-            break;
-          case 'SCAM':
-            this.addLog(`Perdi\u00f3 dinero en estafa $${res.actionDetails?.amount ?? 0}`);
-            break;
-          case 'GO_TO_JAIL':
-            this.addLog('Va a la c\u00e1rcel');
-            break;
-          case 'STAY_IN_JAIL':
-            this.addLog('Permanece en la c\u00e1rcel');
-            break;
-        }
+    this.diceRevealed.set(false);
+    this.dice1.set(null);
+    this.dice2.set(null);
+    this.startDiceAnim();
 
-        if (res.gameState.game.gamePhase === 'FINISHED') {
-          this.showFinishModal.set(true);
-        }
-      },
-      error: (err) => {
-        this.addLog(`Error: ${err?.error?.message ?? 'Error desconocido'}`);
+    try {
+      const res = await firstValueFrom(this.svc.rollDice(this.gameId));
+
+      await this.delay(700);
+      this.stopDiceAnim(res.dice1, res.dice2);
+      await this.delay(200);
+      this.diceRevealed.set(true);
+
+      const cp = this.currentPlayer();
+      if (cp) {
+        await this.animateToken(cp.id, cp.position, res.dice1 + res.dice2);
       }
-    });
+
+      if (res.passedGo) this.toast('Paso por el INICIO', 'success', 4000);
+
+      this.applyState(res.gameState);
+
+      switch (res.action) {
+        case 'BUY': {
+          const cell = res.gameState.boardCells.find(c => c.position === res.newPosition);
+          if (cell) { this.buyCell.set(cell); this.showBuyModal.set(true); }
+          break;
+        }
+        case 'WILDCARD':
+          this.wildcardText.set(res.actionDetails?.text ?? '');
+          this.wildcardExpl.set(res.actionDetails?.explanation ?? '');
+          this.showWildcardModal.set(true);
+          break;
+        case 'PAY_RENT':
+          this.toast(`Renta: -${this.fmt(res.actionDetails?.rent ?? 0)} a ${res.actionDetails?.ownerName ?? ''}`, 'warning');
+          break;
+        case 'PAY_TAX':
+          this.toast(`Impuesto: -${this.fmt(res.actionDetails?.amount ?? 0)}`, 'warning');
+          break;
+        case 'SCAM':
+          this.toast(`Estafa: -${this.fmt(res.actionDetails?.amount ?? 0)}`, 'error');
+          break;
+        case 'LOTTERY':
+          this.toast(`Loteria: +${this.fmt(res.actionDetails?.amount ?? 0)}`, 'success');
+          break;
+        case 'PENSION': case 'PENSION_ESPECIAL':
+          this.toast(`Cobrado: +${this.fmt(res.actionDetails?.amount ?? 0)}`, 'success');
+          break;
+        case 'GO_TO_JAIL':
+          this.toast(`${cp?.displayName} va a la carcel`, 'warning');
+          break;
+      }
+
+    } catch (err: any) {
+      this.stopDiceAnim(null, null);
+      this.toast(err?.error?.message ?? 'Error al lanzar dados', 'error');
+    }
   }
 
   decideBuy(buy: boolean): void {
     this.showBuyModal.set(false);
     this.buyCell.set(null);
-    this.simulatorService.decideBuy(this.gameId, buy).subscribe({
-      next: (res) => {
-        this.gameState.set(res.gameState);
-        this.dice1.set(res.gameState.game.currentDice1);
-        this.dice2.set(res.gameState.game.currentDice2);
-        this.addLog(buy ? 'Compr\u00f3 propiedad' : 'Decidi\u00f3 no comprar');
-        if (res.gameState.game.gamePhase === 'FINISHED') {
-          this.showFinishModal.set(true);
-        }
+    this.svc.decideBuy(this.gameId, buy).subscribe({
+      next: res => {
+        this.applyState(res.gameState);
+        this.toast(buy ? 'Propiedad comprada' : 'Paso de largo', buy ? 'success' : 'info');
       },
-      error: (err) => {
-        this.addLog(`Error: ${err?.error?.message ?? 'Error desconocido'}`);
-      }
+      error: err => this.toast(err?.error?.message ?? 'Error', 'error'),
     });
   }
 
   dismissWildcard(): void {
     this.showWildcardModal.set(false);
-    this.simulatorService.dismissWildcard(this.gameId).subscribe({
-      next: (res) => {
-        this.gameState.set(res.gameState);
-        this.dice1.set(res.gameState.game.currentDice1);
-        this.dice2.set(res.gameState.game.currentDice2);
-        const label = res.wildcardType === 'POSITIVE' ? 'Carta positiva' :
-          res.wildcardType === 'NEGATIVE' ? 'Carta negativa' :
-          res.wildcardType === 'GO_TO_JAIL' ? 'Carta: va a la c\u00e1rcel' :
-          res.wildcardType === 'COLLECT_FROM_ALL' ? 'Carta: cobra a todos' :
-          'Carta: paga a todos';
-        this.addLog(`${label} ($${res.effectAmount})`);
-        if (res.gameState.game.gamePhase === 'FINISHED') {
-          this.showFinishModal.set(true);
-        }
-      },
-      error: (err) => {
-        this.addLog(`Error: ${err?.error?.message ?? 'Error desconocido'}`);
-      }
+    this.svc.dismissWildcard(this.gameId).subscribe({
+      next: res => this.applyState(res.gameState),
+      error: err => this.toast(err?.error?.message ?? 'Error', 'error'),
     });
   }
 
-  endTurn(): void {
+  async endTurn(): Promise<void> {
+    this.diceRevealed.set(false);
     this.dice1.set(null);
     this.dice2.set(null);
-    this.simulatorService.endTurn(this.gameId).subscribe({
-      next: (res) => {
-        this.gameState.set(res);
-        this.dice1.set(res.game.currentDice1);
-        this.dice2.set(res.game.currentDice2);
-        this.addLog('Turno terminado');
-        if (res.game.gamePhase === 'FINISHED') {
-          this.showFinishModal.set(true);
+
+    try {
+      const res = await firstValueFrom(this.svc.endTurn(this.gameId));
+
+      if (res.botMoves?.length) {
+        for (const m of res.botMoves) {
+          await this.animateBotMove(m, res.gameState.players);
         }
-      },
-      error: (err) => {
-        this.addLog(`Error: ${err?.error?.message ?? 'Error desconocido'}`);
+        this.botMsg.set(null);
+        this.dice1.set(null);
+        this.dice2.set(null);
+        this.diceRevealed.set(false);
       }
-    });
+
+      this.applyState(res.gameState);
+
+    } catch (err: any) {
+      this.toast(err?.error?.message ?? 'Error al terminar turno', 'error');
+    }
   }
 
   abandonGame(): void {
-    this.simulatorService.abandonGame(this.gameId).subscribe({
-      next: () => this.router.navigate(['/simulator']),
-      error: () => this.router.navigate(['/simulator'])
-    });
-  }
-
-  goToLobby(): void {
+    if (this.isGameActive()) { this.showExitModal.set(true); return; }
     this.router.navigate(['/simulator']);
   }
 
-  getCellByPosition(position: number): BoardCell | undefined {
-    return this.boardCells().find(c => c.position === position);
+  goToLobby(): void { this.router.navigate(['/simulator']); }
+
+  // ──── Animacion bot ──────────────────────────────────────────────────
+
+  private async animateBotMove(m: BotMove, currentPlayers: BackendPlayer[]): Promise<void> {
+    this.botMsg.set(`${m.playerName} lanzando dados...`);
+    await this.delay(500);
+
+    this.diceRevealed.set(false);
+    this.startDiceAnim();
+    await this.delay(700);
+    this.stopDiceAnim(m.dice1, m.dice2);
+    await this.delay(200);
+    this.diceRevealed.set(true);
+
+    this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', 2500);
+    await this.delay(300);
+
+    const botPlayer = currentPlayers.find(p => p.displayName === m.playerName);
+    if (botPlayer) await this.animateToken(botPlayer.id, m.fromPosition, m.diceSum);
+
+    if (m.passedGo)       this.toast(`${m.playerName} completo una vuelta`, 'success', 3000);
+    if (m.actionDetail)   this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', 3000);
+    await this.delay(700);
   }
 
-  onCellClick(cell: BoardCell, event: MouseEvent): void {
-    const rect = (event.currentTarget as HTMLElement)?.getBoundingClientRect();
-    if (rect) {
-      this.tooltipPos.set({ x: rect.left, y: rect.top - 10 });
-    } else {
-      this.tooltipPos.set({ x: event.clientX, y: event.clientY });
+  private async animateToken(playerId: string, fromPos: number, steps: number): Promise<void> {
+    this.isAnimating.set(true);
+    this.animatingId.set(playerId);
+    this.animatingPos.set(fromPos);
+
+    for (let i = 1; i <= steps; i++) {
+      const next = (fromPos + i) % 40;
+      this.animatingPos.set(next);
+      this.bouncingId.set(playerId);
+      await this.delay(260);
+      this.bouncingId.set(null);
+      await this.delay(10);
     }
-    if (this.showTooltip()?.position === cell.position) {
-      this.showTooltip.set(null);
-    } else {
-      this.showTooltip.set(cell);
-    }
+
+    this.animatingId.set(null);
+    this.isAnimating.set(false);
   }
 
-  private addLog(msg: string): void {
-    const time = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
-    this.actionLog.update(log => [`${time} ${msg}`, ...log].slice(0, 15));
+  // ──── Dados ──────────────────────────────────────────────────────────
+
+  private startDiceAnim(): void {
+    this.isDiceRolling.set(true);
+    this.diceInterval = setInterval(() => {
+      this.dice1.set(Math.ceil(Math.random() * 6));
+      this.dice2.set(Math.ceil(Math.random() * 6));
+    }, 80);
   }
 
-  getPlayerColor(index: number): string {
-    const colors = ['bg-blue-500', 'bg-red-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-orange-500'];
-    return colors[index % colors.length];
+  private stopDiceAnim(d1: number | null, d2: number | null): void {
+    this.clearDiceInterval();
+    this.isDiceRolling.set(false);
+    this.dice1.set(d1);
+    this.dice2.set(d2);
   }
 
-  getPlayerBorder(index: number): string {
-    const colors = ['border-blue-400', 'border-red-400', 'border-green-400', 'border-yellow-400', 'border-purple-400', 'border-pink-400', 'border-cyan-400', 'border-orange-400'];
-    return colors[index % colors.length];
+  private clearDiceInterval(): void {
+    if (this.diceInterval) { clearInterval(this.diceInterval); this.diceInterval = null; }
   }
 
-  getCellColor(cell: BoardCell): string {
-    const groupColors: Record<string, string> = {
-      purple: 'bg-purple-600/30 border-purple-500/50',
-      blue: 'bg-blue-600/30 border-blue-500/50',
-      pink: 'bg-pink-600/30 border-pink-500/50',
-      orange: 'bg-orange-600/30 border-orange-500/50',
-      red: 'bg-red-600/30 border-red-500/50',
-      yellow: 'bg-yellow-600/30 border-yellow-500/50',
-      green: 'bg-green-600/30 border-green-500/50',
+  // ──── Toasts ─────────────────────────────────────────────────────────
+
+  toast(msg: string, type: Toast['type'] = 'info', ms = 3500): void {
+    const id = Math.random().toString(36).slice(2);
+    this.toasts.update(t => [...t, { id, msg, type }]);
+    setTimeout(() => this.toasts.update(t => t.filter(x => x.id !== id)), ms);
+  }
+
+  dismissToast(id: string): void { this.toasts.update(t => t.filter(x => x.id !== id)); }
+
+  // ──── Helpers tablero ────────────────────────────────────────────────
+
+  getTokenPos(p: BackendPlayer): number {
+    return p.id === this.animatingId() ? this.animatingPos() : p.position;
+  }
+
+  getPlayersOnCell(pos: number): BackendPlayer[] {
+    return this.players().filter(p => this.getTokenPos(p) === pos);
+  }
+
+  cellCol(pos: number): number {
+    if (pos <= 10) return pos + 1;
+    if (pos <= 19) return 11;
+    if (pos <= 30) return 11 - (pos - 20);
+    return 1;
+  }
+
+  cellRow(pos: number): number {
+    if (pos <= 10) return 11;
+    if (pos <= 19) return 11 - (pos - 10);
+    if (pos <= 30) return 1;
+    return pos - 29;
+  }
+
+  cellSection(pos: number): 'bottom' | 'right' | 'top' | 'left' | 'corner' {
+    if ([0, 10, 20, 30].includes(pos)) return 'corner';
+    if (pos < 10)  return 'bottom';
+    if (pos < 20)  return 'right';
+    if (pos < 30)  return 'top';
+    return 'left';
+  }
+
+  cellFlexClass(pos: number): string {
+    return { bottom: 'flex-col', right: 'flex-row', top: 'flex-col-reverse', left: 'flex-row-reverse', corner: 'flex-col' }[this.cellSection(pos)];
+  }
+
+  bandIsHorizontal(pos: number): boolean {
+    const s = this.cellSection(pos);
+    return s === 'bottom' || s === 'top';
+  }
+
+  cellBg(cell: BoardCell): string {
+    const g: Record<string, string> = { purple:'#2D1B69', blue:'#1a3360', pink:'#4A1030', orange:'#4A2010', red:'#4A0E0E', yellow:'#3A2C08', green:'#0E3A1A' };
+    if (cell.group && g[cell.group]) return g[cell.group];
+    const t: Record<string, string> = { TAX:'#3A0E0E', SCAM:'#3A0E0E', LOTTERY:'#332408', PENSION:'#0D2A3A', PENSION_ESPECIAL:'#0D2A3A', WILDCARD:'#221060', INICIO:'#0D3A1A', JAIL:'#111827', GO_TO_JAIL:'#2A1505' };
+    return t[cell.type] ?? '#0E1827';
+  }
+
+  cellBandColor(cell: BoardCell): string {
+    const g: Record<string, string> = { purple:'#7C3AED', blue:'#2563EB', pink:'#BE185D', orange:'#EA580C', red:'#DC2626', yellow:'#CA8A04', green:'#16A34A' };
+    if (cell.group && g[cell.group]) return g[cell.group];
+    const t: Record<string, string> = { TAX:'#991B1B', SCAM:'#991B1B', LOTTERY:'#B45309', PENSION:'#1D4ED8', PENSION_ESPECIAL:'#1D4ED8', WILDCARD:'#6D28D9', INICIO:'#15803D', JAIL:'#374151', GO_TO_JAIL:'#92400E' };
+    return t[cell.type] ?? '#334155';
+  }
+
+  playerHex(idx: number): string {
+    return ['#3B82F6','#EF4444','#10B981','#EAB308','#A855F7','#EC4899','#06B6D4','#F97316'][idx % 8];
+  }
+
+  playerBg(idx: number): string {
+    return ['bg-blue-500','bg-red-500','bg-emerald-500','bg-yellow-500','bg-purple-500','bg-pink-500','bg-cyan-500','bg-orange-500'][idx % 8];
+  }
+
+  getOwner(pos: number): BackendPlayer | null {
+    return this.players().find(p => p.properties?.some(pr => pr.cellPosition === pos)) ?? null;
+  }
+
+  cellByPos(pos: number): BoardCell | undefined { return this.cells().find(c => c.position === pos); }
+
+  abbr(name: string, max = 10): string { return name.length <= max ? name : name.slice(0, max - 1) + '.'; }
+
+  cellTypeIcon(cell: BoardCell): string {
+    if (cell.type === 'TAX' || cell.type === 'SCAM') return '-$';
+    if (cell.type === 'LOTTERY') return '+$';
+    if (cell.type === 'PENSION' || cell.type === 'PENSION_ESPECIAL') return '$';
+    if (cell.type === 'WILDCARD') return '?';
+    if (cell.type === 'GO_TO_JAIL') return '!';
+    return '';
+  }
+
+  phaseLabel(ph?: GamePhase): string {
+    const m: Record<string, string> = {
+      ROLLING:'Lanzar dados', MOVING:'Moviendo', ACTION:'Accion',
+      BUYING:'Comprar', WILDCARD_REVEAL:'Carta', BETWEEN_TURNS:'Terminar turno',
+      FINISHED:'Finalizada', ABANDONED:'Abandonada', WAITING:'Esperando',
     };
-    if (cell.group && groupColors[cell.group]) return groupColors[cell.group];
-    switch (cell.type) {
-      case 'INICIO': return 'bg-emerald-600/20 border-emerald-500/40';
-      case 'TAX': case 'SCAM': return 'bg-red-600/20 border-red-500/40';
-      case 'LOTTERY': case 'PENSION': case 'PENSION_ESPECIAL': return 'bg-yellow-600/20 border-yellow-500/40';
-      case 'JAIL': case 'GO_TO_JAIL': return 'bg-slate-600/30 border-slate-500/50';
-      case 'WILDCARD': return 'bg-amber-600/20 border-amber-500/40';
-      default: return 'bg-slate-700/50 border-slate-600';
-    }
+    return m[ph ?? ''] ?? '';
   }
 
-  getCellTopColor(cell: BoardCell): string {
-    const groupColors: Record<string, string> = {
-      purple: 'bg-purple-500',
-      blue: 'bg-blue-500',
-      pink: 'bg-pink-500',
-      orange: 'bg-orange-500',
-      red: 'bg-red-500',
-      yellow: 'bg-yellow-500',
-      green: 'bg-green-500',
-    };
-    if (cell.group && groupColors[cell.group]) return groupColors[cell.group];
-    switch (cell.type) {
-      case 'INICIO': return 'bg-emerald-500';
-      case 'TAX': case 'SCAM': return 'bg-red-500';
-      case 'LOTTERY': case 'PENSION': case 'PENSION_ESPECIAL': return 'bg-yellow-500';
-      case 'JAIL': case 'GO_TO_JAIL': return 'bg-slate-400';
-      case 'WILDCARD': return 'bg-amber-500';
-      default: return 'bg-slate-500';
-    }
+  modeLabel(m?: string): string {
+    return { SOLO:'Solo', MULTIPLAYER:'Multijugador', MIXED:'Mixto', SIMULATION:'Observar' }[m ?? ''] ?? '';
   }
 
-  getCellAbbreviation(name: string): string {
-    if (name.length <= 10) return name;
-    return name.slice(0, 8) + '\u2026';
-  }
-
-  getPlayersOnCell(position: number): BackendPlayer[] {
-    return this.players().filter(p => p.position === position);
-  }
-
-  getOwnerOfCell(cellPosition: number): BackendPlayer | null {
-    for (const p of this.players()) {
-      if (p.properties?.some(prop => prop.cellPosition === cellPosition)) return p;
-    }
-    return null;
-  }
-
-  getOwnerColor(cellPosition: number): string {
-    const owner = this.getOwnerOfCell(cellPosition);
-    if (!owner) return '';
-    return this.getPlayerColor(owner.turnOrder);
-  }
-
-  getPhaseLabel(phase: GamePhase | undefined): string {
-    const labels: Record<string, string> = {
-      WAITING: 'Esperando jugadores',
-      ROLLING: 'Lanzar dados',
-      MOVING: 'Moviendo',
-      ACTION: 'Acci\u00f3n',
-      BUYING: 'Decisi\u00f3n de compra',
-      WILDCARD_REVEAL: 'Carta financiera',
-      BETWEEN_TURNS: 'Terminar turno',
-      FINISHED: 'Partida finalizada',
-      ABANDONED: 'Partida abandonada',
-    };
-    return labels[phase ?? 'WAITING'] ?? 'Desconocido';
-  }
-
-  formatMoney(v: number): string {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(v);
+  fmt(v: number): string {
+    return new Intl.NumberFormat('es-EC', { style:'currency', currency:'USD', minimumFractionDigits:0 }).format(v);
   }
 
   calcXP(): number {
-    const g = this.game();
-    if (!g?.players?.length) return 0;
-    const rank = this.rankedPlayers();
-    if (!rank.length) return 0;
-    return Math.max(10, Math.round((rank.length - (rank.findIndex(p => !p.isBot) + 1) + 1) / rank.length * 100));
+    const maxR = this.game()?.maxRounds ?? 5;
+    const rank  = this.rankedPlayers();
+    const hIdx  = rank.findIndex(p => !p.isBot);
+    const base  = [50, 80, 120, 175][ maxR <= 3 ? 0 : maxR <= 5 ? 1 : maxR <= 7 ? 2 : 3 ];
+    const mult  = [2.0, 1.5, 1.2, 1.0][Math.max(0, hIdx)] ?? 1.0;
+    const props = (rank[hIdx]?.properties?.length ?? 0) * 3;
+    return Math.max(10, Math.round(base * mult + props));
   }
 
-  rankedPlayers(): BackendPlayer[] {
-    const ps = this.game()?.players ?? this.players();
-    return [...ps].sort((a, b) => {
-      if (a.isEliminated && !b.isEliminated) return 1;
-      if (!a.isEliminated && b.isEliminated) return -1;
-      return b.money - a.money;
-    });
+  onCellClick(cell: BoardCell, e: MouseEvent): void {
+    if (this.showTooltip()?.position === cell.position) { this.showTooltip.set(null); return; }
+    this.showTooltip.set(cell);
   }
 
-  modeLabel(mode: string | undefined): string {
-    const labels: Record<string, string> = {
-      SOLO: 'Solo',
-      MULTIPLAYER: 'Multijugador',
-      MIXED: 'Mixto',
-      SIMULATION: 'Observar',
-    };
-    return labels[mode ?? ''] ?? mode ?? '';
-  }
+  readonly Math = Math;
+
+  private delay(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
 }

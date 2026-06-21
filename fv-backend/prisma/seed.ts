@@ -634,6 +634,7 @@ async function main() {
     { text: 'Ve a la cárcel. No cobras salario', type: 'GO_TO_JAIL', effectAmount: 0, explanation: 'Ve directamente a la cárcel' },
   ];
 
+  await prisma.boardWildcard.deleteMany();
   for (const w of wildcards) {
     await prisma.boardWildcard.create({
       data: { text: w.text, type: w.type as any, effectAmount: w.effectAmount, explanation: w.explanation },

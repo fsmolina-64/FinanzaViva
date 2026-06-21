@@ -605,6 +605,7 @@ model SimulatorPlayer {
   isInJail       Boolean  @default(false)
   jailTurnsLeft  Int      @default(0)
   hasRolled      Boolean  @default(false)
+  lapsCompleted  Int      @default(0)
   createdAt      DateTime @default(now())
 
   game       SimulatorGame    @relation(fields: [gameId], references: [id], onDelete: Cascade)
