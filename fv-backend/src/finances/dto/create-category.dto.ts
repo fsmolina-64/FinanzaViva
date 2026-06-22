@@ -1,9 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { CategoryType } from '@prisma/client';
 
 export class CreateCategoryDto {
   @IsNotEmpty()
   @IsString()
   name!: string;
+
+  @IsNotEmpty()
+  @IsEnum(CategoryType)
+  type!: CategoryType;
 
   @IsOptional()
   @IsString()

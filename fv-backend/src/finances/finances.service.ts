@@ -245,8 +245,8 @@ export class FinancesService {
         userId,
         name: dto.name,
         type: dto.type,
-        icon: dto.icon,
-        color: dto.color,
+        icon: dto.icon ?? 'help-circle',
+        color: dto.color ?? '#6b7280',
         isGlobal: false,
       },
     });
@@ -505,7 +505,7 @@ export class FinancesService {
     const breakdown = transactions
       .filter(t => t.type === 'EXPENSE')
       .reduce((acc: Record<string, number>, t) => {
-        const cat = t.category.name;
+        const cat = t.category?.name ?? 'Sin categoria';
         acc[cat] = (acc[cat] || 0) + Number(t.amount);
         return acc;
       }, {});

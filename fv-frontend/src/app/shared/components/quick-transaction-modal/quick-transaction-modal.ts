@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../../core/services/finance.service';
@@ -102,16 +102,40 @@ export class QuickTransactionModal implements OnInit {
     pad(key: string): void {
         if (this.showDebtConfirm()) return;
         if (key === '<') { this.amountStr = this.amountStr.length <= 1 ? '0' : this.amountStr.slice(0, -1); return; }
-        if (key === '.' && this.amountStr.includes('.')) return;
+        if (key === ',' || key === '.') {
+            if (this.amountStr.includes('.')) return;
+            key = '.';
+        }
         const parts = this.amountStr.split('.');
         if (parts[1] !== undefined && parts[1].length >= 2) return;
         this.amountStr = this.amountStr === '0' && key !== '.' ? key : this.amountStr + key;
     }
 
+    @HostListener('document:keydown', ['$event'])
+    onKeydown(e: KeyboardEvent): void {
+        if (e.key === 'Escape') { this.close(); return; }
+
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); this.pad('<'); return; }
+
+        const map: Record<string, string> = {
+            '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+            '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+            'Numpad0': '0', 'Numpad1': '1', 'Numpad2': '2', 'Numpad3': '3',
+            'Numpad4': '4', 'Numpad5': '5', 'Numpad6': '6', 'Numpad7': '7',
+            'Numpad8': '8', 'Numpad9': '9', 'NumpadDecimal': '.', '.': '.', ',': '.', 'Comma': '.',
+        };
+
+        const mapped = map[e.key] ?? map[e.code];
+        if (mapped) { e.preventDefault(); this.pad(mapped); }
+    }
+
     getAmount(): number { return parseFloat(this.amountStr) || 0; }
 
     formatAmount(): string {
-        return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(this.getAmount());
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(this.getAmount());
     }
 
     getSelectedAccountBalance(): number {

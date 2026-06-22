@@ -76,6 +76,7 @@ export class Finances implements OnInit {
   pendingEditId = signal<string | null>(null);
 
   // ── EDICION PRESUPUESTO ───────────────────────────────────────────────────
+  editBudgetAmount = 0;
   editingBudgetId = signal<string | null>(null);
   editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', indefinido: false, months: 1 };
 
@@ -553,6 +554,7 @@ export class Finances implements OnInit {
   startEditBudget(b: Budget): void {
     this.editingBudgetId.set(b.id);
     this.confirmDeleteBudgetId.set(null);
+    this.editBudgetAmount = parseFloat(String(b.amount));
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
       period: b.period,
@@ -563,7 +565,7 @@ export class Finances implements OnInit {
   cancelEditBudget(): void { this.editingBudgetId.set(null); }
 
   saveEditBudget(id: string): void {
-    if (this.editBudget.amount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    if (this.editBudgetAmount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     let endDate: string | null = null;
     if (!this.editBudget.indefinido) {
       const now = new Date();
@@ -571,9 +573,9 @@ export class Finances implements OnInit {
       endDate = end.toISOString().split('T')[0];
     }
     this.financeService.updateBudget(id, {
-      amount: this.editBudget.amount,
+      amount: this.editBudgetAmount,
       period: this.editBudget.period as 'MONTHLY' | 'WEEKLY',
-      endDate  // null → indefinido, string → fecha fin
+      endDate
     }).subscribe({
       next: updated => {
         this.budgets.update(l => l.map(b => b.id === id ? { ...b, ...updated } : b));
@@ -842,6 +844,14 @@ export class Finances implements OnInit {
   getGoalProgress(g: Goal): number {
     const current = parseFloat(String(g.currentAmount)), target = parseFloat(String(g.targetAmount));
     return target ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  }
+
+  sanitizeNumber(val: any): number {
+    if (val === null || val === undefined || val === '') return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const str = String(val).replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    if (str === '' || str === '.') return 0;
+    return parseFloat(str) || 0;
   }
 
   extractError(err: any, fallback: string): string {

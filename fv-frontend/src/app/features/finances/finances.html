@@ -131,7 +131,7 @@
               </div>
               <div>
                 <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                <input [(ngModel)]="editTx.amount" type="number"
+                <input [ngModel]="editTx.amount" (ngModelChange)="editTx.amount = sanitizeNumber($event)" type="number"
                   class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               </div>
             </div>
@@ -228,7 +228,7 @@
           </div>
           <div>
             <label class="text-slate-400 text-xs mb-1 block">Balance inicial</label>
-            <input [(ngModel)]="newAccount.initialBalance" type="number" placeholder="0.00"
+            <input [ngModel]="newAccount.initialBalance" (ngModelChange)="newAccount.initialBalance = sanitizeNumber($event)" type="number" placeholder="0.00"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
           <button (click)="submitAccount()" [disabled]="submittingAccount()"
@@ -367,7 +367,7 @@
           </div>
           <div>
             <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-            <input [(ngModel)]="newTransaction.amount" type="number" placeholder="0.00"
+            <input [ngModel]="newTransaction.amount" (ngModelChange)="newTransaction.amount = sanitizeNumber($event)" type="number" placeholder="0.00"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
         </div>
@@ -451,7 +451,7 @@
                 </div>
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [ngModel]="editTx.amount" (ngModelChange)="editTx.amount = sanitizeNumber($event)" type="number"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
               </div>
@@ -613,7 +613,7 @@
                 </div>
                 <div>
                   <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-                  <input [(ngModel)]="editTx.amount" type="number"
+                  <input [ngModel]="editTx.amount" (ngModelChange)="editTx.amount = sanitizeNumber($event)" type="number"
                     class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
               </div>
@@ -732,7 +732,7 @@
         </div>
         @if (showGlobalForm()) {
         <div class="mb-4 flex gap-2">
-          <input [(ngModel)]="newGlobalLimit" type="number" placeholder="Ej: 1500"
+          <input [ngModel]="newGlobalLimit" (ngModelChange)="newGlobalLimit = sanitizeNumber($event)" type="number" placeholder="Ej: 1500"
             class="flex-1 bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           <button (click)="saveGlobalBudget()"
             class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 rounded-lg transition-all">Guardar</button>
@@ -778,7 +778,7 @@
             </div>
             <div>
               <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-              <input [(ngModel)]="newBudget.amount" type="number" placeholder="0.00"
+              <input [ngModel]="newBudget.amount" (ngModelChange)="newBudget.amount = sanitizeNumber($event)" type="number" placeholder="0.00"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>
@@ -793,7 +793,7 @@
             </div>
             <div>
               <label class="text-slate-400 text-xs mb-1 block">Duracion (meses)</label>
-              <input [(ngModel)]="newBudget.months" type="number" min="1"
+              <input [ngModel]="newBudget.months" (ngModelChange)="newBudget.months = sanitizeNumber($event)" type="number" min="1"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>
@@ -824,7 +824,7 @@
           <div class="form-slide bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-2">
             <label class="text-slate-400 text-xs block">Nuevo monto para {{ b.category?.name }}</label>
             <div class="flex gap-2">
-              <input [(ngModel)]="editBudgetAmount" type="number"
+              <input [ngModel]="editBudgetAmount" (ngModelChange)="editBudgetAmount = sanitizeNumber($event)" type="number"
                 class="flex-1 bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
               <button (click)="saveEditBudget(b.id)"
                 class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 rounded-lg transition-all">Guardar</button>
@@ -1049,7 +1049,7 @@
           </div>
           <div>
             <label class="text-slate-400 text-xs mb-1 block">Monto objetivo</label>
-            <input [(ngModel)]="newGoal.targetAmount" type="number" placeholder="0.00"
+            <input [ngModel]="newGoal.targetAmount" (ngModelChange)="newGoal.targetAmount = sanitizeNumber($event)" type="number" placeholder="0.00"
               class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           </div>
         </div>
@@ -1096,7 +1096,7 @@
             </div>
             <div>
               <label class="text-slate-400 text-xs mb-1 block">Monto objetivo</label>
-              <input [(ngModel)]="editGoal.targetAmount" type="number"
+              <input [ngModel]="editGoal.targetAmount" (ngModelChange)="editGoal.targetAmount = sanitizeNumber($event)" type="number"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>
@@ -1129,7 +1129,7 @@
             </div>
             <div>
               <label class="text-slate-400 text-xs mb-1 block">Cantidad a ahorrar</label>
-              <input [(ngModel)]="progressAmount" type="number" placeholder="0.00"
+              <input [ngModel]="progressAmount" (ngModelChange)="progressAmount = sanitizeNumber($event)" type="number" placeholder="0.00"
                 class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>

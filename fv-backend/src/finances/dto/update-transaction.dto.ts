@@ -4,6 +4,10 @@ import { TransactionType } from '@prisma/client';
 export class UpdateTransactionDto {
     @IsOptional()
     @IsUUID()
+    accountId?: string;
+
+    @IsOptional()
+    @IsUUID()
     categoryId?: string;
 
     @IsOptional()
