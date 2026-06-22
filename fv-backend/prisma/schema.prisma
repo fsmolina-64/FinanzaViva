@@ -606,6 +606,8 @@ model SimulatorPlayer {
   jailTurnsLeft  Int      @default(0)
   hasRolled      Boolean  @default(false)
   lapsCompleted  Int      @default(0)
+  tokenSymbol    String   @default("★")
+  finalRank      Int?
   createdAt      DateTime @default(now())
 
   game       SimulatorGame    @relation(fields: [gameId], references: [id], onDelete: Cascade)

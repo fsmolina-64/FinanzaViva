@@ -117,9 +117,13 @@ export interface EndTurnResponse {
 export interface CreateGamePayload {
   maxRounds: number;
   mode: GameMode;
-  humanPlayers: { displayName: string }[];
-  botPlayers?: { displayName: string; personality: BotPersonality }[];
+  humanPlayers: { displayName: string; tokenSymbol?: string }[];
+  botPlayers?: { displayName: string; personality: BotPersonality; tokenSymbol?: string }[];
   xpRecipientId?: string;
+}
+
+export interface BackendPlayerExtended extends BackendPlayer {
+  tokenSymbol?: string;
 }
 
 export interface HistoryEntry {

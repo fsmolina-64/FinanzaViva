@@ -44,6 +44,11 @@ interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' 
       100%{ transform:scale(1) rotate(0deg);   opacity:1; }
     }
     .dice-reveal { animation: diceReveal 0.25s ease-out; }
+
+    @keyframes countdown {
+      from { width: 100%; }
+      to   { width: 0%; }
+    }
   `]
 })
 export class Game implements OnInit, OnDestroy {
@@ -68,6 +73,13 @@ export class Game implements OnInit, OnDestroy {
   wildcardExpl      = signal('');
   showExitModal     = signal(false);
   showTooltip       = signal<BoardCell | null>(null);
+  showCellExplain   = signal<{
+    cellName: string;
+    description: string;
+    impactText: string;
+    isPositive: boolean | null;
+    cellType: string;
+  } | null>(null);
 
   botMsg = signal<string | null>(null);
 
@@ -120,6 +132,26 @@ export class Game implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.gameState.set(null);
+    this.loading.set(true);
+    this.error.set(null);
+    this.dice1.set(null);
+    this.dice2.set(null);
+    this.isDiceRolling.set(false);
+    this.diceRevealed.set(false);
+    this.isAnimating.set(false);
+    this.animatingId.set(null);
+    this.bouncingId.set(null);
+    this.showBuyModal.set(false);
+    this.buyCell.set(null);
+    this.showWildcardModal.set(false);
+    this.wildcardText.set('');
+    this.wildcardExpl.set('');
+    this.showExitModal.set(false);
+    this.showCellExplain.set(null);
+    this.toasts.set([]);
+    this.botMsg.set(null);
+
     this.gameId = this.route.snapshot.params['id'];
     if (!this.gameId) { this.router.navigate(['/simulator']); return; }
     this.init();
@@ -212,6 +244,12 @@ export class Game implements OnInit, OnDestroy {
       }
 
       if (res.passedGo) this.toast('Paso por el INICIO', 'success', 4000);
+
+      const landedCell = res.gameState.boardCells.find(c => c.position === res.newPosition);
+      if (landedCell && res.action !== 'BUY' && res.action !== 'WILDCARD' && res.action !== 'NOTHING') {
+        const amount = res.actionDetails?.amount ?? res.actionDetails?.rent;
+        await this.showCellModal(landedCell, res.action, amount);
+      }
 
       this.applyState(res.gameState);
 
@@ -307,25 +345,26 @@ export class Game implements OnInit, OnDestroy {
   // ──── Animacion bot ──────────────────────────────────────────────────
 
   private async animateBotMove(m: BotMove, currentPlayers: BackendPlayer[]): Promise<void> {
-    this.botMsg.set(`${m.playerName} lanzando dados...`);
-    await this.delay(500);
+    this.botMsg.set(`${m.playerName} pensando...`);
+    await this.delay(800);
 
+    this.botMsg.set(`${m.playerName} lanzando dados...`);
     this.diceRevealed.set(false);
     this.startDiceAnim();
-    await this.delay(700);
+    await this.delay(1000);
     this.stopDiceAnim(m.dice1, m.dice2);
-    await this.delay(200);
+    await this.delay(400);
     this.diceRevealed.set(true);
 
-    this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', 2500);
-    await this.delay(300);
+    this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', 3000);
+    await this.delay(600);
 
     const botPlayer = currentPlayers.find(p => p.displayName === m.playerName);
     if (botPlayer) await this.animateToken(botPlayer.id, m.fromPosition, m.diceSum);
 
-    if (m.passedGo)       this.toast(`${m.playerName} completo una vuelta`, 'success', 3000);
-    if (m.actionDetail)   this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', 3000);
-    await this.delay(700);
+    if (m.passedGo)     this.toast(`${m.playerName} completo una vuelta`, 'success', 3500);
+    if (m.actionDetail) this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', 3500);
+    await this.delay(1000);
   }
 
   private async animateToken(playerId: string, fromPos: number, steps: number): Promise<void> {
@@ -337,9 +376,9 @@ export class Game implements OnInit, OnDestroy {
       const next = (fromPos + i) % 40;
       this.animatingPos.set(next);
       this.bouncingId.set(playerId);
-      await this.delay(260);
+      await this.delay(380);
       this.bouncingId.set(null);
-      await this.delay(10);
+      await this.delay(20);
     }
 
     this.animatingId.set(null);
@@ -490,6 +529,43 @@ export class Game implements OnInit, OnDestroy {
   }
 
   readonly Math = Math;
+
+  playerToken(p: BackendPlayer): string {
+    return (p as any).tokenSymbol ?? '★';
+  }
+
+  playerText(idx: number): string {
+    return ['text-blue-400','text-red-400','text-emerald-400','text-yellow-400','text-purple-400','text-pink-400','text-cyan-400','text-orange-400'][idx % 8];
+  }
+
+  private async showCellModal(cell: BoardCell, action: string, amount?: number): Promise<void> {
+    let impactText = '';
+    let isPositive: boolean | null = null;
+
+    if (amount !== undefined && amount !== 0) {
+      if (['LOTTERY', 'PENSION', 'PENSION_ESPECIAL'].includes(action)) {
+        impactText = `+${this.fmt(amount)}`;
+        isPositive = true;
+      } else if (['PAY_TAX', 'SCAM'].includes(action)) {
+        impactText = `-${this.fmt(amount)}`;
+        isPositive = false;
+      } else if (action === 'PAY_RENT') {
+        impactText = `-${this.fmt(amount)} (renta)`;
+        isPositive = false;
+      }
+    }
+
+    this.showCellExplain.set({
+      cellName: cell.name,
+      description: cell.description,
+      impactText,
+      isPositive,
+      cellType: cell.type,
+    });
+
+    await this.delay(2500);
+    this.showCellExplain.set(null);
+  }
 
   private delay(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
 }

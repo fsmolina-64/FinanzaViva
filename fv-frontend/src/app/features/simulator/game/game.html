@@ -153,36 +153,40 @@
 <div class="min-h-screen bg-[#060E1D] flex flex-col">
 
   <!-- ──── Header sticky ──── -->
-  <div class="sticky top-0 z-30 bg-[#0A1628]/95 backdrop-blur-sm border-b border-slate-800 px-3 py-2.5 flex items-center justify-between gap-2">
-    <div class="flex items-center gap-3 min-w-0">
-      <div>
-        <p class="text-white font-bold text-sm leading-none">
-          Vuelta {{ currentLap() }}<span class="text-slate-500 font-normal"> / {{ game()!.maxRounds }}</span>
-        </p>
-        <p class="text-slate-500 text-xs mt-0.5">{{ modeLabel(game()!.mode) }}</p>
-      </div>
-      <div class="h-7 w-px bg-slate-700"></div>
-      <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full border flex-shrink-0"
-        [ngClass]="{
-          'bg-blue-500/15 border-blue-500/30 text-blue-400': game()!.gamePhase === 'ROLLING',
-          'bg-emerald-500/15 border-emerald-500/30 text-emerald-400': game()!.gamePhase === 'BETWEEN_TURNS',
-          'bg-amber-500/15 border-amber-500/30 text-amber-400': game()!.gamePhase === 'BUYING' || game()!.gamePhase === 'WILDCARD_REVEAL',
-          'bg-slate-700 border-slate-600 text-slate-400': true
-        }">
-        <span class="w-1.5 h-1.5 rounded-full animate-pulse"
+  <div class="sticky top-0 z-30 border-b border-slate-800/80" style="background: rgba(6,14,29,0.97); backdrop-filter: blur(8px);">
+    <div class="px-3 py-2 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <p class="text-white font-bold text-sm leading-none whitespace-nowrap">
+              Vuelta {{ currentLap() }}<span class="text-slate-500 font-normal"> / {{ game()!.maxRounds }}</span>
+            </p>
+            <span class="text-slate-600 text-xs hidden sm:inline">{{ modeLabel(game()!.mode) }}</span>
+          </div>
+          <p class="text-slate-600 text-xs mt-0.5 sm:hidden">{{ modeLabel(game()!.mode) }}</p>
+        </div>
+        <span class="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border flex-shrink-0"
           [ngClass]="{
-            'bg-blue-400': game()!.gamePhase === 'ROLLING',
-            'bg-emerald-400': game()!.gamePhase === 'BETWEEN_TURNS',
-            'bg-amber-400': game()!.gamePhase === 'BUYING' || game()!.gamePhase === 'WILDCARD_REVEAL',
-            'bg-slate-500': true
-          }"></span>
-        {{ phaseLabel(game()!.gamePhase) }}
-      </span>
+            'bg-blue-500/10 border-blue-500/25 text-blue-400': game()!.gamePhase === 'ROLLING',
+            'bg-emerald-500/10 border-emerald-500/25 text-emerald-400': game()!.gamePhase === 'BETWEEN_TURNS',
+            'bg-amber-500/10 border-amber-500/25 text-amber-400': game()!.gamePhase === 'BUYING' || game()!.gamePhase === 'WILDCARD_REVEAL',
+            'bg-slate-800 border-slate-700 text-slate-500': true
+          }">
+          <span class="w-1 h-1 rounded-full"
+            [ngClass]="{
+              'bg-blue-400 animate-pulse': game()!.gamePhase === 'ROLLING',
+              'bg-emerald-400': game()!.gamePhase === 'BETWEEN_TURNS',
+              'bg-amber-400 animate-pulse': game()!.gamePhase === 'BUYING' || game()!.gamePhase === 'WILDCARD_REVEAL',
+              'bg-slate-500': true
+            }"></span>
+          {{ phaseLabel(game()!.gamePhase) }}
+        </span>
+      </div>
+      <button (click)="abandonGame()"
+        class="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 transition-all flex-shrink-0">
+        Abandonar
+      </button>
     </div>
-    <button (click)="abandonGame()"
-      class="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 transition-all flex-shrink-0">
-      Abandonar
-    </button>
   </div>
 
   <!-- ──── Contenido principal ──── -->
@@ -216,12 +220,19 @@
               <span class="text-emerald-500 text-[8px] font-bold tracking-widest">INICIO</span>
               <span class="text-emerald-400 text-xl leading-none">&#8594;</span>
               @if (getPlayersOnCell(0).length > 0) {
-              <div class="absolute -top-1.5 -right-1 flex -space-x-1 z-10">
-                @for (p of getPlayersOnCell(0); track p.id; let pi = $index) {
-                @if (pi < 3) {
-                <div class="w-[14px] h-[14px] rounded-full border border-[#060E1D] flex items-center justify-center text-[7px] font-bold text-white shadow-md flex-shrink-0"
-                  [ngClass]="[playerBg(p.turnOrder), p.id === bouncingId() ? 'token-jump scale-110 z-20' : '']">{{ p.displayName.charAt(0).toUpperCase() }}</div>
-                }}
+              <div class="absolute inset-0 flex items-end justify-end p-1 pointer-events-none">
+                <div class="flex flex-wrap gap-0.5 justify-end">
+                  @for (p of getPlayersOnCell(0); track p.id; let pi = $index) {
+                  @if (pi < 4) {
+                  <div class="text-lg font-black leading-none select-none"
+                    [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                    [style.color]="playerHex(p.turnOrder)"
+                    [style.text-shadow]="'0 0 10px ' + playerHex(p.turnOrder) + 'A0'"
+                    [title]="p.displayName">
+                    {{ playerToken(p) }}
+                  </div>
+                  }}
+                </div>
               </div>}
             </div>
             }
@@ -234,12 +245,19 @@
               <span class="text-slate-400 text-[8px] font-bold mt-0.5 leading-none">CARCEL</span>
               <span class="text-slate-600 text-[7px] leading-none">solo visita</span>
               @if (getPlayersOnCell(10).length > 0) {
-              <div class="absolute -top-1.5 -right-1 flex -space-x-1 z-10">
-                @for (p of getPlayersOnCell(10); track p.id; let pi = $index) {
-                @if (pi < 3) {
-                <div class="w-[14px] h-[14px] rounded-full border border-[#060E1D] flex items-center justify-center text-[7px] font-bold text-white shadow-md flex-shrink-0"
-                  [ngClass]="[playerBg(p.turnOrder), p.id === bouncingId() ? 'token-jump scale-110 z-20' : '']">{{ p.displayName.charAt(0).toUpperCase() }}</div>
-                }}
+              <div class="absolute inset-0 flex items-end justify-end p-1 pointer-events-none">
+                <div class="flex flex-wrap gap-0.5 justify-end">
+                  @for (p of getPlayersOnCell(10); track p.id; let pi = $index) {
+                  @if (pi < 4) {
+                  <div class="text-lg font-black leading-none select-none"
+                    [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                    [style.color]="playerHex(p.turnOrder)"
+                    [style.text-shadow]="'0 0 10px ' + playerHex(p.turnOrder) + 'A0'"
+                    [title]="p.displayName">
+                    {{ playerToken(p) }}
+                  </div>
+                  }}
+                </div>
               </div>}
             </div>
             }
@@ -251,12 +269,19 @@
               <span class="text-blue-300 font-black text-2xl leading-none">$</span>
               <span class="text-blue-400 text-[7px] font-bold text-center leading-tight">SALARIO<br/>+$300</span>
               @if (getPlayersOnCell(20).length > 0) {
-              <div class="absolute -top-1.5 -right-1 flex -space-x-1 z-10">
-                @for (p of getPlayersOnCell(20); track p.id; let pi = $index) {
-                @if (pi < 3) {
-                <div class="w-[14px] h-[14px] rounded-full border border-[#060E1D] flex items-center justify-center text-[7px] font-bold text-white shadow-md flex-shrink-0"
-                  [ngClass]="[playerBg(p.turnOrder), p.id === bouncingId() ? 'token-jump scale-110 z-20' : '']">{{ p.displayName.charAt(0).toUpperCase() }}</div>
-                }}
+              <div class="absolute inset-0 flex items-end justify-end p-1 pointer-events-none">
+                <div class="flex flex-wrap gap-0.5 justify-end">
+                  @for (p of getPlayersOnCell(20); track p.id; let pi = $index) {
+                  @if (pi < 4) {
+                  <div class="text-lg font-black leading-none select-none"
+                    [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                    [style.color]="playerHex(p.turnOrder)"
+                    [style.text-shadow]="'0 0 10px ' + playerHex(p.turnOrder) + 'A0'"
+                    [title]="p.displayName">
+                    {{ playerToken(p) }}
+                  </div>
+                  }}
+                </div>
               </div>}
             </div>
             }
@@ -268,12 +293,19 @@
               <span class="text-amber-400 text-[8px] font-black text-center leading-tight">IR A<br/>CARCEL</span>
               <span class="text-amber-500 text-base font-black leading-none">&#9650;</span>
               @if (getPlayersOnCell(30).length > 0) {
-              <div class="absolute -top-1.5 -right-1 flex -space-x-1 z-10">
-                @for (p of getPlayersOnCell(30); track p.id; let pi = $index) {
-                @if (pi < 3) {
-                <div class="w-[14px] h-[14px] rounded-full border border-[#060E1D] flex items-center justify-center text-[7px] font-bold text-white shadow-md flex-shrink-0"
-                  [ngClass]="[playerBg(p.turnOrder), p.id === bouncingId() ? 'token-jump scale-110 z-20' : '']">{{ p.displayName.charAt(0).toUpperCase() }}</div>
-                }}
+              <div class="absolute inset-0 flex items-end justify-end p-1 pointer-events-none">
+                <div class="flex flex-wrap gap-0.5 justify-end">
+                  @for (p of getPlayersOnCell(30); track p.id; let pi = $index) {
+                  @if (pi < 4) {
+                  <div class="text-lg font-black leading-none select-none"
+                    [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                    [style.color]="playerHex(p.turnOrder)"
+                    [style.text-shadow]="'0 0 10px ' + playerHex(p.turnOrder) + 'A0'"
+                    [title]="p.displayName">
+                    {{ playerToken(p) }}
+                  </div>
+                  }}
+                </div>
               </div>}
             </div>
             }
@@ -329,18 +361,32 @@
 
                 <!-- Tokens de jugadores -->
                 @if (getPlayersOnCell(cell.position).length > 0) {
-                <div class="absolute -top-1.5 -right-0.5 flex -space-x-0.5 z-10">
-                  @for (p of getPlayersOnCell(cell.position); track p.id; let pi = $index) {
-                  @if (pi < 2) {
-                  <div class="w-[13px] h-[13px] rounded-full border border-[#060E1D] flex items-center justify-center text-[6px] font-bold text-white shadow-md flex-shrink-0"
-                    [ngClass]="[playerBg(p.turnOrder), p.id === bouncingId() ? 'token-jump scale-125 z-20' : '']"
-                    [style.box-shadow]="p.id === bouncingId() ? '0 0 8px 2px ' + playerHex(p.turnOrder) + '90' : ''">
-                    {{ p.displayName.charAt(0).toUpperCase() }}
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  @if (getPlayersOnCell(cell.position).length === 1) {
+                  @for (p of getPlayersOnCell(cell.position); track p.id) {
+                  <div class="text-xl font-black leading-none select-none"
+                    [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                    [style.color]="playerHex(p.turnOrder)"
+                    [style.text-shadow]="'0 0 8px ' + playerHex(p.turnOrder) + '90'"
+                    [title]="p.displayName">
+                    {{ playerToken(p) }}
                   </div>
-                  }}
-                  @if (getPlayersOnCell(cell.position).length > 2) {
-                  <div class="w-[13px] h-[13px] rounded-full bg-slate-700 border border-[#060E1D] flex items-center justify-center text-[6px] text-slate-300 font-bold">
-                    +{{ getPlayersOnCell(cell.position).length - 2 }}
+                  }
+                  } @else {
+                  <div class="flex flex-wrap items-center justify-center gap-0.5 max-w-full px-0.5">
+                    @for (p of getPlayersOnCell(cell.position); track p.id; let pi = $index) {
+                    @if (pi < 4) {
+                    <div class="text-sm font-black leading-none select-none flex-shrink-0"
+                      [ngClass]="p.id === bouncingId() ? 'token-jump scale-125' : ''"
+                      [style.color]="playerHex(p.turnOrder)"
+                      [title]="p.displayName">
+                      {{ playerToken(p) }}
+                    </div>
+                    }
+                    }
+                    @if (getPlayersOnCell(cell.position).length > 4) {
+                    <span class="text-[8px] text-slate-400 font-bold">+{{ getPlayersOnCell(cell.position).length - 4 }}</span>
+                    }
                   </div>
                   }
                 </div>
@@ -355,25 +401,8 @@
 
             <!-- Bloque superior: logo -->
             <div class="flex-1 flex flex-col items-center justify-center border-b border-[#1a3050] relative">
-              <div class="absolute top-3 left-3 w-8 h-8 rounded border border-[#1a3050] flex items-center justify-center">
-                <span class="text-[#1a3050] text-[10px] font-black">FV</span>
-              </div>
-              <div class="absolute top-3 right-3 w-8 h-8 rounded border border-[#1a3050] flex items-center justify-center">
-                <span class="text-[#1a3050] text-[10px] font-black">FV</span>
-              </div>
-
-              <div class="text-center px-4">
-                <p class="font-black tracking-[0.35em] text-lg sm:text-2xl"
-                  style="color:#1E4FA0; text-shadow:0 0 30px #1E4FA040;">FINANZAVIVA</p>
-                <div class="mt-1.5 h-px w-24 mx-auto" style="background: linear-gradient(to right, transparent, #1E4FA060, transparent)"></div>
-                <p class="text-[10px] sm:text-xs text-slate-600 mt-1.5 tracking-[0.2em] uppercase">Tablero Financiero</p>
-              </div>
-
-              <div class="absolute bottom-3 left-3 w-8 h-8 rounded border border-[#1a3050] flex items-center justify-center">
-                <span class="text-[#1a3050] text-[10px] font-black">FV</span>
-              </div>
-              <div class="absolute bottom-3 right-3 w-8 h-8 rounded border border-[#1a3050] flex items-center justify-center">
-                <span class="text-[#1a3050] text-[10px] font-black">FV</span>
+              <div class="flex items-center justify-center h-full w-full p-4">
+                <img src="/tablero.png" alt="Tablero" class="w-full h-full object-contain" />
               </div>
             </div>
 
@@ -495,14 +524,19 @@
               'bg-[#0E1827] border-slate-800': !p.isEliminated && p.id !== currentPlayer()?.id
             }">
 
-            <div class="flex items-center gap-2">
-              <div class="relative flex-shrink-0">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md"
-                  [ngClass]="playerBg(p.turnOrder)">{{ p.displayName.charAt(0).toUpperCase() }}</div>
-                @if (p.id === currentPlayer()?.id && p.isBot && botMsg()) {
-                <div class="absolute -inset-0.5 rounded-full border-2 border-amber-400 animate-ping opacity-60"></div>
-                }
-              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-2xl font-black border-2 shadow-md"
+                    [ngClass]="playerBg(p.turnOrder)"
+                    [style.border-color]="playerHex(p.turnOrder)"
+                    [style.box-shadow]="p.id === currentPlayer()?.id ? '0 0 12px 2px ' + playerHex(p.turnOrder) + '50' : ''">
+                    <span [style.color]="p.id === currentPlayer()?.id ? 'white' : playerHex(p.turnOrder)"
+                          style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5))">{{ playerToken(p) }}</span>
+                  </div>
+                  @if (p.id === currentPlayer()?.id && p.isBot && botMsg()) {
+                  <div class="absolute -inset-0.5 rounded-full border-2 border-amber-400 animate-ping opacity-50"></div>
+                  }
+                </div>
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 min-w-0">
@@ -517,7 +551,7 @@
                 <div class="flex items-center gap-2 mt-0.5">
                   <p class="text-xs font-bold leading-none"
                     [ngClass]="p.money >= 0 ? 'text-emerald-400' : 'text-red-400'">{{ fmt(p.money) }}</p>
-                  <span class="text-[9px] text-slate-600 leading-none">{{ p.lapsCompleted ?? 0 }}v</span>
+                  <span class="text-[9px] text-slate-600 leading-none">{{ p.lapsCompleted }}v</span>
                 </div>
               </div>
 
@@ -540,18 +574,19 @@
         </div>
 
         <!-- Progreso de vueltas -->
-        <div class="pt-1.5 border-t border-slate-800 space-y-1.5">
-          <p class="text-[9px] text-slate-600 uppercase tracking-wider px-1">Progreso de vueltas</p>
+        <div class="pt-1.5 border-t border-slate-800">
+          <p class="text-[9px] text-slate-600 uppercase tracking-wider px-1 mb-1.5">Progreso vueltas</p>
           @for (p of sortedPlayers(); track p.id) {
-          <div class="px-1">
+          <div class="px-1 mb-1.5">
             <div class="flex justify-between items-center mb-0.5">
               <span class="text-[9px] text-slate-500 truncate max-w-[80px]">{{ p.displayName }}</span>
-              <span class="text-[9px] font-bold" [ngClass]="playerBg(p.turnOrder).replace('bg-','text-')">{{ p.lapsCompleted ?? 0 }}/{{ game()!.maxRounds }}</span>
+              <span class="text-[9px] font-bold" [ngClass]="playerText(p.turnOrder)">{{ p.lapsCompleted }}/{{ game()!.maxRounds }}</span>
             </div>
             <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500"
                 [ngClass]="playerBg(p.turnOrder)"
-                [style.width.%]="Math.min(100, ((p.lapsCompleted ?? 0) / game()!.maxRounds) * 100)"></div>
+                [style.width.%]="Math.min(100, ((p.lapsCompleted) / game()!.maxRounds) * 100)">
+              </div>
             </div>
           </div>
           }
@@ -565,6 +600,50 @@
 
 </div>
 <!-- fin juego activo wrapper -->
+
+<!-- ══════════════════════════════════════════════════════════════════
+     MODAL: EXPLICACION DE CASILLA
+══════════════════════════════════════════════════════════════════ -->
+@if (showCellExplain(); as info) {
+<div class="fixed inset-0 z-40 flex items-end sm:items-center justify-center pointer-events-none pb-24 sm:pb-0 px-3">
+  <div class="pointer-events-auto animate-slide-up bg-[#0E1827] rounded-2xl border shadow-2xl shadow-black/60 p-5 w-full max-w-sm space-y-3"
+    [ngClass]="{
+      'border-emerald-700/50 shadow-emerald-900/20': info.isPositive === true,
+      'border-red-700/50 shadow-red-900/20':         info.isPositive === false,
+      'border-purple-700/50 shadow-purple-900/20':   info.isPositive === null
+    }">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black flex-shrink-0"
+        [ngClass]="{
+          'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400': info.isPositive === true,
+          'bg-red-500/15 border border-red-500/30 text-red-400':             info.isPositive === false,
+          'bg-purple-500/15 border border-purple-500/30 text-purple-400':    info.isPositive === null
+        }">
+        @if (info.isPositive === true) { + }
+        @if (info.isPositive === false) { - }
+        @if (info.isPositive === null) { ? }
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white font-bold text-sm leading-tight">{{ info.cellName }}</p>
+        @if (info.impactText) {
+        <p class="font-black text-lg leading-none mt-0.5"
+          [ngClass]="{
+            'text-emerald-400': info.isPositive === true,
+            'text-red-400':     info.isPositive === false
+          }">{{ info.impactText }}</p>
+        }
+      </div>
+    </div>
+    <p class="text-slate-400 text-xs leading-relaxed">{{ info.description }}</p>
+    <div class="h-0.5 bg-slate-800 rounded-full overflow-hidden">
+      <div class="h-full rounded-full transition-all"
+        [ngClass]="info.isPositive === true ? 'bg-emerald-500' : info.isPositive === false ? 'bg-red-500' : 'bg-purple-500'"
+        style="animation: countdown 2.5s linear forwards">
+      </div>
+    </div>
+  </div>
+</div>
+}
 
 <!-- ══════════════════════════════════════════════════════════════════
      MODAL: COMPRAR PROPIEDAD

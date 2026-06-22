@@ -57,6 +57,7 @@ export class SimulatorService {
       userId: string | null;
       isBot: boolean;
       botPersonality: any;
+      tokenSymbol: string;
       shuffle: number;
     }> = [];
 
@@ -66,6 +67,7 @@ export class SimulatorService {
         userId: p.userId ?? userId,
         isBot: false,
         botPersonality: null,
+        tokenSymbol: p.tokenSymbol ?? '★',
         shuffle: Math.random(),
       });
     }
@@ -76,6 +78,7 @@ export class SimulatorService {
         userId: null,
         isBot: true,
         botPersonality: b.personality,
+        tokenSymbol: b.tokenSymbol ?? '★',
         shuffle: Math.random(),
       });
     }
@@ -97,6 +100,7 @@ export class SimulatorService {
             userId: e.userId,
             isBot: e.isBot,
             botPersonality: e.botPersonality,
+            tokenSymbol: e.tokenSymbol,
             turnOrder: i,
             money: initialMoney,
             position: 0,
@@ -343,7 +347,7 @@ export class SimulatorService {
       case 'GO_TO_JAIL': {
         currentPlayer.position = 10;
         currentPlayer.isInJail = true;
-        currentPlayer.jailTurnsLeft = 3;
+        currentPlayer.jailTurnsLeft = 1;
         action = 'GO_TO_JAIL';
         actionDetails = { jailPosition: 10 };
         break;
@@ -492,7 +496,7 @@ export class SimulatorService {
       case 'GO_TO_JAIL': {
         player.position = 10;
         player.isInJail = true;
-        player.jailTurnsLeft = 3;
+        player.jailTurnsLeft = 1;
         break;
       }
 
@@ -593,13 +597,12 @@ export class SimulatorService {
   async abandonGame(gameId: string, userId: string) {
     const game = await this.prisma.simulatorGame.findUnique({
       where: { id: gameId },
-      include: { players: { orderBy: { turnOrder: 'asc' } } },
     });
 
     if (!game) throw new NotFoundException('Partida no encontrada');
-    if (game.createdByUserId !== userId) throw new BadRequestException('Solo el creador puede abandonar la partida');
+
     if (game.status === 'FINISHED' || game.status === 'ABANDONED') {
-      throw new BadRequestException('La partida ya terminó');
+      return { success: true, status: game.status };
     }
 
     await this.prisma.simulatorGame.update({
@@ -608,46 +611,44 @@ export class SimulatorService {
         status: 'ABANDONED',
         gamePhase: 'ABANDONED',
         abandonedAt: new Date(),
+        finishedAt: new Date(),
       },
     });
 
-    return { message: 'Partida abandonada' };
+    if (game.mode !== 'SIMULATION') {
+      await this.prisma.userStatistics
+        .update({
+          where: { userId },
+          data: { gamesPlayed: { increment: 1 } },
+        })
+        .catch(() => {});
+    }
+
+    return { success: true, status: 'ABANDONED' };
   }
 
   async getHistory(userId: string) {
     const games = await this.prisma.simulatorGame.findMany({
-      where: {
-        createdByUserId: userId,
-        OR: [
-          { status: 'FINISHED' },
-          { status: 'ABANDONED' },
-        ],
-      },
-      include: {
-        players: {
-          orderBy: { turnOrder: 'asc' },
-        },
-      },
+      where: { createdByUserId: userId },
+      include: { players: { orderBy: { money: 'desc' } } },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 50,
     });
 
-    return games.map(g => {
-      const humanPlayers = g.players.filter(p => !p.isBot);
-      const bestPlayer = [...g.players].sort((a, b) => b.money - a.money)[0];
-      return {
-        id: g.id,
-        rounds: g.currentRound,
-        maxRounds: g.maxRounds,
-        mode: g.mode,
-        status: g.status,
-        playerCount: g.players.length,
-        humanPlayerCount: humanPlayers.length,
-        winner: bestPlayer?.displayName ?? null,
-        winnerIsBot: bestPlayer?.isBot ?? false,
-        finishedAt: g.finishedAt ?? g.abandonedAt ?? g.createdAt,
-      };
-    });
+    return games.map(g => ({
+      id: g.id,
+      rounds: g.maxRounds,
+      mode: g.mode,
+      status: g.status,
+      humanPlayerCount: g.players.filter((p: any) => !p.isBot).length,
+      winner:
+        g.status === 'FINISHED'
+          ? (g.players.find((p: any) => !p.isBot && p.finalRank === 1)?.displayName ??
+             g.players[0]?.displayName ??
+             '-')
+          : '-',
+      finishedAt: g.finishedAt ?? g.createdAt,
+    }));
   }
 
   async getBoardCells() {
@@ -892,7 +893,7 @@ export class SimulatorService {
       case 'GO_TO_JAIL': {
         newPosition = 10;
         player.isInJail = true;
-        player.jailTurnsLeft = 3;
+        player.jailTurnsLeft = 1;
         action = 'GO_TO_JAIL';
         actionDetail = `${player.displayName} fue a la carcel`;
         break;
@@ -942,7 +943,7 @@ export class SimulatorService {
       case 'GO_TO_JAIL': {
         bot.position = 10;
         bot.isInJail = true;
-        bot.jailTurnsLeft = 3;
+        bot.jailTurnsLeft = 1;
         break;
       }
 
@@ -1074,88 +1075,59 @@ export class SimulatorService {
   private async finishGame(gameId: string) {
     const game = await this.prisma.simulatorGame.findUnique({
       where: { id: gameId },
-      include: { players: { orderBy: { turnOrder: 'asc' }, include: { properties: true } } },
+      include: { players: { orderBy: { money: 'desc' } } },
     });
+    if (!game) throw new NotFoundException('Partida no encontrada');
 
-    if (!game) return;
-
-    const boardCells = await this.prisma.boardCell.findMany();
-    const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
-
-    // Rank players by money descending
-    const ranked = [...game.players].sort((a, b) => {
-      if (a.isEliminated && !b.isEliminated) return 1;
-      if (!a.isEliminated && b.isEliminated) return -1;
-      return b.money - a.money;
-    });
-
-    // Calculate XP for the recipient
-    const recipientId = game.xpRecipientId ?? game.createdByUserId;
-    const baseXP = this.getBaseXP(game.maxRounds);
-
-    const humanPlayers = game.players.filter((p: any) => !p.isBot);
-    // XP is based on the best human player's rank
-    const bestHuman = humanPlayers.length > 0
-      ? humanPlayers[0]
-      : ranked[0];
-
-    const bestHumanRank = ranked.findIndex((p: any) => p.id === bestHuman.id) + 1;
-    const positionMultiplier = this.getPositionMultiplier(bestHumanRank);
-
-    const propertiesCount = allProperties.filter(p => p.playerId === bestHuman.id).length;
-
-    // Count complete groups
-    const completeGroups = this.countCompleteGroups(bestHuman.id, boardCells, allProperties);
-
-    const xpAmount = Math.floor(baseXP * positionMultiplier + propertiesCount * 3 + completeGroups * 15);
-
-    // Update player ranks
-    for (let i = 0; i < ranked.length; i++) {
+    for (let i = 0; i < game.players.length; i++) {
       await this.prisma.simulatorPlayer.update({
-        where: { id: ranked[i].id },
-        data: { hasRolled: false },
+        where: { id: game.players[i].id },
+        data: { finalRank: i + 1 },
       });
     }
 
-    // Update user statistics
-    const isWinner = bestHumanRank === 1;
-    await this.prisma.userStatistics.upsert({
-      where: { userId: recipientId },
-      update: {
-        gamesPlayed: { increment: 1 },
-        gamesWon: isWinner ? { increment: 1 } : undefined,
-      },
-      create: {
-        userId: recipientId,
-        gamesPlayed: 1,
-        gamesWon: isWinner ? 1 : 0,
-      },
-    });
-
-    // Award XP
-    if (xpAmount > 0) {
-      try {
-        await this.gamification.addXp(recipientId, {
-          amount: xpAmount,
-          source: XpSource.SIMULATOR_GAME_FINISHED,
-          referenceId: gameId,
-          description: `Simulador completado — Posición #${bestHumanRank} de ${game.players.length} jugadores`,
-        });
-      } catch {
-        // XP award is best-effort
-      }
+    if (game.mode === 'SIMULATION') {
+      return this.prisma.simulatorGame.update({
+        where: { id: gameId },
+        data: { status: 'FINISHED', gamePhase: 'FINISHED', finishedAt: new Date() },
+      });
     }
 
-    await this.prisma.simulatorGame.update({
-      where: { id: gameId },
-      data: {
-        status: 'FINISHED',
-        gamePhase: 'FINISHED',
-        finishedAt: new Date(),
-      },
-    });
+    const recipientId = game.xpRecipientId ?? game.createdByUserId;
+    const humanPlayers = game.players.filter((p: any) => !p.isBot);
+    const winner = game.players[0];
 
-    return this.getGameState(gameId);
+    await this.prisma.userStatistics
+      .update({
+        where: { userId: recipientId },
+        data: { gamesPlayed: { increment: 1 } },
+      })
+      .catch(() => {});
+
+    const humanWon = humanPlayers.some((p: any) => p.id === winner.id);
+    if (humanWon) {
+      await this.prisma.userStatistics
+        .update({
+          where: { userId: recipientId },
+          data: { gamesWon: { increment: 1 } },
+        })
+        .catch(() => {});
+    }
+
+    const xpAmount = this.getBaseXP(game.maxRounds);
+    await this.gamification
+      .addXp(recipientId, {
+        amount: xpAmount,
+        source: XpSource.SIMULATOR_GAME_FINISHED,
+        referenceId: gameId,
+        description: `Tablero financiero completado - ${game.mode}`,
+      })
+      .catch(() => {});
+
+    return this.prisma.simulatorGame.update({
+      where: { id: gameId },
+      data: { status: 'FINISHED', gamePhase: 'FINISHED', finishedAt: new Date() },
+    });
   }
 
   private getBaseXP(maxRounds: number): number {
