@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AcademyService } from '../../../core/services/academy.service';
 import { QuizService } from '../../../core/services/quiz.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { AcademyModule, Lesson } from '../../../core/models/academy.model';
 import { Quiz } from '../../../core/models/quiz.model';
 
@@ -25,7 +26,8 @@ export class ModuleDetail implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private academyService: AcademyService,
-    private quizService: QuizService
+    private quizService: QuizService,
+    private toast: ToastService
   ) { }
 
   ngOnInit(): void {
@@ -33,7 +35,7 @@ export class ModuleDetail implements OnInit {
 
     this.academyService.getModule(this.moduleId).subscribe({
       next: d => { this.module.set(d); this.loading.set(false); },
-      error: () => this.loading.set(false)
+      error: () => { this.loading.set(false); this.toast.error('Error al cargar el módulo'); }
     });
 
     this.quizService.getQuizByModule(this.moduleId).subscribe({
@@ -45,7 +47,7 @@ export class ModuleDetail implements OnInit {
         }
         this.quizLoading.set(false);
       },
-      error: () => this.quizLoading.set(false)
+      error: () => { this.quizLoading.set(false); this.toast.error('Error al cargar el quiz'); }
     });
   }
 

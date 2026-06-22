@@ -129,12 +129,10 @@ export class Simulator implements OnInit {
     this.selectedMode = mode;
     const opt = this.modeOptions.find(m => m.value === mode)!;
 
-    // Ajustar humanos al rango del modo
     let humans = this.humanNames.slice(0, opt.maxHumans);
     while (humans.length < opt.minHumans) humans.push('');
     this.humanNames = humans;
 
-    // Ajustar bots al rango del modo
     let bots = this.bots.slice(0, opt.maxBots);
     while (bots.length < opt.minBots) {
       bots.push({
@@ -194,7 +192,6 @@ export class Simulator implements OnInit {
     }).subscribe({
       next: game => {
         this.starting.set(false);
-        // game.ts llama startGame() — así la pantalla de carga queda en el juego, no aquí
         this.router.navigate(['/simulator', game.id]);
       },
       error: err => {
@@ -210,6 +207,6 @@ export class Simulator implements OnInit {
   }
 
   formatCurrency(v: number): string {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(v);
+    return `$${v.toLocaleString('es-EC')}`;
   }
 }

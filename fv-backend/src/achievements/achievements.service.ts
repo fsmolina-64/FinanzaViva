@@ -34,12 +34,13 @@ export class AchievementsService {
     });
     if (existing) return;
 
-    await this.prisma.userAchievement.create({ data: { userId, achievementId } });
-
-    await this.prisma.userStatistics.update({
-      where: { userId },
-      data: { achievementsCount: { increment: 1 } },
-    });
+    await this.prisma.$transaction([
+      this.prisma.userAchievement.create({ data: { userId, achievementId } }),
+      this.prisma.userStatistics.update({
+        where: { userId },
+        data: { achievementsCount: { increment: 1 } },
+      }),
+    ]);
 
     if (xpReward > 0) {
       await this.gamification.addXp(userId, {

@@ -1,13 +1,13 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { SimulatorService } from './simulator.service';
 import { CreateGameDto } from './dto/create-game.dto';
-import { SubmitDecisionDto } from './dto/submit-decision.dto';
+import { DecideBuyDto } from './dto/decide-buy.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 
 @UseGuards(JwtGuard)
 @Controller('simulator')
 export class SimulatorController {
-  constructor(private readonly simulatorService: SimulatorService) { }
+  constructor(private readonly simulatorService: SimulatorService) {}
 
   @Post('games')
   createGame(@Request() req: any, @Body() dto: CreateGameDto) {
@@ -19,26 +19,43 @@ export class SimulatorController {
     return this.simulatorService.startGame(id, req.user.id);
   }
 
-  // GET /simulator/games/:id → ahora devuelve estado completo con evento activo
   @Get('games/:id')
-  getGameState(@Param('id') id: string) {
-    return this.simulatorService.getGameState(id);
+  getGameState(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.getGameState(id, req.user.id);
   }
 
-  // POST /simulator/games/:id/decision → devuelve { result, gameState }
-  // next-round ya no existe — el avance de turno es automático en submitDecision
-  @Post('games/:id/decision')
-  submitDecision(@Param('id') id: string, @Body() dto: SubmitDecisionDto) {
-    return this.simulatorService.submitDecision(id, dto);
+  @Post('games/:id/roll-dice')
+  rollDice(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.rollDice(id, req.user.id);
+  }
+
+  @Post('games/:id/decide-buy')
+  decideBuy(@Request() req: any, @Param('id') id: string, @Body() dto: DecideBuyDto) {
+    return this.simulatorService.decideBuy(id, req.user.id, dto);
+  }
+
+  @Post('games/:id/dismiss-wildcard')
+  dismissWildcard(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.dismissWildcard(id, req.user.id);
+  }
+
+  @Post('games/:id/end-turn')
+  endTurn(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.endTurn(id, req.user.id);
+  }
+
+  @Post('games/:id/abandon')
+  abandonGame(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.abandonGame(id, req.user.id);
   }
 
   @Get('history')
   getHistory(@Request() req: any) {
-    return this.simulatorService.getGameHistory(req.user.id);
+    return this.simulatorService.getHistory(req.user.id);
   }
 
-  @Get('events/random')
-  getRandomEvent() {
-    return this.simulatorService.getRandomEvent();
+  @Get('board-cells')
+  getBoardCells() {
+    return this.simulatorService.getBoardCells();
   }
 }

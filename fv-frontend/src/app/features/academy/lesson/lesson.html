@@ -6,7 +6,7 @@
             stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Volver al modulo
+        Volver al módulo
     </a>
 
     @if (loading()) {
@@ -131,7 +131,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        <span class="text-emerald-400 font-bold text-xs uppercase tracking-wider">Caso practico</span>
+                        <span class="text-emerald-400 font-bold text-xs uppercase tracking-wider">Caso práctico</span>
                     </div>
                     <div class="p-4 space-y-2">
                         <p class="text-emerald-200 font-semibold text-sm">{{ block.title }}</p>
@@ -225,7 +225,7 @@
                             <circle cx="12" cy="12" r="6" />
                             <circle cx="12" cy="12" r="2" />
                         </svg>
-                        <p class="text-purple-300 font-bold text-xs uppercase tracking-wider">Reto practico</p>
+                        <p class="text-purple-300 font-bold text-xs uppercase tracking-wider">Reto práctico</p>
                     </div>
                     <div class="p-4 space-y-3">
                         <p class="text-slate-100 text-sm leading-relaxed font-medium">{{ block.question }}</p>
@@ -315,15 +315,15 @@
             <div class="text-emerald-400 font-bold text-3xl">+{{ result()!.totalXpEarned }} XP</div>
             @if (result()!.lessonXpEarned > 0 && result()!.moduleXpEarned > 0) {
             <p class="text-slate-400 text-xs">
-                Leccion: +{{ result()!.lessonXpEarned }} XP &nbsp;&middot;&nbsp;
-                Modulo: +{{ result()!.moduleXpEarned }} XP
+                Lección: +{{ result()!.lessonXpEarned }} XP &nbsp;&middot;&nbsp;
+                Módulo: +{{ result()!.moduleXpEarned }} XP
             </p>
             }
             }
             @if (result()!.moduleCompleted) {
-            <p class="text-white font-bold text-lg">Modulo completado</p>
+            <p class="text-white font-bold text-lg">Módulo completado</p>
             } @else {
-            <p class="text-white font-semibold text-base">Leccion completada</p>
+            <p class="text-white font-semibold text-base">Lección completada</p>
             }
             @if (result()!.leveledUp) {
             <div class="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-500/30 rounded-xl px-4 py-2">
@@ -337,7 +337,7 @@
             <div>
                 <button (click)="goNext()"
                     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-                    {{ result()!.nextLesson ? 'Siguiente leccion' : 'Volver al modulo' }}
+                    {{ result()!.nextLesson ? 'Siguiente lección' : 'Volver al módulo' }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
@@ -370,7 +370,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <polyline points="20 6 9 17 4 12" />
                 </svg>
-                Leccion ya completada
+                Lección ya completada
             </div>
             <button (click)="reset()" [disabled]="resetting()"
                 class="sm:w-auto px-5 py-3 rounded-2xl border border-slate-600 text-slate-400 text-sm font-medium hover:text-white hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
@@ -378,7 +378,7 @@
             </button>
         </div>
         <p class="text-slate-600 text-xs text-center">
-            El XP ya fue otorgado y no se duplicara si vuelves a completar.
+            El XP ya fue otorgado y no se duplicará si vuelves a completar.
         </p>
         }
         }

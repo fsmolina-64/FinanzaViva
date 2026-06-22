@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { OnboardingService } from './onboarding.service';
 import { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '../models/auth.model';
 
 @Injectable({
@@ -16,7 +17,8 @@ export class AuthService {
 
   constructor(
     private api: ApiService,
-    private router: Router
+    private router: Router,
+    private onboardingService: OnboardingService
   ) {}
 
   login(data: LoginRequest): Observable<AuthResponse> {
@@ -26,9 +28,7 @@ export class AuthService {
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.api.post<AuthResponse>('/auth/register', data).pipe(
-      tap(response => this.saveSession(response))
-    );
+    return this.api.post<AuthResponse>('/auth/register', data);
   }
 
   logout(): void {
@@ -36,6 +36,7 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
     this.isLoggedIn.set(false);
     this.currentUser.set(null);
+    this.onboardingService.clearAll();
     this.router.navigate(['/auth/login']);
   }
 
@@ -57,5 +58,6 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     this.isLoggedIn.set(true);
     this.currentUser.set(response.user);
+    this.onboardingService.clearAll();
   }
 }

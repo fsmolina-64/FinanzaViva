@@ -1,20 +1,16 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { CategoryType } from '@prisma/client';
+import { IsString, IsNotEmpty, IsIn } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsNotEmpty()
   @IsString()
   name!: string;
 
-  @IsNotEmpty()
-  @IsEnum(CategoryType)
-  type!: CategoryType;
-
-  @IsOptional()
   @IsString()
-  icon?: string;
+  icon: string = '';
 
-  @IsOptional()
   @IsString()
-  color?: string;
+  color: string = '';
+
+  @IsIn(['INCOME', 'EXPENSE'])
+  type!: 'INCOME' | 'EXPENSE';
 }

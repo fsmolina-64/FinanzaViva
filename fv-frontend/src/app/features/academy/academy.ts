@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AcademyService } from '../../core/services/academy.service';
+import { ToastService } from '../../core/services/toast.service';
 import { AcademyModule } from '../../core/models/academy.model';
 
 @Component({
@@ -14,12 +15,15 @@ export class Academy implements OnInit {
   modules = signal<AcademyModule[]>([]);
   loading = signal(true);
 
-  constructor(private academyService: AcademyService) { }
+  constructor(
+    private academyService: AcademyService,
+    private toast: ToastService
+  ) { }
 
   ngOnInit(): void {
     this.academyService.getModules().subscribe({
       next: d => { this.modules.set(d); this.loading.set(false); },
-      error: () => this.loading.set(false)
+      error: () => { this.loading.set(false); this.toast.error('Error al cargar los módulos'); }
     });
   }
 

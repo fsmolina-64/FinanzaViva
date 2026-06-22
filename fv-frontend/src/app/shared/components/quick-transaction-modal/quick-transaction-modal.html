@@ -16,7 +16,6 @@
         </div>
         } @else {
 
-        <!-- Selector tipo -->
         <div class="flex border-b border-slate-800/80 mt-1">
             @for (opt of typeOptions; track opt.key) {
             <button (click)="setType(opt.key)"
@@ -30,7 +29,6 @@
             }
         </div>
 
-        <!-- Confirmación de deuda -->
         @if (showDebtConfirm()) {
         <div class="px-6 py-8 text-center space-y-4">
             <div class="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
@@ -39,7 +37,7 @@
             <div>
                 <p class="text-white font-bold text-base">Saldo insuficiente</p>
                 <p class="text-slate-400 text-sm mt-1">
-                    Esta operacion dejara la cuenta con saldo negativo de
+                    Esta operación dejará la cuenta con saldo negativo de
                     <span class="text-red-400 font-semibold">
                         {{ formatAmount() }} sobre ${{ getSelectedAccountBalance().toFixed(2) }} disponibles
                     </span>.
@@ -59,7 +57,6 @@
         </div>
         } @else {
 
-        <!-- Display monto -->
         <div class="px-6 py-5 text-center select-none">
             <p class="text-slate-500 text-xs font-medium mb-1 uppercase tracking-widest">Monto</p>
             <div class="text-5xl font-bold tracking-tight tabular-nums transition-colors duration-200" [ngClass]="selectedType() === 'EXPENSE'  ? 'text-red-400'
@@ -68,11 +65,10 @@
                 {{ formatAmount() }}
             </div>
             @if (selectedType() === 'EXPENSE' && getAmount() > 0 && getAmount() > getSelectedAccountBalance()) {
-            <p class="text-amber-400 text-xs mt-1">Supera el saldo disponible — se registrara como deuda</p>
+            <p class="text-amber-400 text-xs mt-1">Supera el saldo disponible — se registrará como deuda</p>
             }
         </div>
 
-        <!-- Numpad -->
         <div class="px-4 pb-3">
             <div class="grid grid-cols-3 gap-2">
                 @for (key of numpadKeys; track key) {
@@ -86,7 +82,6 @@
             </div>
         </div>
 
-        <!-- MODO TRANSFER: cuentas origen/destino -->
         @if (selectedType() === 'TRANSFER') {
         <div class="px-4 pb-3 space-y-2.5">
             @if (accounts().length < 2) { <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
@@ -120,11 +115,10 @@
     </div>
     } @else {
 
-    <!-- MODO INCOME/EXPENSE: categorias + cuenta -->
     <div class="px-4 pb-3">
-        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">Categoria</p>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-2">Categoría</p>
         @if (topCategories().length === 0) {
-        <p class="text-slate-600 text-xs">Sin categorias disponibles</p>
+        <p class="text-slate-600 text-xs">Sin categorías disponibles</p>
         } @else {
         <div class="flex flex-wrap gap-1.5">
             @for (cat of topCategories(); track cat.id) {
@@ -156,7 +150,6 @@
     </div>
     }
 
-    <!-- Opcionales: fecha y nota -->
     <div class="px-4 pb-4 space-y-2">
         <button (click)="showExtras = !showExtras"
             class="text-xs text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-1.5">

@@ -1,0 +1,58 @@
+.type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  background-color: #111827;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.type-btn:hover:not(.type-btn--selected) {
+  border-color: #374151;
+  transform: scale(1.03);
+}
+
+.type-btn--selected {
+  border-color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.08);
+}
+
+.type-btn__icon--selected { color: #c084fc; }
+.type-btn__icon--default  { color: #6b7280; }
+
+.type-btn__label--selected { color: #d8b4fe; }
+.type-btn__label--default  { color: #9ca3af; }
+
+.type-btn__desc--selected { color: #a855f7; }
+.type-btn__desc--default  { color: #4b5563; }
+
+.field-input {
+  width: 100%;
+  background-color: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus         { border-color: #a855f7; }
+.field-input--error        { border-color: #ef4444 !important; }
+.field-input--balance      { padding-left: 32px; }
+
+.dollar-prefix {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 14px;
+  pointer-events: none;
+}
