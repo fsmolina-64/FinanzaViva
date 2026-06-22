@@ -11,6 +11,7 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransferDto } from './dto/create-transfer.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @UseGuards(JwtGuard)
 @Controller('finances')
@@ -28,6 +29,9 @@ export class FinancesController {
 
   @Get('accounts')
   getAccounts(@Request() req: any) { return this.financesService.getAccounts(req.user.id); }
+
+  @Patch('accounts/:id')
+  updateAccount(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateAccountDto) { return this.financesService.updateAccount(req.user.id, id, dto); }
 
   @Delete('accounts/:id')
   deleteAccount(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteAccount(req.user.id, id); }

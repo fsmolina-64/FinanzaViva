@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -66,6 +67,22 @@ export class FinancesService {
     return this.prisma.financialAccount.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateAccount(userId: string, accountId: string, dto: UpdateAccountDto) {
+    const account = await this.prisma.financialAccount.findUnique({ where: { id: accountId } });
+    if (!account) throw new NotFoundException('Cuenta no encontrada');
+    if (account.userId !== userId) throw new ForbiddenException();
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.type !== undefined) data.type = dto.type;
+    if (dto.balance !== undefined) data.balance = dto.balance;
+
+    return this.prisma.financialAccount.update({
+      where: { id: accountId },
+      data,
     });
   }
 
@@ -211,7 +228,7 @@ export class FinancesService {
         where: { id: transactionId },
         data: {
           ...(dto.accountId && { accountId: dto.accountId }),
-          ...(dto.categoryId && { categoryId: dto.categoryId }),
+        categoryId: dto.categoryId ?? null,
           ...(dto.amount !== undefined && { amount: dto.amount }),
           ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
@@ -328,7 +345,7 @@ export class FinancesService {
     return this.prisma.budget.create({
       data: {
         userId,
-        categoryId: dto.categoryId,
+        ...(dto.categoryId && { categoryId: dto.categoryId }),
         amount: dto.amount,
         period: dto.period,
         startDate: new Date(dto.startDate),

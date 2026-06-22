@@ -1,0 +1,151 @@
+<div class="flex flex-col items-center">
+
+  <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-violet-700
+              flex items-center justify-center mb-6"
+       style="box-shadow:0 0 0 12px rgba(139,92,246,0.08), 0 8px 32px rgba(139,92,246,0.25)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  </div>
+
+  <h1 class="text-white text-3xl font-bold text-center mb-2 tracking-tight">
+    Todo listo
+  </h1>
+  <p class="text-gray-400 text-center mb-10 max-w-md leading-relaxed">
+    Tu espacio financiero esta configurado. Aqui tienes un resumen de lo que creaste.
+  </p>
+
+  <div class="w-full space-y-3 mb-10">
+
+    <!-- Cuentas -->
+    <div class="rounded-2xl border border-gray-800 p-5" style="background-color:#111827">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+             style="background:rgba(16,185,129,0.12)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        </div>
+        <span class="text-white font-medium text-sm">Cuentas</span>
+      </div>
+      @for (account of data().accounts; track account.id) {
+        <div class="flex items-center justify-between py-2 border-t border-gray-800">
+          <span class="text-gray-300 text-sm">{{ account.name }}</span>
+          <span class="text-emerald-400 text-sm font-medium">
+            {{ account.balance | currency:'USD':'symbol':'1.2-2' }}
+          </span>
+        </div>
+      }
+    </div>
+
+    <!-- Categorias del usuario -->
+    @if (data().customCategories.length > 0) {
+      <div class="rounded-2xl border border-gray-800 p-5" style="background-color:#111827">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+               style="background:rgba(245,158,11,0.12)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </div>
+          <span class="text-white font-medium text-sm">Categorias creadas</span>
+        </div>
+        @for (cat of data().customCategories; track cat.id) {
+          <div class="flex items-center gap-2 py-2 border-t border-gray-800">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  [style.background-color]="cat.type === 'INCOME' ? '#10b981' : '#ef4444'"></span>
+            <span class="text-gray-300 text-sm">{{ cat.name }}</span>
+            <span class="text-gray-600 text-xs ml-auto">{{ cat.type === 'INCOME' ? 'Ingreso' : 'Gasto' }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Presupuestos -->
+    @if (data().budgets.length > 0) {
+      <div class="rounded-2xl border border-gray-800 p-5" style="background-color:#111827">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+               style="background:rgba(139,92,246,0.12)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-400"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+          </div>
+          <span class="text-white font-medium text-sm">Presupuestos</span>
+        </div>
+        @for (b of data().budgets; track $index) {
+          <div class="flex items-center justify-between py-2 border-t border-gray-800">
+            <div class="flex items-center gap-2">
+              <span class="text-gray-300 text-sm">{{ b.categoryName }}</span>
+              <span class="text-gray-600 text-xs">Mensual</span>
+            </div>
+            <span class="text-violet-400 text-sm font-medium">
+              {{ b.amount | currency:'USD':'symbol':'1.2-2' }}
+            </span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Metas -->
+    @if (data().goals.length > 0) {
+      <div class="rounded-2xl border border-gray-800 p-5" style="background-color:#111827">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl flex items-center justify-center"
+               style="background:rgba(244,63,94,0.12)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-rose-400"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <span class="text-white font-medium text-sm">Metas financieras</span>
+        </div>
+        @for (goal of data().goals; track goal.id) {
+          <div class="flex items-center justify-between py-2 border-t border-gray-800">
+            <span class="text-gray-300 text-sm">{{ goal.name }}</span>
+            <span class="text-rose-400 text-sm font-medium">
+              {{ goal.targetAmount | currency:'USD':'symbol':'1.2-2' }}
+            </span>
+          </div>
+        }
+      </div>
+    }
+
+    @if (data().customCategories.length === 0 && data().budgets.length === 0 && data().goals.length === 0) {
+      <div class="rounded-2xl border border-dashed border-gray-700 p-6 text-center">
+        <p class="text-gray-500 text-sm">No creaste configuraciones adicionales. Puedes hacerlo desde Finanzas.</p>
+      </div>
+    }
+  </div>
+
+  <button
+    type="button"
+    (click)="complete.emit()"
+    [disabled]="isLoading()"
+    class="w-full bg-white text-gray-900 font-semibold py-4 rounded-xl
+           hover:bg-gray-100 transition-all text-sm cursor-pointer
+           disabled:opacity-60 disabled:cursor-not-allowed">
+    @if (isLoading()) {
+      <span class="flex items-center justify-center gap-2">
+        <svg class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        Entrando...
+      </span>
+    } @else {
+      Entrar al Dashboard
+    }
+  </button>
+
+</div>

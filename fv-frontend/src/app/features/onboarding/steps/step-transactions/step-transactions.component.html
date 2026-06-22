@@ -1,0 +1,59 @@
+<div class="flex flex-col items-center">
+
+  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600
+              flex items-center justify-center mb-6"
+       style="box-shadow:0 8px 32px rgba(99,102,241,0.2)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  </div>
+
+  <h1 class="text-white text-3xl font-bold text-center mb-3 tracking-tight">
+    Tipos de movimientos
+  </h1>
+  <p class="text-gray-400 text-center mb-8 max-w-md leading-relaxed">
+    Cada vez que registres una transaccion, sera de uno de estos tres tipos.
+  </p>
+
+  <div class="w-full space-y-3 mb-10">
+    @for (type of types; track type.label) {
+      <div class="rounded-2xl border p-5 flex gap-4 items-start hover:scale-[1.02] transition-all duration-200"
+           [style.border-color]="type.borderColor"
+           style="background-color:#111827">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+             [style.background]="type.iconBg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+               [style.color]="type.iconColor"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="type.iconPath" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm mb-1" [style.color]="type.labelColor">
+            {{ type.label }}
+          </p>
+          <p class="text-gray-400 text-xs mb-3 leading-relaxed">{{ type.desc }}</p>
+          <div class="flex flex-wrap gap-2">
+            @for (example of type.examples; track example) {
+              <span class="px-2.5 py-1 rounded-lg text-xs text-gray-400"
+                    style="background-color:#1f2937">
+                {{ example }}
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <button
+    type="button"
+    (click)="next.emit()"
+    class="bg-white text-gray-900 font-semibold px-10 py-3 rounded-xl
+           hover:bg-gray-100 hover:scale-105 transition-all duration-200 text-sm cursor-pointer">
+    Entendido, continuar
+  </button>
+
+</div>

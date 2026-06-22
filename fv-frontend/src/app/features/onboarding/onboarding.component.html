@@ -1,0 +1,56 @@
+<div class="onboarding-page">
+
+  <div class="onboarding-header">
+    @if (currentStep() > 0) {
+      <button class="back-btn" (click)="prevStep()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Atras
+      </button>
+    } @else {
+      <div class="header-spacer"></div>
+    }
+
+    <div class="progress-bar">
+      @for (step of steps; track $index) {
+        <div
+          class="dot"
+          [class.dot--passed]="currentStep() > $index"
+          [class.dot--current]="currentStep() === $index">
+        </div>
+      }
+    </div>
+
+    <div class="header-spacer"></div>
+  </div>
+
+  <div class="step-wrapper" [class.step-wrapper--out]="transitioning()">
+
+    @if (currentStep() === 0) {
+      <app-step-welcome (next)="nextStep()" />
+    }
+    @if (currentStep() === 1) {
+      <app-step-account (next)="nextStep()" />
+    }
+    @if (currentStep() === 2) {
+      <app-step-transactions (next)="nextStep()" />
+    }
+    @if (currentStep() === 3) {
+      <app-step-categories (next)="nextStep()" (categoryCreated)="onCategoryCreated($event)" />
+    }
+    @if (currentStep() === 4) {
+      <app-step-budgets (next)="nextStep()" />
+    }
+    @if (currentStep() === 5) {
+      <app-step-goals (next)="nextStep()" (skip)="nextStep()" />
+    }
+    @if (currentStep() === 6) {
+      <app-step-summary
+        [data]="collectedData()"
+        [isLoading]="isCompleting()"
+        (complete)="onComplete()" />
+    }
+
+  </div>
+</div>

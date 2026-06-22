@@ -27,7 +27,7 @@ export class SimulatorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
-  ) {}
+  ) { }
 
   async createGame(userId: string, dto: CreateGameDto) {
     const humanCount = dto.humanPlayers?.length ?? 0;
@@ -633,9 +633,7 @@ export class SimulatorService {
     return this.prisma.boardCell.findMany({ orderBy: { position: 'asc' } });
   }
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
+
 
   private async advanceToHuman(gameId: string) {
     while (true) {
@@ -715,7 +713,6 @@ export class SimulatorService {
         continue;
       }
 
-      // Reset hasRolled for all players on new round
       if (isNewRound) {
         await this.prisma.simulatorPlayer.updateMany({
           where: { gameId },
@@ -755,14 +752,12 @@ export class SimulatorService {
     const player = game.players[game.currentPlayerIdx];
     if (!player || !player.isBot) return;
 
-    // --- Roll dice ---
     const dice1 = Math.floor(Math.random() * 6) + 1;
     const dice2 = Math.floor(Math.random() * 6) + 1;
     const sum = dice1 + dice2;
     const oldPosition = player.position;
     let newPosition = (oldPosition + sum) % 40;
 
-    // Handle jail for bot
     if (player.isInJail) {
       player.jailTurnsLeft--;
       if (dice1 === dice2 || player.jailTurnsLeft <= 0) {
@@ -783,7 +778,6 @@ export class SimulatorService {
 
     const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
 
-    // --- Process cell ---
     let purchased = false;
 
     switch (cell.type) {
@@ -1015,14 +1009,12 @@ export class SimulatorService {
     const boardCells = await this.prisma.boardCell.findMany();
     const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
 
-    // Rank players by money descending
     const ranked = [...game.players].sort((a, b) => {
       if (a.isEliminated && !b.isEliminated) return 1;
       if (!a.isEliminated && b.isEliminated) return -1;
       return b.money - a.money;
     });
 
-    // Calculate XP for the recipient
     const recipientId = game.xpRecipientId ?? game.createdByUserId;
     const baseXP = this.getBaseXP(game.maxRounds);
 
@@ -1037,12 +1029,10 @@ export class SimulatorService {
 
     const propertiesCount = allProperties.filter(p => p.playerId === bestHuman.id).length;
 
-    // Count complete groups
     const completeGroups = this.countCompleteGroups(bestHuman.id, boardCells, allProperties);
 
     const xpAmount = Math.floor(baseXP * positionMultiplier + propertiesCount * 3 + completeGroups * 15);
 
-    // Update player ranks
     for (let i = 0; i < ranked.length; i++) {
       await this.prisma.simulatorPlayer.update({
         where: { id: ranked[i].id },
@@ -1050,7 +1040,6 @@ export class SimulatorService {
       });
     }
 
-    // Update user statistics
     const isWinner = bestHumanRank === 1;
     await this.prisma.userStatistics.upsert({
       where: { userId: recipientId },
@@ -1065,7 +1054,6 @@ export class SimulatorService {
       },
     });
 
-    // Award XP
     if (xpAmount > 0) {
       try {
         await this.gamification.addXp(recipientId, {
