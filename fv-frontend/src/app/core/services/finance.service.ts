@@ -8,7 +8,8 @@ import {
   CreateBudgetPayload, CreateGoalPayload,
   UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload,
    CreateTransferPayload, TransferResponse,
-   CreateCategoryPayload, UpdateCategoryPayload
+   CreateCategoryPayload, UpdateCategoryPayload,
+   UpdateAccountPayload
 } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,10 @@ export class FinanceService {
 
   deleteAccount(id: string): Observable<void> {
     return this.api.delete<void>(`/finances/accounts/${id}`);
+  }
+
+  updateAccount(id: string, data: UpdateAccountPayload): Observable<Account> {
+    return this.api.patch<Account>(`/finances/accounts/${id}`, data);
   }
 
   getTransactions(): Observable<Transaction[]> {

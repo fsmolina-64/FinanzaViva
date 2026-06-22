@@ -199,3 +199,8 @@ export interface UpdateCategoryPayload {
   color?: string;
   endDate?: string;
 }
+
+export interface UpdateAccountPayload {
+  name?: string;
+  balance?: number;
+}

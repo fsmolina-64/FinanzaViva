@@ -13,6 +13,7 @@ import {
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
   CreateTransactionPayload, CreateCategoryPayload, CreateBudgetPayload, TransferDisplay
 } from '../../core/models/finance.model';
+import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
 type TxTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
@@ -102,6 +103,11 @@ export class Finances implements OnInit {
   confirmDeleteCategoryId = signal<string | null>(null);
 
   submittingAccount = signal(false);
+  editingAccountId = signal<string | null>(null);
+  editAccountForm = { name: '', newBalance: 0 };
+  showAccountBalanceModal = signal(false);
+  private pendingAccountEdit: { acc: Account; mode: 'income' | 'adjustment' } | null = null;
+
   submittingTx = signal(false);
   submittingBudget = signal(false);
   submittingGoal = signal(false);
@@ -242,7 +248,52 @@ export class Finances implements OnInit {
     return nonTransfers;
   });
 
-  recentTransactions = computed(() => this.transactions().slice(0, 5));
+  recentTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
+    const txs = this.transactions();
+    const transferGroups = new Map<string, Transaction[]>();
+    const result: (Transaction | TransferDisplay)[] = [];
+
+    for (const tx of txs) {
+      if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+        const g = transferGroups.get(tx.transferGroupId) || [];
+        g.push(tx);
+        transferGroups.set(tx.transferGroupId, g);
+      } else {
+        result.push(tx);
+      }
+    }
+
+    for (const [, group] of transferGroups) {
+      if (group.length >= 2) {
+        const from = group.find(t => {
+          const other = group.find(o => o.id !== t.id);
+          return other && t.accountId !== other.accountId;
+        }) ?? group[0];
+        const to = group.find(t => t.id !== from.id)!;
+        const fromAcc = this.accounts().find(a => a.id === from.accountId);
+        const toAcc = this.accounts().find(a => a.id === to.accountId);
+        result.push({
+          groupId: from.transferGroupId!,
+          type: 'TRANSFER',
+          fromAccountId: from.accountId,
+          toAccountId: to.accountId,
+          fromAccountName: fromAcc?.name ?? 'Cuenta origen',
+          toAccountName: toAcc?.name ?? 'Cuenta destino',
+          amount: parseFloat(String(from.amount)),
+          description: from.description || to.description,
+          date: from.date,
+          fromTxId: from.id,
+          toTxId: to.id,
+        });
+      } else if (group.length === 1) {
+        result.push(group[0]);
+      }
+    }
+
+    return result
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  });
 
   groupedTransactions = computed(() => {
     const map = new Map<string, (Transaction | TransferDisplay)[]>();
@@ -269,7 +320,7 @@ export class Finances implements OnInit {
       const vis = typeF === 'ALL' ? day : day.filter(t => t.type === typeF);
       cells.push({
         date: key,
-        income: vis.filter(t => t.type === 'INCOME').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
+        income: vis.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + parseFloat(String(t.amount)), 0),
         expense: vis.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)), 0),
         count: vis.length
       });
@@ -351,7 +402,7 @@ export class Finances implements OnInit {
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
 
   hasEditingOpen(): boolean {
-    return !!(this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
+    return !!(this.editingAccountId() || this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
       this.editingGoalId() || this.addingProgressGoalId() ||
       this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
       this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
@@ -394,6 +445,9 @@ export class Finances implements OnInit {
     this.showDebtConfirm.set(false);
     this.pendingDebtPayload = null;
     this.pendingEditId.set(null);
+    this.editingAccountId.set(null);
+    this.showAccountBalanceModal.set(false);
+    this.pendingAccountEdit = null;
     this.calendarDayKey.set(null);
   }
 
@@ -425,10 +479,122 @@ export class Finances implements OnInit {
     });
   }
 
+  startEditAccount(acc: Account): void {
+    this.editingAccountId.set(acc.id);
+    this.editAccountForm = {
+      name: acc.name,
+      newBalance: parseFloat(String(acc.balance))
+    };
+  }
+
+  cancelEditAccount(): void {
+    this.editingAccountId.set(null);
+  }
+
+  cancelAccountEdit(): void {
+    this.showAccountBalanceModal.set(false);
+    this.pendingAccountEdit = null;
+    this.cancelEditAccount();
+  }
+
+  saveEditAccount(acc: Account): void {
+    if (!this.editAccountForm.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    const newBalance = this.sanitizeNumber(this.editAccountForm.newBalance);
+    const originalBalance = parseFloat(String(acc.balance));
+    const balanceChanged = Math.abs(newBalance - originalBalance) > 0.001;
+    const nameChanged = this.editAccountForm.name.trim() !== acc.name;
+
+    if (!balanceChanged) {
+      if (!nameChanged) { this.cancelEditAccount(); return; }
+      this.financeService.updateAccount(acc.id, { name: this.editAccountForm.name.trim() }).subscribe({
+        next: updated => {
+          this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
+          this.cancelEditAccount();
+          this.toast.success('Cuenta actualizada');
+        },
+        error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+      });
+      return;
+    }
+
+    this.pendingAccountEdit = { acc, mode: 'adjustment' };
+    this.showAccountBalanceModal.set(true);
+  }
+
+  confirmAccountEdit(mode: 'income' | 'adjustment'): void {
+    const pending = this.pendingAccountEdit;
+    if (!pending) return;
+    this.showAccountBalanceModal.set(false);
+
+    const acc = pending.acc;
+    const newBalance = this.sanitizeNumber(this.editAccountForm.newBalance);
+    const originalBalance = parseFloat(String(acc.balance));
+    const diff = newBalance - originalBalance;
+    const nameChanged = this.editAccountForm.name.trim() !== acc.name;
+
+    const updateName$ = nameChanged
+      ? this.financeService.updateAccount(acc.id, { name: this.editAccountForm.name.trim() })
+      : null;
+
+    const afterNameUpdate = () => {
+      if (mode === 'adjustment') {
+        this.financeService.updateAccount(acc.id, { balance: newBalance }).subscribe({
+          next: updated => {
+            this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
+            this.refreshSummary();
+            this.pendingAccountEdit = null;
+            this.cancelEditAccount();
+            this.toast.success('Cuenta actualizada');
+          },
+          error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+        });
+      } else {
+        if (diff === 0) { this.cancelEditAccount(); this.pendingAccountEdit = null; return; }
+        const incomeCategories = this.categories().filter(c => c.type === 'INCOME');
+        const cat = incomeCategories[0];
+        if (!cat) { this.toast.error('No hay categoría de ingreso disponible'); return; }
+
+        const txPayload: CreateTransactionPayload = {
+          accountId: acc.id,
+          categoryId: cat.id,
+          amount: Math.abs(diff),
+          type: diff > 0 ? 'INCOME' : 'EXPENSE',
+          description: `Ajuste de balance de ${acc.name}`,
+          date: new Date().toISOString().split('T')[0],
+          allowNegative: diff < 0
+        };
+        this.financeService.createTransaction(txPayload).subscribe({
+          next: res => {
+            this.transactions.update(l => [res.transaction, ...l]);
+            this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
+            this.refreshSummary();
+            this.pendingAccountEdit = null;
+            this.cancelEditAccount();
+            this.toast.success('Ajuste registrado como transacción');
+          },
+          error: err => this.toast.error(this.extractError(err, 'Error al registrar el ajuste'))
+        });
+      }
+    };
+
+    if (updateName$) {
+      updateName$.subscribe({
+        next: updated => {
+          this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
+          afterNameUpdate();
+        },
+        error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+      });
+    } else {
+      afterNameUpdate();
+    }
+  }
+
   submitTransaction(): void {
     if (!this.newTransaction.accountId) { this.toast.warning('Selecciona una cuenta'); return; }
     if (!this.newTransaction.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
-    if (Number(this.newTransaction.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    const err = this.validateAmount(this.newTransaction.amount);
+    if (err) { this.toast.warning(err); return; }
     const payload: CreateTransactionPayload = {
       accountId: this.newTransaction.accountId,
       categoryId: this.newTransaction.categoryId,
@@ -524,7 +690,8 @@ export class Finances implements OnInit {
   }
 
   saveEditTx(id: string): void {
-    if (Number(this.editTx.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    const err = this.validateAmount(this.editTx.amount);
+    if (err) { this.toast.warning(err); return; }
 
     if (this.editTxType() === 'TRANSFER') {
       if (!this.editTx.accountId) { this.toast.warning('Selecciona cuenta origen'); return; }
@@ -663,7 +830,8 @@ export class Finances implements OnInit {
   isToday(dateKey: string): boolean { return dateKey === new Date().toISOString().split('T')[0]; }
 
   submitBudget(): void {
-    if (Number(this.newBudget.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    const err = this.validateAmount(this.newBudget.amount);
+    if (err) { this.toast.warning(err); return; }
     const now = new Date();
     const months = Math.max(1, this.newBudget.months);
     const payload: CreateBudgetPayload = {
@@ -702,7 +870,8 @@ export class Finances implements OnInit {
   cancelEditBudget(): void { this.editingBudgetId.set(null); }
 
   saveEditBudget(id: string): void {
-    if (this.editBudgetAmount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    const err = this.validateAmount(this.editBudgetAmount);
+    if (err) { this.toast.warning(err); return; }
     let endDate: string | null = null;
     if (!this.editBudget.indefinido) {
       const end = new Date(this.editBudget.startDate + 'T12:00:00');
@@ -738,7 +907,8 @@ export class Finances implements OnInit {
   }
 
   saveGlobalBudget(): void {
-    if (this.newGlobalLimit <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
+    const err = this.validateAmount(this.newGlobalLimit);
+    if (err) { this.toast.warning(err); return; }
     this.globalBudgetLimit.set(this.newGlobalLimit);
     localStorage.setItem('fv_global_budget', String(this.newGlobalLimit));
     this.showGlobalForm.set(false);
@@ -844,7 +1014,8 @@ export class Finances implements OnInit {
 
   submitGoal(): void {
     if (!this.newGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
-    if (Number(this.newGoal.targetAmount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
+    const err = this.validateAmount(this.newGoal.targetAmount);
+    if (err) { this.toast.warning(err); return; }
     this.submittingGoal.set(true);
     this.financeService.createGoal({ name: this.newGoal.name.trim(), targetAmount: Number(this.newGoal.targetAmount), deadline: this.newGoal.deadline || undefined }).subscribe({
       next: g => { this.goals.update(l => [g, ...l]); this.showGoalForm.set(false); this.newGoal = { name: '', targetAmount: 0, deadline: '' }; this.submittingGoal.set(false); this.toast.success('Meta creada'); },
@@ -861,7 +1032,8 @@ export class Finances implements OnInit {
   cancelAddProgress(): void { this.addingProgressGoalId.set(null); }
 
   saveProgress(g: Goal): void {
-    if (this.progressAmount <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
+    const err = this.validateAmount(this.progressAmount);
+    if (err) { this.toast.warning(err); return; }
     if (!this.progressAccountId) { this.toast.warning('Selecciona una cuenta'); return; }
     const acc = this.accounts().find(a => a.id === this.progressAccountId);
     if (!acc) return;
@@ -894,6 +1066,8 @@ export class Finances implements OnInit {
 
   saveEditGoal(id: string): void {
     if (!this.editGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    const err = this.validateAmount(this.editGoal.targetAmount);
+    if (err) { this.toast.warning(err); return; }
     this.financeService.updateGoal(id, { name: this.editGoal.name.trim(), targetAmount: Number(this.editGoal.targetAmount), deadline: this.editGoal.deadline || undefined }).subscribe({
       next: updated => { this.goals.update(l => l.map(g => g.id === id ? { ...g, ...updated } : g)); this.editingGoalId.set(null); this.toast.success('Meta actualizada'); },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar la meta'))
@@ -969,11 +1143,7 @@ export class Finances implements OnInit {
     return this.recurrenceOptions.find(o => o.value === r)?.label ?? r;
   }
 
-  formatCurrency(value: number | string): string {
-    const n = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(n)) return '0,00';
-    return new Intl.NumberFormat('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-  }
+  formatCurrency = formatCurrency;
 
   formatDateLabel(dateKey: string): string {
     const d = new Date(dateKey + 'T12:00:00');
@@ -1053,13 +1223,10 @@ export class Finances implements OnInit {
     return target ? Math.min(100, Math.round((current / target) * 100)) : 0;
   }
 
-  sanitizeNumber(val: any): number {
-    if (val === null || val === undefined || val === '') return 0;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    const str = String(val).replace(/,/g, '.').replace(/[^0-9.]/g, '');
-    if (str === '' || str === '.') return 0;
-    return parseFloat(str) || 0;
-  }
+  sanitizeNumber(val: any): number { return parseAmount(val); }
+  filterAmountKey = filterAmountKey;
+  sanitizeStr(val: any): string { return sanitizeNumberInput(val); }
+  validateAmount = validateAmount;
 
   extractError(err: any, fallback: string): string {
     return err?.error?.message ?? fallback;

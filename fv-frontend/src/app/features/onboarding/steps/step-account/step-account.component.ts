@@ -4,6 +4,7 @@ import { ApiService }       from '../../../../core/services/api.service';
 import { ToastService }     from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingAccount } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
+import { filterAmountKey, sanitizeNumberInput } from '../../../../shared/utils/amount.utils';
 
 type AccountType = 'CASH' | 'BANK' | 'DIGITAL_WALLET';
 
@@ -41,19 +42,18 @@ export class StepAccountComponent {
     { value: 'DIGITAL_WALLET' as AccountType, label: 'Digital', desc: 'Billetera virtual', path: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' },
   ];
 
-  filterBalance(event: KeyboardEvent): void {
-    const allowed = ['0','1','2','3','4','5','6','7','8','9','.','Backspace','Tab','ArrowLeft','ArrowRight','Delete','Home','End'];
-    if (!allowed.includes(event.key) && !event.ctrlKey && !event.metaKey) {
-      event.preventDefault();
-    }
-  }
+  filterBalance = filterAmountKey;
 
   onBalanceInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const cleaned = input.value.replace(/^0+(?=\d)/, '');
-    if (cleaned !== input.value) {
-      this.form.controls.balance.setValue(cleaned === '' ? 0 : Number(cleaned));
+    const cleaned = sanitizeNumberInput(input.value);
+    const parsed = parseFloat(cleaned) || 0;
+    if (input.value !== cleaned) {
+      const pos = input.selectionStart;
+      input.value = cleaned;
+      if (pos) input.setSelectionRange(pos, pos);
     }
+    this.form.controls.balance.setValue(parsed);
   }
 
   startEdit(account: OnboardingAccount): void {
