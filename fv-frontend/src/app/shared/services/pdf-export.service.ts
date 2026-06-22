@@ -22,14 +22,13 @@ export interface PdfReportData {
   }[];
 }
 
-// ── Design palette ────────────────────────────────────────────────────────────
 const C = {
-  blue: [96, 165, 250] as [number, number, number],        // softer blue
-  dark: [30, 41, 59] as [number, number, number],          // slate-800 — less dark
-  green: [52, 211, 153] as [number, number, number],       // softer green
-  red: [248, 113, 113] as [number, number, number],        // softer red
-  orange: [251, 191, 36] as [number, number, number],      // softer orange
-  purple: [167, 139, 250] as [number, number, number],     // softer purple
+  blue: [96, 165, 250] as [number, number, number],
+  dark: [30, 41, 59] as [number, number, number],
+  green: [52, 211, 153] as [number, number, number],
+  red: [248, 113, 113] as [number, number, number],
+  orange: [251, 191, 36] as [number, number, number],
+  purple: [167, 139, 250] as [number, number, number],
   slate: [51, 65, 85] as [number, number, number],
   gray: [148, 163, 184] as [number, number, number],
   muted: [148, 163, 184] as [number, number, number],
@@ -59,23 +58,20 @@ const ACCOUNT_TYPE_COLOR: Record<string, [number, number, number]> = {
   CASH: C.green, BANK: C.blue, DIGITAL_WALLET: C.purple,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
 export class PdfExportService {
 
   private logoDataUrl: string | null = null;
 
-  // ── Entry point ───────────────────────────────────────────────────────────────
-
   async generateReport(data: PdfReportData, period: { from: string; to: string }): Promise<void> {
     const doc = new jsPDF('p', 'mm', 'a4');
-    const PW = doc.internal.pageSize.getWidth();  // 210 mm
-    const PH = doc.internal.pageSize.getHeight(); // 297 mm
+    const PW = doc.internal.pageSize.getWidth();
+    const PH = doc.internal.pageSize.getHeight();
 
     const logoUrl = await this.loadLogo();
 
-    // Resolve inception dates
+
     const inception: Record<string, string> = { ...(data.accountInceptionDates ?? {}) };
     for (const a of data.accounts) {
       if (!inception[a.id]) inception[a.id] = a.createdAt.substring(0, 10);
@@ -93,7 +89,6 @@ export class PdfExportService {
       return !acc || d >= acc;
     });
 
-    // ── KPIs
     const income = txs.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + parseFloat(String(t.amount)), 0);
     const expenses = txs.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + parseFloat(String(t.amount)), 0);
     const savings = income - expenses;
@@ -110,7 +105,6 @@ export class PdfExportService {
     });
     const nonTransferTxs = txs.filter(t => t.type !== 'TRANSFER');
 
-    // ── Dynamic TOC
     const tocItems: string[] = [
       '1. Resumen ejecutivo',
       '2. Analisis de gastos',
@@ -126,12 +120,11 @@ export class PdfExportService {
     const incCat = this.groupByCategory(txs.filter(t => t.type === 'INCOME' && !t.isInitialBalance), data.categories);
     const expCat = this.groupByCategory(txs.filter(t => t.type === 'EXPENSE'), data.categories);
 
-    // ── Charts (canvas → base64)
+
     const incChart = incCat.length > 0 ? this.drawDonutChart(incCat) : null;
     const expChart = expCat.length > 0 ? this.drawDonutChart(expCat) : null;
     const compareChart = this.drawCompareChart(income, expenses);
 
-    // ── Pages
     this.buildCover(doc, data.userName, period, kpis, PW, PH, logoUrl, tocItems);
 
     doc.addPage();
@@ -166,7 +159,7 @@ export class PdfExportService {
       this.buildTransactionDetail(doc, nonTransferTxs, data.categories, data.accounts, PW);
     }
 
-    // ── Stamp footers on every page except cover (page 1 has its own branded footer)
+
     const totalPages = (doc as any).internal.getNumberOfPages();
     for (let i = 2; i <= totalPages; i++) {
       doc.setPage(i);
@@ -177,7 +170,7 @@ export class PdfExportService {
     await this.saveWithDialog(doc, filename);
   }
 
-  // ── Save: File System Access API → fallback download ─────────────────────────
+
 
   private async saveWithDialog(doc: jsPDF, filename: string): Promise<void> {
     // Chrome/Edge 86+ support showSaveFilePicker — user selects folder + name
@@ -197,8 +190,6 @@ export class PdfExportService {
     }
     doc.save(filename);
   }
-
-  // ── Data helpers ─────────────────────────────────────────────────────────────
 
   private calcHistoricalBalances(
     transactions: Transaction[],
@@ -260,8 +251,6 @@ export class PdfExportService {
     return { income, expenses, available, percentage, status, message, breakdown: {} };
   }
 
-  // ── Canvas chart: donut ───────────────────────────────────────────────────────
-
   private drawDonutChart(data: { name: string; amount: number; count: number }[]): string {
     const W = 960, H = 420;
     const canvas = document.createElement('canvas');
@@ -277,7 +266,6 @@ export class PdfExportService {
     const cx = 205, cy = H / 2, outer = 162, inner = 76;
     let angle = -Math.PI / 2;
 
-    // Shadow ring
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.09)';
     ctx.shadowBlur = 24;
@@ -285,7 +273,6 @@ export class PdfExportService {
     ctx.fillStyle = '#F1F5F9'; ctx.fill();
     ctx.restore();
 
-    // Slices
     slices.forEach((s, i) => {
       const sweep = (s.amount / total) * Math.PI * 2;
       ctx.beginPath();
@@ -311,11 +298,9 @@ export class PdfExportService {
       angle += sweep;
     });
 
-    // Hole
     ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2);
     ctx.fillStyle = '#FFFFFF'; ctx.fill();
 
-    // Center label
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#1E293B';
@@ -358,8 +343,6 @@ export class PdfExportService {
     return canvas.toDataURL('image/png', 1.0);
   }
 
-  // ── Canvas chart: income vs expenses horizontal bars ─────────────────────────
-
   private drawCompareChart(income: number, expenses: number): string {
     const W = 960, H = 130;
     const canvas = document.createElement('canvas');
@@ -374,7 +357,6 @@ export class PdfExportService {
     const trackW = 590;
     const trackX = 236;
 
-    // Income bar
     ctx.fillStyle = '#E2E8F0';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 16, trackW, barH, 15); ctx.fill();
     const incW = Math.max(10, (income / maxVal) * trackW);
@@ -393,7 +375,6 @@ export class PdfExportService {
     const incLabelX = Math.min(trackX + incW + 10, trackX + trackW - 70);
     ctx.fillText(`$${income.toFixed(2)}`, incLabelX, 16 + barH / 2);
 
-    // Expenses bar
     ctx.fillStyle = '#E2E8F0';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 70, trackW, barH, 15); ctx.fill();
     const expW = Math.max(10, (expenses / maxVal) * trackW);
@@ -415,8 +396,6 @@ export class PdfExportService {
     return canvas.toDataURL('image/png', 1.0);
   }
 
-  // ── Canvas helper: rounded rect path ─────────────────────────────────────────
-
   private rrectCanvas(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
@@ -425,8 +404,6 @@ export class PdfExportService {
     ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
     ctx.closePath();
   }
-
-  // ── Shared page elements ──────────────────────────────────────────────────────
 
   private buildHeader(doc: jsPDF, title: string, PW: number): void {
     // Dark band — matches the app's sidebar/navbar tone
@@ -465,8 +442,6 @@ export class PdfExportService {
     doc.text(`Pag. ${page} / ${total}`, PW - 16, PH - 5.5, { align: 'right' });
   }
 
-  // ── Cover page ────────────────────────────────────────────────────────────────
-
   private buildCover(
     doc: jsPDF,
     userName: string,
@@ -480,11 +455,9 @@ export class PdfExportService {
     doc.setFillColor(...C.dark);
     doc.rect(0, 0, PW, 80, 'F');
 
-    // Subtle bottom separator of header band
     doc.setDrawColor(...C.white); doc.setLineWidth(0.15);
     doc.line(16, 76, PW - 16, 76);
 
-    // Logo
     if (logoUrl) {
       try { doc.addImage(logoUrl, 'PNG', PW / 2 - 13, 5, 26, 26); } catch { /* skip */ }
     }
@@ -516,18 +489,14 @@ export class PdfExportService {
       doc.roundedRect(tx, tY, tW, 26, 2.5, 2.5, 'F');
       doc.setDrawColor(...C.border); doc.setLineWidth(0.15);
       doc.roundedRect(tx, tY, tW, 26, 2.5, 2.5, 'S');
-      // Left accent bar
       doc.setFillColor(...t.clr);
       doc.roundedRect(tx, tY, 3, 26, 1, 1, 'F');
-      // Label
       doc.setTextColor(...C.muted); doc.setFontSize(6); doc.setFont('helvetica', 'bold');
       doc.text(t.label, tx + tW / 2, tY + 10, { align: 'center' });
-      // Value
       doc.setTextColor(...t.clr); doc.setFontSize(9.5); doc.setFont('helvetica', 'bold');
       doc.text(t.value, tx + tW / 2, tY + 21, { align: 'center' });
     });
 
-    // ── Period card
     const cY = tY + 35;
     doc.setFillColor(...C.bgGray);
     doc.roundedRect(16, cY, PW - 32, 42, 4, 4, 'F');
@@ -551,7 +520,6 @@ export class PdfExportService {
       PW / 2, cY + 35, { align: 'center' }
     );
 
-    // ── User + generation date
     const uY = cY + 52;
     doc.setTextColor(...C.slate); doc.setFontSize(10.5); doc.setFont('helvetica', 'bold');
     doc.text(`Preparado para: ${userName || 'Usuario'}`, PW / 2, uY, { align: 'center' });
@@ -561,7 +529,6 @@ export class PdfExportService {
       PW / 2, uY + 10, { align: 'center' }
     );
 
-    // ── Table of contents
     const tocY = uY + 22;
     doc.setFillColor(...C.bgGray);
     doc.roundedRect(16, tocY, PW - 32, 72, 4, 4, 'F');
@@ -591,8 +558,6 @@ export class PdfExportService {
     doc.setTextColor(...C.white); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
     doc.text('FinanzaViva  |  Tu camino hacia la libertad financiera', PW / 2, PH - 5.5, { align: 'center' });
   }
-
-  // ── Summary page ──────────────────────────────────────────────────────────────
 
   private buildSummary(
     doc: jsPDF,
@@ -800,8 +765,6 @@ export class PdfExportService {
     });
   }
 
-  // ── Accounts page ─────────────────────────────────────────────────────────────
-
   private buildAccounts(
     doc: jsPDF,
     accounts: Account[],
@@ -811,7 +774,6 @@ export class PdfExportService {
     this.buildHeader(doc, 'Estado de Cuentas', PW);
     let y = 38;
 
-    // ── Visual account cards (left accent bars)
     const renderCardRow = (accts: Account[], startY: number): number => {
       const n = Math.min(accts.length, 3);
       if (n === 0) return startY;
@@ -825,16 +787,12 @@ export class PdfExportService {
         doc.roundedRect(cx, startY, cW, 32, 3, 3, 'F');
         doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
         doc.roundedRect(cx, startY, cW, 32, 3, 3, 'S');
-        // Left accent bar
         doc.setFillColor(...clr);
         doc.roundedRect(cx, startY, 3, 32, 1.5, 1.5, 'F');
-        // Account name
         doc.setTextColor(...C.slate); doc.setFontSize(8.5); doc.setFont('helvetica', 'bold');
         doc.text(a.name, cx + cW / 2, startY + 14, { align: 'center', maxWidth: cW - 6 });
-        // Balance
         doc.setTextColor(...clr); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
         doc.text(this.fmt(bal), cx + cW / 2, startY + 24, { align: 'center' });
-        // Type label
         doc.setTextColor(...C.muted); doc.setFontSize(5.5); doc.setFont('helvetica', 'normal');
         doc.text((ACCOUNT_TYPE_LABEL[a.type] ?? a.type).toUpperCase(), cx + cW / 2, startY + 30, { align: 'center' });
       });
@@ -845,7 +803,6 @@ export class PdfExportService {
     if (accounts.length > 3) y = renderCardRow(accounts.slice(3, 6), y);
     y += 4;
 
-    // ── Summary table
     const total = accounts.reduce((s, a) => s + (histBal[a.id] ?? parseFloat(String(a.balance))), 0);
     autoTable(doc, {
       startY: y,
@@ -867,8 +824,6 @@ export class PdfExportService {
       styles: { cellPadding: 4 },
     });
   }
-
-  // ── Budgets page ─────────────────────────────────────────────────────────────
 
   private buildBudgets(
     doc: jsPDF,
@@ -945,8 +900,6 @@ export class PdfExportService {
     });
   }
 
-  // ── Goals page ────────────────────────────────────────────────────────────────
-
   private buildGoals(doc: jsPDF, goals: Goal[], PW: number): void {
     this.buildHeader(doc, 'Metas Financieras', PW);
 
@@ -1005,8 +958,6 @@ export class PdfExportService {
     });
   }
 
-  // ── Transfers page ────────────────────────────────────────────────────────────
-
   private buildTransfers(
     doc: jsPDF,
     transfers: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[],
@@ -1034,8 +985,6 @@ export class PdfExportService {
       styles: { cellPadding: 3.5 },
     });
   }
-
-  // ── Transaction detail page ───────────────────────────────────────────────────
 
   private buildTransactionDetail(
     doc: jsPDF,
@@ -1087,8 +1036,6 @@ export class PdfExportService {
       },
     });
   }
-
-  // ── Format helpers ────────────────────────────────────────────────────────────
 
   private async loadLogo(): Promise<string | null> {
     if (this.logoDataUrl) return this.logoDataUrl;

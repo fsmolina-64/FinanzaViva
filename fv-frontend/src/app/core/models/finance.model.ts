@@ -134,7 +134,7 @@ export interface CreateTransactionPayload {
 }
 
 export interface CreateBudgetPayload {
-  categoryId: string;
+  categoryId?: string;
   amount: number;
   period: BudgetPeriod;
   startDate: string;

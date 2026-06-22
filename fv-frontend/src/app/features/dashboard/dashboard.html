@@ -1,6 +1,5 @@
-﻿<div class="space-y-5 animate-slide-up">
+<div class="space-y-5 animate-slide-up">
 
-  <!-- HEADER -->
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold text-white">
@@ -21,7 +20,6 @@
     }
   </div>
 
-  <!-- XP / NIVEL -->
   @if (stats()) {
   <div class="bg-gradient-to-br from-[#1E293B] to-slate-800 rounded-2xl p-5 border border-slate-700">
     <div class="flex items-center justify-between mb-3">
@@ -56,10 +54,8 @@
   </div>
   }
 
-  <!-- STATS: ACADEMIA / QUIZZES / SIMULADOR -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    <!-- Academia -->
     <a routerLink="/academy"
       class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
       <div class="flex items-center justify-between mb-4">
@@ -94,7 +90,6 @@
       </div>
     </a>
 
-    <!-- Quizzes -->
     <a routerLink="/quizzes"
       class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
       <div class="flex items-center justify-between mb-4">
@@ -121,7 +116,6 @@
       </div>
     </a>
 
-    <!-- Simulador -->
     <a routerLink="/simulator"
       class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
       <div class="flex items-center justify-between mb-4">
@@ -142,7 +136,6 @@
 
   </div>
 
-  <!-- LOGROS + RECOMPENSAS -->
   <div class="grid grid-cols-2 gap-4">
 
     <a routerLink="/achievements"
@@ -186,7 +179,6 @@
 
   </div>
 
-  <!-- BALANCE TOTAL -->
   @if (!loading()) {
   <a routerLink="/finances"
     class="bg-[#1E293B] rounded-2xl px-5 py-4 border border-slate-700 hover:border-slate-600 flex items-center justify-between transition-all duration-300 no-underline block group">

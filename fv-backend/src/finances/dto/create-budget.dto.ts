@@ -2,8 +2,9 @@ import { IsEnum, IsUUID, IsNumber, IsDateString, IsOptional, Min } from 'class-v
 import { BudgetPeriod } from '@prisma/client';
 
 export class CreateBudgetDto {
+  @IsOptional()
   @IsUUID()
-  categoryId!: string;
+  categoryId?: string;
 
   @IsNumber()
   @Min(0.01)
