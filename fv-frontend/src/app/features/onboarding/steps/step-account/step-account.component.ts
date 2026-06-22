@@ -1,6 +1,7 @@
 import { Component, signal, output, inject, computed } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService }       from '../../../../core/services/api.service';
+import { ToastService }     from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingAccount } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
 
@@ -17,6 +18,7 @@ export class StepAccountComponent {
   private api = inject(ApiService);
   private fb  = inject(FormBuilder);
   private onboardingService = inject(OnboardingService);
+  private toast = inject(ToastService);
 
   next = output<void>();
 
@@ -99,10 +101,12 @@ export class StepAccountComponent {
         this.isLoading.set(false);
         this.form.reset();
         this.selectedType.set('CASH');
+        this.toast.success('Cuenta creada exitosamente.');
       },
       error: () => {
         this.isLoading.set(false);
         this.errorMsg.set('No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.');
+        this.toast.error('No se pudo crear la cuenta.');
       },
     });
   }
@@ -133,10 +137,12 @@ export class StepAccountComponent {
         }));
         this.isLoading.set(false);
         this.cancelEdit();
+        this.toast.success('Cuenta actualizada.');
       },
       error: () => {
         this.isLoading.set(false);
         this.errorMsg.set('No se pudo actualizar la cuenta.');
+        this.toast.error('No se pudo actualizar la cuenta.');
       },
     });
   }
@@ -150,6 +156,7 @@ export class StepAccountComponent {
       next: () => {
         this.onboardingService.removeAccount(account.id);
         this.isDeletingId.set(null);
+        this.toast.success('Cuenta eliminada.');
         if (this.editingId() === account.id) this.cancelEdit();
       },
       error: (err) => {

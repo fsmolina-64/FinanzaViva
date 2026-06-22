@@ -1,6 +1,7 @@
 import { Component, signal, inject, output, computed } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService }        from '../../../../core/services/api.service';
+import { ToastService }      from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingGoal } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
 
@@ -14,6 +15,7 @@ export class StepGoalsComponent {
   private api = inject(ApiService);
   private fb  = inject(FormBuilder);
   private onboardingService = inject(OnboardingService);
+  private toast = inject(ToastService);
 
   next = output<void>();
   skip = output<void>();
@@ -104,10 +106,12 @@ export class StepGoalsComponent {
         });
         this.isLoading.set(false);
         this.form.reset();
+        this.toast.success('Meta creada.');
       },
       error: () => {
         this.isLoading.set(false);
         this.errorMsg.set('No se pudo crear la meta. Puedes agregarla desde Finanzas.');
+        this.toast.error('No se pudo crear la meta.');
       },
     });
   }
@@ -138,10 +142,12 @@ export class StepGoalsComponent {
         }));
         this.isLoading.set(false);
         this.cancelEdit();
+        this.toast.success('Meta actualizada.');
       },
       error: () => {
         this.isLoading.set(false);
         this.errorMsg.set('No se pudo actualizar la meta.');
+        this.toast.error('No se pudo actualizar la meta.');
       },
     });
   }
@@ -154,8 +160,12 @@ export class StepGoalsComponent {
         this.onboardingService.removeGoal(goal.id);
         this.isDeletingId.set(null);
         if (this.editingId() === goal.id) this.cancelEdit();
+        this.toast.success('Meta eliminada.');
       },
-      error: () => this.isDeletingId.set(null),
+      error: () => {
+        this.isDeletingId.set(null);
+        this.toast.error('No se pudo eliminar la meta.');
+      },
     });
   }
 }

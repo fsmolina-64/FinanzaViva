@@ -1,7 +1,8 @@
 import { Component, OnInit, signal, computed, inject, output } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
-import { OnboardingCategory } from '../../../../core/services/onboarding.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { OnboardingCategory, OnboardingService } from '../../../../core/services/onboarding.service';
 
 interface Category {
   id:       string;
@@ -21,8 +22,10 @@ type TabType = 'INCOME' | 'EXPENSE';
   templateUrl: './step-categories.component.html',
 })
 export class StepCategoriesComponent implements OnInit {
-  private api = inject(ApiService);
-  private fb  = inject(FormBuilder);
+  private api          = inject(ApiService);
+  private fb           = inject(FormBuilder);
+  private onboarding   = inject(OnboardingService);
+  private toast        = inject(ToastService);
 
   next = output<void>();
   categoryCreated = output<OnboardingCategory>();
@@ -81,6 +84,8 @@ export class StepCategoriesComponent implements OnInit {
   }
 
   saveEdit(cat: Category): void {
+    if (cat.isGlobal) { this.toast.warning('Las categorías predefinidas no se pueden editar.'); return; }
+
     const name = this.editName().trim();
     if (!name) { this.cancelEdit(); return; }
     if (name === cat.name) { this.cancelEdit(); return; }
@@ -91,17 +96,20 @@ export class StepCategoriesComponent implements OnInit {
         this.categories.update(cats =>
           cats.map(c => c.id === cat.id ? { ...c, name: updated.name ?? name } : c)
         );
+        this.toast.success('Categoría actualizada.');
         this.isEditSaving.set(false);
         this.cancelEdit();
       },
       error: () => {
         this.isEditSaving.set(false);
         this.cancelEdit();
+        this.toast.error('No se pudo actualizar la categoría.');
       },
     });
   }
 
   deleteCategory(cat: Category): void {
+    if (cat.isGlobal) { this.toast.warning('Las categorías predefinidas no se pueden eliminar.'); return; }
     if (this.deletingId() === cat.id) return;
     this.deleteError.set(null);
     this.deletingId.set(cat.id);
@@ -109,11 +117,18 @@ export class StepCategoriesComponent implements OnInit {
     this.api.delete<any>(`/finances/categories/${cat.id}`).subscribe({
       next: () => {
         this.categories.update(cats => cats.filter(c => c.id !== cat.id));
+        // Remove from customCategories if it was user-created
+        this.onboarding.collectedData.update(d => ({
+          ...d,
+          customCategories: d.customCategories.filter(c => c.id !== cat.id),
+        }));
         this.deletingId.set(null);
+        this.toast.success('Categoría eliminada.');
       },
       error: () => {
         this.deletingId.set(null);
         this.deleteError.set(`No se pudo eliminar "${cat.name}". Puede estar en uso.`);
+        this.toast.error(`No se pudo eliminar "${cat.name}". Puede estar en uso.`);
       },
     });
   }

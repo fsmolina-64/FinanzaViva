@@ -89,15 +89,22 @@ export class FinancesService {
   async deleteAccount(userId: string, accountId: string) {
     const account = await this.prisma.financialAccount.findUnique({
       where: { id: accountId },
-      include: { _count: { select: { transactions: true } } },
+      include: {
+        transactions: {
+          where: { isInitialBalance: false },
+          take: 1,
+        },
+      },
     });
     if (!account) throw new NotFoundException('Cuenta no encontrada');
     if (account.userId !== userId) throw new ForbiddenException();
-    if (account._count.transactions > 0) {
+    if (account.transactions.length > 0) {
       throw new BadRequestException(
-        `No puedes eliminar esta cuenta porque tiene ${account._count.transactions} transacción(es) asociada(s).`,
+        'No puedes eliminar esta cuenta porque tiene transacciones asociadas. Elimina primero las transacciones.',
       );
     }
+    // Delete any initial-balance transactions along with the account
+    await this.prisma.transaction.deleteMany({ where: { accountId, isInitialBalance: true } });
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
 
@@ -274,10 +281,23 @@ export class FinancesService {
 
 
   async getCategories(userId: string) {
-    return this.prisma.category.findMany({
+    const hidden = await this.prisma.userHiddenCategory.findMany({
+      where: { userId },
+      select: { categoryId: true },
+    });
+    const hiddenIds = new Set(hidden.map(h => h.categoryId));
+
+    const all = await this.prisma.category.findMany({
       where: { OR: [{ isGlobal: true }, { userId }] },
       orderBy: { name: 'asc' },
     });
+
+    // Filter out global categories that the user has hidden or overridden
+    const userCatIds = new Set(all.filter(c => c.userId === userId).map(c => c.originalCategoryId).filter(Boolean));
+    return all.filter(c =>
+      !c.isGlobal ||
+      (!hiddenIds.has(c.id) && !userCatIds.has(c.id))
+    );
   }
 
   async createCategory(userId: string, dto: CreateCategoryDto) {
@@ -297,6 +317,21 @@ export class FinancesService {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
     if (category.userId && category.userId !== userId) throw new ForbiddenException();
+
+    // Global category: create a user-specific override instead of modifying in-place
+    if (!category.userId) {
+      return this.prisma.category.create({
+        data: {
+          userId,
+          name: dto.name ?? category.name,
+          type: category.type,
+          icon: dto.icon ?? category.icon,
+          color: dto.color ?? category.color,
+          isGlobal: false,
+          originalCategoryId: category.id,
+        },
+      });
+    }
 
     return this.prisma.category.update({
       where: { id: categoryId },
@@ -318,6 +353,7 @@ export class FinancesService {
 
     const txCount = category._count.transactions;
 
+    // Handle reassignment before hiding/deleting
     if (txCount > 0) {
       if (!reassignToId) {
         throw new BadRequestException(
@@ -327,13 +363,21 @@ export class FinancesService {
       const target = await this.prisma.category.findUnique({ where: { id: reassignToId } });
       if (!target) throw new BadRequestException('La categoría de reasignación no existe');
 
-      await this.prisma.$transaction([
-        this.prisma.transaction.updateMany({
-          where: { categoryId },
-          data: { categoryId: reassignToId },
-        }),
-        this.prisma.category.delete({ where: { id: categoryId } }),
-      ]);
+      await this.prisma.transaction.updateMany({
+        where: { categoryId },
+        data: { categoryId: reassignToId },
+      });
+    }
+
+    // Global category: hide it for this user instead of deleting
+    if (!category.userId) {
+      await this.prisma.userHiddenCategory.create({
+        data: { userId, categoryId },
+      });
+      return { message: 'Categoría oculta para este usuario.' };
+    }
+
+    if (txCount > 0) {
       return { message: 'Categoría eliminada y transacciones reasignadas' };
     }
 

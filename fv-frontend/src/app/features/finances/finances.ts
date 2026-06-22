@@ -11,7 +11,7 @@ import { GamificationService } from '../../core/services/gamification.service';
 import {
   Account, Transaction, Category, Budget, Goal,
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
-  CreateTransactionPayload, CreateCategoryPayload, TransferDisplay
+  CreateTransactionPayload, CreateCategoryPayload, CreateBudgetPayload, TransferDisplay
 } from '../../core/models/finance.model';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -65,7 +65,7 @@ export class Finances implements OnInit {
     recurrence: 'NONE' as Recurrence
   };
 
-  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', months: 1 };
+  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY', months: 1 };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
   editingTxId = signal<string | null>(null);
@@ -78,7 +78,7 @@ export class Finances implements OnInit {
   pendingEditId = signal<string | null>(null);
 
   editingBudgetId = signal<string | null>(null);
-  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY' | 'WEEKLY', categoryId: '', startDate: '', indefinido: false, months: 1 };
+  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY', categoryId: '', startDate: '', indefinido: false, months: 1 };
   get editBudgetAmount(): number { return this.editBudget.amount; }
   set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
@@ -285,6 +285,9 @@ export class Finances implements OnInit {
       return typeF === 'ALL' || t.type === typeF;
     });
   });
+
+  generalBudgets = computed(() => this.budgets().filter(b => !b.categoryId));
+  categoryBudgets = computed(() => this.budgets().filter(b => !!b.categoryId));
 
   globalBudgetPct = computed(() => {
     const limit = this.globalBudgetLimit(), h = this.health();
@@ -659,17 +662,16 @@ export class Finances implements OnInit {
   isToday(dateKey: string): boolean { return dateKey === new Date().toISOString().split('T')[0]; }
 
   submitBudget(): void {
-    if (!this.newBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     if (Number(this.newBudget.amount) <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
     const now = new Date();
     const months = Math.max(1, this.newBudget.months);
-    const payload = {
-      categoryId: this.newBudget.categoryId,
+    const payload: CreateBudgetPayload = {
       amount: Number(this.newBudget.amount),
-      period: this.newBudget.period,
+      period: 'MONTHLY',
       startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-      endDate: new Date(now.getFullYear(), now.getMonth() + months, 0).toISOString().split('T')[0]
+      endDate: new Date(now.getFullYear(), now.getMonth() + months, 0).toISOString().split('T')[0],
     };
+    if (this.newBudget.categoryId) payload.categoryId = this.newBudget.categoryId;
     this.submittingBudget.set(true);
     this.financeService.createBudget(payload).subscribe({
       next: b => {
@@ -688,7 +690,7 @@ export class Finances implements OnInit {
     this.confirmDeleteBudgetId.set(null);
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
-      period: b.period,
+      period: 'MONTHLY',
       categoryId: b.categoryId,
       startDate: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       indefinido: !b.endDate,
@@ -699,7 +701,6 @@ export class Finances implements OnInit {
 
   saveEditBudget(id: string): void {
     if (this.editBudget.amount <= 0) { this.toast.warning('El monto debe ser mayor a 0'); return; }
-    if (!this.editBudget.categoryId) { this.toast.warning('Selecciona una categoría'); return; }
     let endDate: string | null = null;
     if (!this.editBudget.indefinido) {
       const end = new Date(this.editBudget.startDate + 'T12:00:00');
@@ -707,13 +708,14 @@ export class Finances implements OnInit {
       end.setDate(end.getDate() - 1);
       endDate = end.toISOString().split('T')[0];
     }
-    this.financeService.updateBudget(id, {
-      categoryId: this.editBudget.categoryId,
+    const payload: Record<string, any> = {
       startDate: this.editBudget.startDate || null,
       amount: this.editBudget.amount,
-      period: this.editBudget.period as 'MONTHLY' | 'WEEKLY',
-      endDate
-    }).subscribe({
+      period: 'MONTHLY',
+      endDate,
+    };
+    if (this.editBudget.categoryId) payload['categoryId'] = this.editBudget.categoryId;
+    this.financeService.updateBudget(id, payload).subscribe({
       next: updated => {
         this.budgets.update(l => l.map(b => b.id === id ? { ...b, ...updated } : b));
         this.editingBudgetId.set(null);
@@ -771,9 +773,15 @@ export class Finances implements OnInit {
     if (!this.editCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.financeService.updateCategory(id, { name: this.editCategory.name.trim() }).subscribe({
       next: updated => {
-        this.categories.update(l => l.map(c => c.id === id ? { ...c, ...updated } : c));
+        // If backend returned a new category (user override for global), replace the old
+        if (updated.id !== id) {
+          this.categories.update(l => [...l.filter(c => c.id !== id), updated]);
+          this.toast.success('Categoría personalizada creada. La original permanece para otros usuarios.');
+        } else {
+          this.categories.update(l => l.map(c => c.id === id ? { ...c, ...updated } : c));
+          this.toast.success('Categoría actualizada');
+        }
         this.editingCategoryId.set(null);
-        this.toast.success('Categoría actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
     });
@@ -798,13 +806,14 @@ export class Finances implements OnInit {
 
   deleteCategory(id: string, reassignToId?: string): void {
     this.financeService.deleteCategory(id, reassignToId).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.categories.update(l => l.filter(c => c.id !== id));
         this.budgets.update(l => l.filter(b => b.categoryId !== id));
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
-        this.toast.success('Categoría eliminada');
+        const msg = res?.message ?? 'Categoría eliminada';
+        this.toast.success(msg);
       },
       error: err => {
         this.toast.error(this.extractError(err, 'Error al eliminar la categoría'));
@@ -1025,7 +1034,8 @@ export class Finances implements OnInit {
   computeSpent(categoryId: string): number {
     const now = new Date();
     return this.transactions()
-      .filter(t => t.type === 'EXPENSE' && t.categoryId === categoryId
+      .filter(t => t.type === 'EXPENSE'
+        && (!categoryId || t.categoryId === categoryId)
         && new Date(t.date).getMonth() === now.getMonth()
         && new Date(t.date).getFullYear() === now.getFullYear())
       .reduce((s, t) => s + parseFloat(String(t.amount)), 0);

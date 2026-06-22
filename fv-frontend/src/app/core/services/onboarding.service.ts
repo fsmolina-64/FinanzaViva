@@ -31,11 +31,26 @@ export interface OnboardingCategory {
   color: string;
 }
 
+export interface OnboardingEditedCategory {
+  id: string;
+  oldName: string;
+  newName: string;
+  type: string;
+}
+
+export interface OnboardingDeletedCategory {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export interface OnboardingData {
   accounts: OnboardingAccount[];
   goals: OnboardingGoal[];
   budgets: OnboardingBudget[];
   customCategories: OnboardingCategory[];
+  editedCategories: OnboardingEditedCategory[];
+  deletedCategories: OnboardingDeletedCategory[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,7 +59,10 @@ export class OnboardingService {
   private readonly STEP_KEY      = 'fv_onboarding_step';
 
   onboardingCompleted = signal<boolean | null>(this.readFromStorage());
-  collectedData       = signal<OnboardingData>({ accounts: [], goals: [], budgets: [], customCategories: [] });
+  collectedData       = signal<OnboardingData>({
+    accounts: [], goals: [], budgets: [], customCategories: [],
+    editedCategories: [], deletedCategories: [],
+  });
 
   constructor(private api: ApiService) {
     this.clearAll();
@@ -70,7 +88,7 @@ export class OnboardingService {
 
   clearAll(): void {
     this.onboardingCompleted.set(null);
-    this.collectedData.set({ accounts: [], goals: [], budgets: [], customCategories: [] });
+    this.collectedData.set({ accounts: [], goals: [], budgets: [], customCategories: [], editedCategories: [], deletedCategories: [] });
     localStorage.removeItem(this.COMPLETED_KEY);
     localStorage.removeItem(this.STEP_KEY);
   }
@@ -117,5 +135,19 @@ export class OnboardingService {
 
   removeGoal(id: string): void {
     this.collectedData.update(d => ({ ...d, goals: d.goals.filter(g => g.id !== id) }));
+  }
+
+  addEditedCategory(cat: OnboardingEditedCategory): void {
+    this.collectedData.update(d => ({
+      ...d,
+      editedCategories: [...d.editedCategories.filter(c => c.id !== cat.id), cat],
+    }));
+  }
+
+  addDeletedCategory(cat: OnboardingDeletedCategory): void {
+    this.collectedData.update(d => ({
+      ...d,
+      deletedCategories: [...d.deletedCategories.filter(c => c.id !== cat.id), cat],
+    }));
   }
 }

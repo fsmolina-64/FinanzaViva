@@ -7,6 +7,16 @@ datasource db {
   provider = "postgresql"
 }
 
+model UserHiddenCategory {
+  id         String   @id @default(uuid())
+  userId     String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, categoryId])
+  @@map("user_hidden_categories")
+}
+
 // ENUMS
 
 enum AccountType {
@@ -351,6 +361,7 @@ model Category {
   type     CategoryType
   isGlobal Boolean      @default(false) // true = predefinida del sistema
   userId   String?      // null si isGlobal = true
+  originalCategoryId String? // id of the global category this overrides
 
   user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]

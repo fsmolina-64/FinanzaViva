@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject, output } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingBudget } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
 
@@ -18,6 +19,7 @@ export class StepBudgetsComponent implements OnInit {
   private api = inject(ApiService);
   private fb  = inject(FormBuilder);
   private onboardingService = inject(OnboardingService);
+  private toast = inject(ToastService);
 
   next = output<void>();
 
@@ -144,10 +146,12 @@ export class StepBudgetsComponent implements OnInit {
           this.syncToService();
           this.isSaving.set(false);
           this.cancelEdit();
+          this.toast.success('Presupuesto actualizado.');
         },
         error: () => {
           this.isSaving.set(false);
           this.errorMsg.set('No se pudo actualizar el presupuesto.');
+          this.toast.error('No se pudo actualizar el presupuesto.');
         },
       });
     } else {
@@ -165,10 +169,12 @@ export class StepBudgetsComponent implements OnInit {
           this.isSaving.set(false);
           this.form.reset();
           this.selectedCatId.set(null);
+          this.toast.success('Presupuesto creado.');
         },
         error: () => {
           this.isSaving.set(false);
           this.errorMsg.set('No se pudo crear el presupuesto. Intenta de nuevo.');
+          this.toast.error('No se pudo crear el presupuesto.');
         },
       });
     }
@@ -193,5 +199,6 @@ export class StepBudgetsComponent implements OnInit {
     this.onboardingService.removeBudget(budget.id);
     this.createdBudgets.update(list => list.filter((_, i) => i !== index));
     if (this.editingIndex() === index) this.cancelEdit();
+    this.toast.success('Presupuesto eliminado.');
   }
 }

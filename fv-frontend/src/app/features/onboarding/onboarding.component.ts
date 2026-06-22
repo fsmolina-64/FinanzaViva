@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { Router } from '@angular/router';
+import { ToastService } from '../../core/services/toast.service';
 import { OnboardingService, OnboardingCategory } from '../../core/services/onboarding.service';
 import { StepWelcomeComponent }      from './steps/step-welcome/step-welcome.component';
 import { StepAccountComponent }      from './steps/step-account/step-account.component';
@@ -27,6 +28,7 @@ import { StepSummaryComponent }      from './steps/step-summary/step-summary.com
 export class OnboardingComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private router            = inject(Router);
+  private toast             = inject(ToastService);
 
   readonly TOTAL_STEPS = 7;
   currentStep    = signal<number>(0);
@@ -91,6 +93,7 @@ export class OnboardingComponent implements OnInit {
 
   private finish(): void {
     this.onboardingService.setCompleted();
+    this.toast.success('¡Bienvenido! Tu configuración inicial está completa.', 5000);
     this.router.navigate(['/dashboard']);
   }
 }
