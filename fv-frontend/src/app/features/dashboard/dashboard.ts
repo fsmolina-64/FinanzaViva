@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { GamificationService } from '../../core/services/gamification.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -50,6 +50,7 @@ export class Dashboard implements OnInit {
     private achievementService: AchievementService,
     private api: ApiService,
     private toast: ToastService,
+    private router: Router,
     public authService: AuthService
   ) { }
 
@@ -149,5 +150,10 @@ export class Dashboard implements OnInit {
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(amount);
+  }
+
+  onQuizzesClick(): void {
+    this.toast.success('Completa todas las lecciones de un módulo para desbloquear su quiz');
+    this.router.navigate(['/academy']);
   }
 }

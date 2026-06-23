@@ -75,6 +75,11 @@ export class QuizDetail implements OnInit {
   }
 
   next(): void {
+    const q = this.currentQuestion();
+    if (q && !this.answers()[q.id]) {
+      this.toast.warning('Responde esta pregunta antes de continuar');
+      return;
+    }
     if (this.currentIndex() < (this.quiz()?.questions.length ?? 1) - 1)
       this.currentIndex.update(i => i + 1);
   }

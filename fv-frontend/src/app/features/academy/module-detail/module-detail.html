@@ -39,6 +39,16 @@
                         [style.width.%]="getProgress()"></div>
                 </div>
             </div>
+            <div class="space-y-1 pt-3 border-t border-slate-700/50">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>Progreso de lectura</span>
+                    <span>{{ readingProgress() }}%</span>
+                </div>
+                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-1000 bg-gradient-to-r from-blue-500 to-purple-500"
+                        [style.width.%]="readingProgress()"></div>
+                </div>
+            </div>
         </div>
 
         <div>

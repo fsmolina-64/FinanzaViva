@@ -4,6 +4,7 @@ import { ApiService }        from '../../../../core/services/api.service';
 import { ToastService }      from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingGoal } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
+import { filterAmountKey, sanitizeNumberInput } from '../../../../shared/utils/amount.utils';
 
 @Component({
   selector:    'app-step-goals',
@@ -41,19 +42,18 @@ export class StepGoalsComponent {
     { label: 'Auto',                amount: 5000 },
   ];
 
-  filterAmount(event: KeyboardEvent): void {
-    const allowed = ['0','1','2','3','4','5','6','7','8','9','.','Backspace','Tab','ArrowLeft','ArrowRight','Delete','Home','End'];
-    if (!allowed.includes(event.key) && !event.ctrlKey && !event.metaKey) {
-      event.preventDefault();
-    }
-  }
+  filterAmount = filterAmountKey;
 
   onAmountInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const cleaned = input.value.replace(/^0+(?=\d)/, '');
-    if (cleaned !== input.value) {
-      this.form.controls.targetAmount.setValue(cleaned === '' ? null : Number(cleaned));
+    const cleaned = sanitizeNumberInput(input.value);
+    const parsed = parseFloat(cleaned) || null;
+    if (input.value !== cleaned) {
+      const pos = input.selectionStart;
+      input.value = cleaned;
+      if (pos) input.setSelectionRange(pos, pos);
     }
+    this.form.controls.targetAmount.setValue(parsed);
   }
 
   fillExample(ex: { label: string; amount: number }): void {

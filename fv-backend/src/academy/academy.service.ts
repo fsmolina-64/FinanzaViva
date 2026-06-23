@@ -183,7 +183,14 @@ export class AcademyService {
         where: { userId, status: 'COMPLETED', lesson: { moduleId: module.id } },
       });
       const totalLessons = module.lessons.length;
+      const readingProgress = Math.round((completedCount / totalLessons) * 100);
       const moduleCompleted = completedCount === totalLessons;
+
+      await tx.userModuleProgress.upsert({
+        where: { userId_moduleId: { userId, moduleId: module.id } },
+        update: { readingProgress },
+        create: { userId, moduleId: module.id, readingProgress },
+      });
 
       if (moduleCompleted) {
         await tx.userModuleProgress.upsert({
@@ -254,6 +261,13 @@ export class AcademyService {
         nextLesson: nextLesson ? { ...nextLesson, status: 'AVAILABLE' as const } : null,
       };
     });
+  }
+
+  async getReadingProgress(userId: string, moduleId: string) {
+    const progress = await this.prisma.userModuleProgress.findUnique({
+      where: { userId_moduleId: { userId, moduleId } },
+    });
+    return { readingProgress: progress?.readingProgress ?? 0 };
   }
 
   async resetLesson(userId: string, lessonId: string) {

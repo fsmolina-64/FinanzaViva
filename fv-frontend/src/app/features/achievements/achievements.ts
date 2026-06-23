@@ -1,5 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -41,6 +43,7 @@ export class Achievements implements OnInit {
   userProfile = signal<UserProfile | null>(null);
   loading = signal(true);
   equipping = signal<string | null>(null);
+  unequippingAll = signal(false);
 
   unlocked = computed(() => this.achievements().filter(a => a.unlocked));
   locked = computed(() => this.achievements().filter(a => !a.unlocked));
@@ -48,6 +51,8 @@ export class Achievements implements OnInit {
   groupedUnlocked = computed(() => this.groupByCategory(this.unlocked()));
   groupedLocked = computed(() => this.groupByCategory(this.locked()));
   categories = computed(() => Object.keys(CATEGORY_META));
+
+  equippedCount = computed(() => this.rewards().filter(r => r.isEquipped).length);
 
   tabs: { key: Tab; label: string }[] = [
     { key: 'logros', label: 'Logros' },
@@ -57,16 +62,29 @@ export class Achievements implements OnInit {
   constructor(
     private achievementService: AchievementService,
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
+    const tab = this.route.snapshot.queryParams['tab'] as Tab;
+    if (tab === 'recompensas') this.activeTab.set('recompensas');
+
     let done = 0;
     const check = () => { if (++done >= 3) this.loading.set(false); };
 
-    this.achievementService.getAchievements().subscribe({ next: d => { this.achievements.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar logros'); } });
-    this.achievementService.getRewards().subscribe({ next: d => { this.rewards.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar recompensas'); } });
-    this.api.get<UserProfile>('/users/me').subscribe({ next: d => { this.userProfile.set(d); check(); }, error: () => { check(); this.toast.error('Error al cargar perfil'); } });
+    this.achievementService.getAchievements().subscribe({
+      next: d => { this.achievements.set(d); check(); },
+      error: () => { check(); this.toast.error('Error al cargar logros'); }
+    });
+    this.achievementService.getRewards().subscribe({
+      next: d => { this.rewards.set(d); check(); },
+      error: () => { check(); this.toast.error('Error al cargar recompensas'); }
+    });
+    this.api.get<UserProfile>('/users/me').subscribe({
+      next: d => { this.userProfile.set(d); check(); },
+      error: () => { check(); this.toast.error('Error al cargar perfil'); }
+    });
   }
 
   private groupByCategory(list: Achievement[]): Record<string, Achievement[]> {
@@ -90,27 +108,58 @@ export class Achievements implements OnInit {
     return a.condition.threshold ? (this.getProgress(a) / a.condition.threshold) * 100 : 0;
   }
 
-  equip(rewardId: string): void {
+  toggleEquip(rewardId: string): void {
     if (this.equipping()) return;
     this.equipping.set(rewardId);
+
     this.achievementService.equipReward(rewardId).subscribe({
       next: res => {
-        const equipped = this.rewards().find(r => r.id === rewardId);
-        this.rewards.update(list => list.map(r => ({
-          ...r,
-          isEquipped: r.id === res.rewardId ? true : r.type === equipped?.type ? false : r.isEquipped
-        })));
+        const target = this.rewards().find(r => r.id === rewardId);
+        this.rewards.update(list => list.map(r => {
+          if (r.id === rewardId) return { ...r, isEquipped: res.isEquipped };
+          if (res.isEquipped && r.type === target?.type) return { ...r, isEquipped: false };
+          return r;
+        }));
         this.equipping.set(null);
-        this.toast.success('Recompensa equipada');
+        this.toast.success(res.isEquipped ? 'Recompensa equipada' : 'Recompensa desequipada');
       },
-      error: () => { this.equipping.set(null); this.toast.error('Error al equipar la recompensa'); }
+      error: () => {
+        this.equipping.set(null);
+        this.toast.error('Error al actualizar la recompensa');
+      }
+    });
+  }
+
+  unequipAll(): void {
+    if (this.unequippingAll()) return;
+    const equipped = this.rewards().filter(r => r.isEquipped);
+    if (!equipped.length) return;
+
+    this.unequippingAll.set(true);
+    forkJoin(equipped.map(r => this.achievementService.equipReward(r.id))).subscribe({
+      next: () => {
+        this.rewards.update(list => list.map(r => ({ ...r, isEquipped: false })));
+        this.unequippingAll.set(false);
+        this.toast.success('Todas las recompensas desequipadas');
+      },
+      error: () => {
+        this.achievementService.getRewards().subscribe({
+          next: d => { this.rewards.set(d); this.unequippingAll.set(false); },
+          error: () => this.unequippingAll.set(false)
+        });
+        this.toast.error('Error al desequipar algunas recompensas');
+      }
     });
   }
 
   getRewardTypeLabel(type: string): string {
     return ({
-      AVATAR: 'Avatar', TITLE: 'Título', AURA: 'Aura',
-      BADGE: 'Insignia', SIMULATOR_EVENT: 'Simulador', FRAME: 'Marco'
+      AVATAR: 'Avatar',
+      TITLE: 'Título',
+      AURA: 'Aura',
+      BADGE: 'Insignia',
+      SIMULATOR_EVENT: 'Simulador',
+      FRAME: 'Marco'
     } as any)[type] ?? type;
   }
 

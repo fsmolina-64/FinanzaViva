@@ -16,7 +16,6 @@
     Organiza tus transacciones. Puedes crear, editar o eliminar mas adelante desde la seccion de Finanzas.
   </p>
 
-  <!-- Tabs -->
   <div class="flex gap-1 p-1 rounded-xl mb-6 w-full max-w-xs" style="background-color:#1e293b">
     <button type="button" (click)="setTab('EXPENSE')"
       class="flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
@@ -30,7 +29,6 @@
     </button>
   </div>
 
-  <!-- Lista de categorias -->
   <div class="w-full mb-4">
 
     @if (isLoading()) {
@@ -108,7 +106,6 @@
     }
   </div>
 
-  <!-- Agregar nueva categoria -->
   @if (!showAddForm()) {
   <button type="button" (click)="toggleAddForm()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
                    border border-dashed border-gray-700 text-gray-500 text-sm

@@ -173,7 +173,6 @@ export class PdfExportService {
 
 
   private async saveWithDialog(doc: jsPDF, filename: string): Promise<void> {
-    // Chrome/Edge 86+ support showSaveFilePicker — user selects folder + name
     if (typeof (window as any).showSaveFilePicker === 'function') {
       try {
         const handle = await (window as any).showSaveFilePicker({
@@ -185,7 +184,7 @@ export class PdfExportService {
         await writable.close();
         return;
       } catch (e: any) {
-        if (e?.name === 'AbortError') return; // user cancelled
+        if (e?.name === 'AbortError') return;
       }
     }
     doc.save(filename);
@@ -311,7 +310,6 @@ export class PdfExportService {
     ctx.font = '15px Arial';
     ctx.fillText('Total', cx, cy + 14);
 
-    // Legend — two columns when more than 5 items
     const useTwoCols = slices.length > 5;
     const half = Math.ceil(slices.length / 2);
     let ly = 28, lx = 415;
@@ -406,7 +404,6 @@ export class PdfExportService {
   }
 
   private buildHeader(doc: jsPDF, title: string, PW: number): void {
-    // Dark band — matches the app's sidebar/navbar tone
     doc.setFillColor(...C.dark);
     doc.rect(0, 0, PW, 16, 'F');
 
@@ -451,7 +448,6 @@ export class PdfExportService {
     logoUrl: string | null,
     tocItems: string[]
   ): void {
-    // Dark header band — consistent with app sidebar
     doc.setFillColor(...C.dark);
     doc.rect(0, 0, PW, 80, 'F');
 
@@ -472,7 +468,6 @@ export class PdfExportService {
     doc.setFontSize(8); doc.setTextColor(...C.blueAcc);
     doc.text('Educacion financiera gamificada', PW / 2, 68, { align: 'center' });
 
-    // ── KPI tiles (left accent bars — document-like, not UI-like)
     const tileGap = 4;
     const tW = (PW - 32 - tileGap * 3) / 4;
     const tY = 88;
@@ -534,7 +529,6 @@ export class PdfExportService {
     doc.roundedRect(16, tocY, PW - 32, 72, 4, 4, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(16, tocY, PW - 32, 72, 4, 4, 'S');
-    // Dark left accent — visual anchor for the TOC block
     doc.setFillColor(...C.dark);
     doc.roundedRect(16, tocY, 3, 72, 2, 2, 'F');
 
@@ -552,7 +546,6 @@ export class PdfExportService {
       doc.text(item, col + 8, row);
     });
 
-    // ── Bottom footer bar — dark to match header, creates bookend effect
     doc.setFillColor(...C.dark);
     doc.rect(0, PH - 14, PW, 14, 'F');
     doc.setTextColor(...C.white); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
@@ -571,7 +564,6 @@ export class PdfExportService {
     this.buildHeader(doc, 'Resumen Ejecutivo', PW);
     let y = 38;
 
-    // ── 2 x 2 KPI cards (left accent bars)
     const W2 = (PW - 40) / 2;
     const cards: { label: string; value: string; sub: string; rgb: [number, number, number] }[] = [
       { label: 'BALANCE TOTAL', value: this.fmt(kpis.totalBal), sub: 'Patrimonio neto', rgb: C.blue },
@@ -585,23 +577,18 @@ export class PdfExportService {
       const cy = y + Math.floor(i / 2) * 34;
       doc.setFillColor(...C.bgGray);
       doc.roundedRect(cx, cy, W2, 28, 3, 3, 'F');
-      // Left accent bar
       doc.setFillColor(...c.rgb);
       doc.roundedRect(cx, cy, 3, 28, 1, 1, 'F');
-      // Label (2mm right shift to clear accent bar)
       doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'bold');
       doc.text(c.label, cx + 9, cy + 10);
-      // Value
       doc.setTextColor(...c.rgb); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
       doc.text(c.value, cx + 9, cy + 22);
-      // Sub-label right-aligned
       doc.setTextColor(...C.muted); doc.setFontSize(6.5); doc.setFont('helvetica', 'normal');
       doc.text(c.sub, cx + W2 - 7, cy + 22, { align: 'right' });
     });
 
     y += 2 * 34 + 6;
 
-    // ── Transaction count badge (neutral — avoids the blue-on-blue look)
     doc.setFillColor(...C.bgGray);
     doc.roundedRect(16, y, PW - 32, 9, 2, 2, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.15);
@@ -610,14 +597,12 @@ export class PdfExportService {
     doc.text(`${kpis.txCount} transacciones registradas en el periodo`, PW / 2, y + 6.5, { align: 'center' });
     y += 13;
 
-    // ── Income vs Expenses comparison chart
     doc.setTextColor(...C.slate); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
     doc.text('Comparacion de Flujo Financiero', 16, y);
     y += 5;
     doc.addImage(compareChart, 'PNG', 16, y, PW - 32, 26);
     y += 30;
 
-    // ── Financial health
     doc.setTextColor(...C.slate); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
     doc.text('Salud Financiera', 16, y);
     y += 5;
@@ -636,10 +621,8 @@ export class PdfExportService {
     doc.text(`${health.percentage}% usado  |  ${health.status}`, PW - 16, y, { align: 'right' });
     y += 12;
 
-    // ── Bottom row: savings rate + top categories
     const hw = (PW - 40) / 2;
 
-    // LEFT: savings rate card
     const rClr: [number, number, number] = kpis.savingsRate >= 20 ? C.green : kpis.savingsRate >= 10 ? C.orange : C.red;
     const rLbl = kpis.savingsRate >= 20 ? 'Excelente' : kpis.savingsRate >= 10 ? 'Aceptable' : kpis.savingsRate > 0 ? 'Mejorable' : 'Deficit';
     const rTip = kpis.savingsRate >= 20
@@ -652,7 +635,6 @@ export class PdfExportService {
     doc.roundedRect(16, y, hw, 36, 3, 3, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(16, y, hw, 36, 3, 3, 'S');
-    // Left accent
     doc.setFillColor(...rClr);
     doc.roundedRect(16, y, 3, 36, 1, 1, 'F');
 
@@ -668,13 +650,11 @@ export class PdfExportService {
     doc.setTextColor(...C.muted);
     doc.text(rTip, 24, y + 33);
 
-    // RIGHT: top categories card
     const rx = 16 + hw + 8;
     doc.setFillColor(...C.bgGray);
     doc.roundedRect(rx, y, hw, 36, 3, 3, 'F');
     doc.setDrawColor(...C.border); doc.setLineWidth(0.2);
     doc.roundedRect(rx, y, hw, 36, 3, 3, 'S');
-    // Left accent (dark — neutral category)
     doc.setFillColor(...C.dark);
     doc.roundedRect(rx, y, 3, 36, 1, 1, 'F');
 
@@ -695,7 +675,6 @@ export class PdfExportService {
     }
   }
 
-  // ── Category page (gastos / ingresos) ────────────────────────────────────────
 
   private buildCategoryPage(
     doc: jsPDF,
@@ -716,21 +695,17 @@ export class PdfExportService {
       return;
     }
 
-    // Total badge
     doc.setFillColor(...altRow);
     doc.roundedRect(16, y, PW - 32, 11, 3, 3, 'F');
     doc.setTextColor(...rgb); doc.setFontSize(9.5); doc.setFont('helvetica', 'bold');
     doc.text(`Total: ${this.fmt(total)}`, PW / 2, y + 8, { align: 'center' });
     y += 15;
 
-    // Donut chart
     if (chart) {
       doc.addImage(chart, 'PNG', 16, y, PW - 32, 88);
       y += 93;
     }
 
-    // Category breakdown table
-    // Tinted alternating rows kept — semantic context (red=expenses, green=income)
     autoTable(doc, {
       startY: y,
       head: [['#', 'Categoria', 'Monto', '% del total', 'Transacciones']],
@@ -1022,7 +997,6 @@ export class PdfExportService {
       },
       margin: { left: 12, right: 12, bottom: 15 },
       styles: { cellPadding: 2.5, overflow: 'linebreak' },
-      // Per-row semantic tinting — useful for a financial statement
       didParseCell: (d) => {
         if (d.section !== 'body') return;
         const type = (d.row.raw as string[])?.[1] ?? '';

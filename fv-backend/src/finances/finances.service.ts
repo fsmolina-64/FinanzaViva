@@ -103,7 +103,6 @@ export class FinancesService {
         'No puedes eliminar esta cuenta porque tiene transacciones asociadas. Elimina primero las transacciones.',
       );
     }
-    // Delete any initial-balance transactions along with the account
     await this.prisma.transaction.deleteMany({ where: { accountId, isInitialBalance: true } });
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
@@ -235,7 +234,7 @@ export class FinancesService {
         where: { id: transactionId },
         data: {
           ...(dto.accountId && { accountId: dto.accountId }),
-        categoryId: dto.categoryId ?? null,
+          categoryId: dto.categoryId ?? null,
           ...(dto.amount !== undefined && { amount: dto.amount }),
           ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
@@ -292,7 +291,6 @@ export class FinancesService {
       orderBy: { name: 'asc' },
     });
 
-    // Filter out global categories that the user has hidden or overridden
     const userCatIds = new Set(all.filter(c => c.userId === userId).map(c => c.originalCategoryId).filter(Boolean));
     return all.filter(c =>
       !c.isGlobal ||
@@ -306,8 +304,8 @@ export class FinancesService {
         userId,
         name: dto.name,
         type: dto.type,
-        icon: dto.icon,
-        color: dto.color,
+        icon: dto.icon ?? 'help-circle',
+        color: dto.color ?? '#6b7280',
         isGlobal: false,
       },
     });
@@ -318,7 +316,6 @@ export class FinancesService {
     if (!category) throw new NotFoundException('Categoría no encontrada');
     if (category.userId && category.userId !== userId) throw new ForbiddenException();
 
-    // Global category: create a user-specific override instead of modifying in-place
     if (!category.userId) {
       return this.prisma.category.create({
         data: {
@@ -353,7 +350,6 @@ export class FinancesService {
 
     const txCount = category._count.transactions;
 
-    // Handle reassignment before hiding/deleting
     if (txCount > 0) {
       if (!reassignToId) {
         throw new BadRequestException(
@@ -369,7 +365,6 @@ export class FinancesService {
       });
     }
 
-    // Global category: hide it for this user instead of deleting
     if (!category.userId) {
       await this.prisma.userHiddenCategory.create({
         data: { userId, categoryId },

@@ -90,8 +90,8 @@
       </div>
     </a>
 
-    <a routerLink="/quizzes"
-      class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
+    <div (click)="onQuizzesClick()"
+      class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
       <div class="flex items-center justify-between mb-4">
         <span class="text-slate-300 text-sm font-semibold">Quizzes</span>
         <div class="w-8 h-8 bg-purple-500/15 rounded-lg flex items-center justify-center border border-purple-500/20">
@@ -114,7 +114,7 @@
           [class]="getQuizApprovalRate() >= 70 ? 'bg-emerald-500' : 'bg-amber-500'"
           [style.width.%]="getQuizApprovalRate()"></div>
       </div>
-    </a>
+    </div>
 
     <a routerLink="/simulator"
       class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
@@ -155,7 +155,7 @@
       <div class="text-right text-xs text-slate-600 mt-1">{{ getAchievementProgress() }}%</div>
     </a>
 
-    <a routerLink="/achievements"
+    <a routerLink="/achievements" [queryParams]="{tab: 'recompensas'}"
       class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-violet-500/40 transition-all duration-300 hover:-translate-y-0.5 no-underline block">
       <div class="flex items-center justify-between mb-3">
         <span class="text-slate-300 text-sm font-semibold">Recompensas</span>

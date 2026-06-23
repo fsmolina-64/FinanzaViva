@@ -33,4 +33,8 @@ export class AcademyService {
   resetLesson(id: string): Observable<LessonResetResponse> {
     return this.api.post<LessonResetResponse>(`/academy/lessons/${id}/reset`, {});
   }
+
+  getReadingProgress(moduleId: string): Observable<{ readingProgress: number }> {
+    return this.api.get<{ readingProgress: number }>(`/academy/modules/${moduleId}/reading-progress`);
+  }
 }

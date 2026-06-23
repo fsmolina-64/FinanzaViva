@@ -29,14 +29,13 @@
       <a [routerLink]="item.path" routerLinkActive="nav-active"
         class="nav-item flex items-center px-4 py-3 mx-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-200 group mb-1 cursor-pointer">
         @if (item.icon.endsWith('.png') || item.icon.length > 2) {
-  <img [src]="item.icon" 
-     alt="Icono Premium" 
-     class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out group-hover:scale-125 group-hover:drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]" />
-} @else {
-  <span class="text-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
-    {{ item.icon }}
-  </span>
-}
+        <img [src]="item.icon" alt="Icono Premium"
+          class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out group-hover:scale-125 group-hover:drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]" />
+        } @else {
+        <span class="text-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
+          {{ item.icon }}
+        </span>
+        }
         <span class="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300"
           [class.opacity-0]="!sidebarOpen()" [class.w-0]="!sidebarOpen()" [class.ml-0]="!sidebarOpen()">{{ item.label
           }}</span>
@@ -65,8 +64,8 @@
         </div>
         }
         @if (authService.currentUser()) {
-        <div class="flex items-center gap-2">
-          @if (authService.currentUser()!.avatarUrl) {
+        <div class="flex items-center gap-2 cursor-pointer select-none" [routerLink]="['/profile']"> @if
+          (authService.currentUser()!.avatarUrl) {
           <img [src]="authService.currentUser()!.avatarUrl" alt="avatar"
             class="w-8 h-8 rounded-full object-cover border border-slate-600 hover:scale-105 cursor-pointer transition-all duration-200" />
           } @else {
