@@ -9,7 +9,7 @@
         class="ml-3 text-primary font-bold text-lg tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300"
         [class.opacity-0]="!sidebarOpen()" [class.w-0]="!sidebarOpen()">FinanzaViva</span>
     </div>
-    @if (sidebarOpen() && gamificationService.stats()) {
+    @if (gamificationService.stats()) {
     <div class="px-4 py-3 border-b border-default/60">
       <div class="flex justify-between text-xs text-muted mb-1.5">
         <span>Nivel {{ gamificationService.stats()!.level }}</span>
@@ -32,7 +32,8 @@
         [style.animation-delay.ms]="i * 40">
         @if (item.icon.endsWith('.png') || item.icon.length > 2) {
         <img [src]="item.icon" alt="Icono Premium"
-          class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out group-hover:scale-125" />
+          class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out group-hover:scale-125"
+          [class.object-cover]="item.path === '/ranking'" />
         } @else {
         <span class="text-xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
           {{ item.icon }}
@@ -79,7 +80,9 @@
               }}</span>
           </div>
           }
-          <span class="text-muted text-sm font-medium hidden md:block group-hover:text-primary transition-colors duration-200">{{ authService.currentUser()!.displayName
+          <span
+            class="text-muted text-sm font-medium hidden md:block group-hover:text-primary transition-colors duration-200">{{
+            authService.currentUser()!.displayName
             }}</span>
         </div>
         }

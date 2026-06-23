@@ -100,3 +100,19 @@ export const tabSlideAnimation = trigger('tabSlide', [
     animate('250ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
   ]),
 ]);
+
+export const fabMenuAnimation = trigger('animateFab', [
+  transition(':enter', [
+    query(':enter', [
+      style({ opacity: 0, transform: 'translateX(24px)' }),
+      stagger('50ms', [
+        animate('200ms ease-out', style({ opacity: 1, transform: 'translateX(0)' })),
+      ]),
+    ], { optional: true }),
+  ]),
+  transition(':leave', [
+    query(':leave', [
+      animate('150ms ease-in', style({ opacity: 0, transform: 'translateX(24px)' })),
+    ], { optional: true }),
+  ]),
+]);

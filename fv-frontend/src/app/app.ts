@@ -2,7 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
-import { routeAnimation } from './core/animations/animations';
+import { routeAnimation, fabMenuAnimation } from './core/animations/animations';
 import { QuickTransactionModal } from './shared/components/quick-transaction-modal/quick-transaction-modal';
 import { ToastComponent } from './shared/components/toast/toast';
 import { QuickTransactionService, QuickTransactionResult } from './core/services/quick-transaction.service';
@@ -11,7 +11,7 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, CommonModule, QuickTransactionModal, ToastComponent],
-  animations: [routeAnimation],
+  animations: [routeAnimation, fabMenuAnimation],
   template: `
     <div [@routeAnimation]="currentRoute()">
       <router-outlet />
@@ -35,9 +35,9 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
 
       <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2.5">
         @if (fabMenuOpen()) {
-        <div class="flex flex-col items-end gap-2" style="animation: fadeIn 0.2s ease both">
+        <div class="flex flex-col items-end gap-2" @animateFab>
           <button (click)="openModal('TRANSFER')"
-            class="bg-elevated hover:bg-elevated/80 text-primary text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-elevated/30 transition-all hover:-translate-x-1 whitespace-nowrap">
+            class="bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-blue-600/30 transition-all hover:-translate-x-1 whitespace-nowrap">
             Transferencia
           </button>
           <button (click)="openModal('INCOME')"
@@ -51,7 +51,7 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
         </div>
         }
         <button (click)="fabMenuOpen.set(!fabMenuOpen())"
-          class="w-14 h-14 bg-elevated hover:bg-elevated/80 rounded-full shadow-xl shadow-elevated/40 text-primary text-3xl font-light flex items-center justify-center transition-all duration-300 active:scale-95"
+          class="w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-full shadow-xl shadow-blue-600/40 text-primary text-3xl font-light flex items-center justify-center transition-all duration-300 active:scale-95"
           [style.transform]="fabMenuOpen() ? 'rotate(45deg)' : 'rotate(0)'">
           +
         </button>

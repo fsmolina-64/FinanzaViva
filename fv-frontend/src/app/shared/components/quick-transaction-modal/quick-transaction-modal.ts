@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../../core/services/finance.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { fadeIn } from '../../../core/animations/animations';
 import {
     Account, Category, Transaction, TransactionAlert,
     CreateTransactionPayload, CreateTransferPayload, TransferResponse
@@ -14,7 +15,8 @@ type ModalType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
     selector: 'app-quick-transaction-modal',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './quick-transaction-modal.html'
+    templateUrl: './quick-transaction-modal.html',
+    animations: [fadeIn]
 })
 export class QuickTransactionModal implements OnInit {
     @Input() initialType: ModalType = 'EXPENSE';
