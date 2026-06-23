@@ -171,7 +171,7 @@ export class Achievements implements OnInit {
       BADGE: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
       SIMULATOR_EVENT: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       FRAME: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-    } as any)[type] ?? 'bg-slate-500/20 text-slate-400 border-slate-600';
+    } as any)[type] ?? 'bg-muted/20 text-muted border-strong';
   }
 
   groupLen(group: Record<string, Achievement[]>, cat: string): number {

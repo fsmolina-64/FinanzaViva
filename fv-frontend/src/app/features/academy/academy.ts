@@ -35,7 +35,7 @@ export class Academy implements OnInit {
   getProgressColor(p: number): string {
     if (p === 100) return 'from-emerald-500 to-emerald-400';
     if (p >= 50) return 'from-blue-500 to-blue-400';
-    return 'from-slate-500 to-slate-400';
+    return 'from-muted to-subtle';
   }
 
   getStatusLabel(m: AcademyModule): string {
@@ -49,6 +49,6 @@ export class Academy implements OnInit {
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
     if (m.completedLessons > 0)
       return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    return 'bg-slate-500/20 text-slate-400 border-slate-600';
+    return 'bg-muted/20 text-muted border-strong';
   }
 }

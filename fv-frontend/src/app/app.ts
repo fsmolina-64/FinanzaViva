@@ -33,21 +33,21 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
         @if (fabMenuOpen()) {
         <div class="flex flex-col items-end gap-2" style="animation: fadeIn 0.2s ease both">
           <button (click)="openModal('TRANSFER')"
-            class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-blue-500/30 transition-all hover:-translate-x-1 whitespace-nowrap">
+            class="bg-elevated hover:bg-elevated/80 text-primary text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-elevated/30 transition-all hover:-translate-x-1 whitespace-nowrap">
             Transferencia
           </button>
           <button (click)="openModal('INCOME')"
-            class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-emerald-500/30 transition-all hover:-translate-x-1 whitespace-nowrap">
+            class="bg-success hover:bg-success/80 text-primary text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-success/30 transition-all hover:-translate-x-1 whitespace-nowrap">
             Ingreso
           </button>
           <button (click)="openModal('EXPENSE')"
-            class="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-red-500/30 transition-all hover:-translate-x-1 whitespace-nowrap">
+            class="bg-danger hover:bg-danger/80 text-primary text-sm font-semibold pl-4 pr-5 py-2.5 rounded-full shadow-lg shadow-danger/30 transition-all hover:-translate-x-1 whitespace-nowrap">
             Gasto
           </button>
         </div>
         }
         <button (click)="fabMenuOpen.set(!fabMenuOpen())"
-          class="w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-full shadow-xl shadow-blue-500/40 text-white text-3xl font-light flex items-center justify-center transition-all duration-300 active:scale-95"
+          class="w-14 h-14 bg-elevated hover:bg-elevated/80 rounded-full shadow-xl shadow-elevated/40 text-primary text-3xl font-light flex items-center justify-center transition-all duration-300 active:scale-95"
           [style.transform]="fabMenuOpen() ? 'rotate(45deg)' : 'rotate(0)'">
           +
         </button>

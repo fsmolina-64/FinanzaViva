@@ -1,7 +1,7 @@
 .nav-active {
-  background-color: rgba(37, 99, 235, 0.15);
-  color: #2563EB;
-  border-left: 3px solid #2563EB;
+  background-color: rgba(241, 245, 249, 0.1);
+  color: #F1F5F9;
+  border-left: 3px solid #F1F5F9;
 }
 
 .nav-item {
@@ -13,20 +13,11 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(37,99,235,0.1), transparent);
+  background: linear-gradient(135deg, rgba(241,245,249,0.05), transparent);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 .nav-item:hover::after {
   opacity: 1;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease forwards;
 }

@@ -2,26 +2,26 @@
 
   <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600
               flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(244,63,94,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
       stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   </div>
 
-  <h1 class="text-white text-3xl font-bold text-center mb-3 tracking-tight">
+  <h1 class="text-primary text-3xl font-bold text-center mb-3 tracking-tight">
     Tu primera meta financiera
   </h1>
-  <p class="text-gray-400 text-center mb-6 max-w-md leading-relaxed">
+  <p class="text-muted text-center mb-6 max-w-md leading-relaxed">
     Las metas te ayudan a ahorrar con proposito. FinanzaViva te mostrara tu progreso en tiempo real.
-    <span class="text-gray-600"> (Opcional lo puedes hacer mas adelante)</span>
+    <span class="text-subtle"> (Opcional lo puedes hacer mas adelante)</span>
   </p>
 
   <div class="flex flex-wrap gap-2 mb-6 justify-center">
     @for (ex of examples; track ex.label) {
       <button type="button" (click)="fillExample(ex)"
-              class="px-3 py-1.5 rounded-xl text-xs text-gray-400 cursor-pointer
-                     hover:border-gray-600 hover:text-gray-300 transition-colors"
-              style="background-color:#111827; border:1px solid #1f2937">
+              class="px-3 py-1.5 rounded-xl text-xs text-muted cursor-pointer
+                     hover:border-strong hover:text-primary transition-colors"
+              style="background-color:#0F172A; border:1px solid #1E293B">
         {{ ex.label }}
       </button>
     }
@@ -29,39 +29,39 @@
 
   <div class="w-full space-y-4">
     <div>
-      <label class="block text-gray-400 text-xs mb-1.5 font-medium">Nombre de la meta</label>
+      <label class="block text-muted text-xs mb-1.5 font-medium">Nombre de la meta</label>
       <input type="text" [formControl]="form.controls.name" placeholder="Ej: Fondo de emergencia"
-             class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3
-                    text-white text-sm outline-none focus:border-pink-500 transition-colors"
+class="w-full bg-input border border-default rounded-xl px-4 py-3
+                     text-primary text-sm outline-none focus:border-pink-500 transition-colors"
              [class.border-red-800]="form.controls.name.invalid && form.controls.name.touched">
       @if (form.controls.name.invalid && form.controls.name.touched) {
-        <p class="text-red-400 text-xs mt-1">Ingresa un nombre de al menos 2 caracteres</p>
+        <p class="text-danger text-xs mt-1">Ingresa un nombre de al menos 2 caracteres</p>
       }
     </div>
 
     <div>
-      <label class="block text-gray-400 text-xs mb-1.5 font-medium">Monto objetivo</label>
+      <label class="block text-muted text-xs mb-1.5 font-medium">Monto objetivo</label>
       <div class="relative">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">$</span>
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-subtle text-sm pointer-events-none">$</span>
         <input type="text" inputmode="decimal" [formControl]="form.controls.targetAmount" placeholder="1000"
                (keydown)="filterAmount($event)" (input)="onAmountInput($event)"
-               class="w-full bg-gray-900 border border-gray-800 rounded-xl pl-8 pr-4 py-3
-                      text-white text-sm outline-none focus:border-pink-500 transition-colors"
+               class="w-full bg-input border border-default rounded-xl pl-8 pr-4 py-3
+                      text-primary text-sm outline-none focus:border-pink-500 transition-colors"
                [class.border-red-800]="form.controls.targetAmount.invalid && form.controls.targetAmount.touched">
       </div>
       @if (form.controls.targetAmount.invalid && form.controls.targetAmount.touched) {
-        <p class="text-red-400 text-xs mt-1">El monto debe ser mayor a 0</p>
+        <p class="text-danger text-xs mt-1">El monto debe ser mayor a 0</p>
       }
     </div>
 
     <div>
-      <label class="block text-gray-400 text-xs mb-1.5 font-medium">
+      <label class="block text-muted text-xs mb-1.5 font-medium">
         Fecha limite
-        <span class="text-gray-600 font-normal ml-1">(opcional)</span>
+        <span class="text-subtle font-normal ml-1">(opcional)</span>
       </label>
       <input type="date" [formControl]="form.controls.deadline" [min]="minDate"
-             class="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3
-                    text-white text-sm outline-none focus:border-pink-500 transition-colors
+             class="w-full bg-input border border-default rounded-xl px-4 py-3
+                    text-primary text-sm outline-none focus:border-pink-500 transition-colors
                     [color-scheme:dark]">
     </div>
 
@@ -86,24 +86,24 @@
 
     @if (editingId()) {
       <button type="button" (click)="cancelEdit()"
-              class="w-full py-2 text-gray-500 text-sm hover:text-gray-400 transition-colors cursor-pointer">
+              class="w-full py-2 text-subtle text-sm hover:text-muted transition-colors cursor-pointer">
         Cancelar edicion
       </button>
     }
 
     @if (hasGoals()) {
       <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
-        <p class="text-gray-400 text-xs font-medium mb-3">Metas creadas</p>
+        <p class="text-muted text-xs font-medium mb-3">Metas creadas</p>
         <div class="space-y-2">
           @for (g of createdGoals(); track g.id) {
             <div class="flex items-center justify-between py-2 px-3 rounded-lg"
                  [style.background-color]="editingId() === g.id ? '#2d1b69' : '#1e293b'"
                  [style.border]="editingId() === g.id ? '1px solid #a855f7' : 'none'">
-              <span class="text-gray-300 text-sm">{{ g.name }}</span>
+              <span class="text-primary/80 text-sm">{{ g.name }}</span>
               <div class="flex items-center gap-2">
                 <span class="text-rose-400 text-sm font-medium">{{ g.targetAmount | currency:'USD':'symbol':'1.2-2' }}</span>
                 <button type="button" (click)="startEdit(g)"
-                        class="text-gray-600 hover:text-purple-400 transition-colors p-0.5 cursor-pointer">
+                        class="text-subtle hover:text-accent-purple transition-colors p-0.5 cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
                        stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -112,7 +112,7 @@
                 </button>
                 <button type="button" (click)="deleteCreatedGoal(g)"
                         [disabled]="isDeletingId() === g.id"
-                        class="text-gray-600 hover:text-red-400 transition-colors p-0.5 cursor-pointer disabled:opacity-40">
+                        class="text-subtle hover:text-danger transition-colors p-0.5 cursor-pointer disabled:opacity-40">
                   @if (isDeletingId() === g.id) {
                     <svg class="w-3 h-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -141,7 +141,7 @@
       </button>
     } @else {
       <button type="button" (click)="skip.emit()"
-              class="w-full py-2 text-gray-600 text-sm hover:text-gray-400 transition-colors cursor-pointer">
+              class="w-full py-2 text-subtle text-sm hover:text-muted transition-colors cursor-pointer">
         Omitir por ahora
       </button>
     }

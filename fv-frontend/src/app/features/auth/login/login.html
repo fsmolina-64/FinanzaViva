@@ -2,11 +2,11 @@
   
   <img src="/logo-oficial.png" alt="Logo de FinanzaViva" class="w-32 h-32 object-contain mx-auto mb-6">
 
-  <h2 class="text-white text-2xl font-bold text-center mb-1">Bienvenido de vuelta</h2>
-  <p class="text-slate-400 text-sm  mb-8">Ingresa a tu cuenta para continuar</p>
+  <h2 class="text-primary text-2xl font-bold text-center mb-1">Bienvenido de vuelta</h2>
+  <p class="text-muted text-sm mb-8">Ingresa a tu cuenta para continuar</p>
 
   @if (error()) {
-    <div class="bg-red-950/50 border border-red-500/50 text-red-400 text-sm px-4 py-3 rounded-xl mb-6 animate-shake flex items-center gap-2">
+    <div class="bg-danger/10 border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl mb-6 animate-shake flex items-center gap-2">
       <span>⚠️</span>
       <span>{{ error() }}</span>
     </div>
@@ -15,58 +15,58 @@
   <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
+      <label class="text-primary text-sm font-medium mb-2 block">
         Correo electrónico
       </label>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">📧</span>
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">📧</span>
         <input
           formControlName="email"
           type="email"
           placeholder="tu@email.com"
-          class="input-field w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong"
         />
       </div>
       @if (email.touched && email.errors?.['required']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">El correo es requerido</p>
+        <p class="text-danger text-xs mt-1.5 animate-fade-in">El correo es requerido</p>
       }
       @if (email.touched && email.errors?.['email']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Correo inválido</p>
+        <p class="text-danger text-xs mt-1.5 animate-fade-in">Correo inválido</p>
       }
     </div>
 
     <div class="form-group">
-      <label class="text-slate-300 text-sm font-medium mb-2 block">
+      <label class="text-primary text-sm font-medium mb-2 block">
         Contraseña
       </label>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔒</span>
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">🔒</span>
         <input
           formControlName="password"
           [type]="showPassword() ? 'text' : 'password'"
           placeholder="••••••••"
-          class="input-field w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-all duration-200 hover:border-slate-600"
+          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong"
         />
         <button
           type="button"
           (click)="togglePassword()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors duration-200"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors duration-200"
         >
           {{ showPassword() ? '🙈' : '👁️' }}
         </button>
       </div>
       @if (password.touched && password.errors?.['required']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">La contraseña es requerida</p>
+        <p class="text-danger text-xs mt-1.5 animate-fade-in">La contraseña es requerida</p>
       }
       @if (password.touched && password.errors?.['minlength']) {
-        <p class="text-red-400 text-xs mt-1.5 animate-fade-in">Mínimo 6 caracteres</p>
+        <p class="text-danger text-xs mt-1.5 animate-fade-in">Mínimo 6 caracteres</p>
       }
     </div>
 
     <button
       type="submit"
       [disabled]="loading()"
-      class="btn-primary w-full bg-[#2563EB] hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
+      class="w-full bg-accent-blue hover:bg-accent-blue/90 text-primary font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-blue/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
     >
       @if (loading()) {
         <span class="flex items-center justify-center gap-2">
@@ -80,9 +80,9 @@
 
   </form>
 
-  <p class="text-slate-400 text-sm text-center mt-6">
+  <p class="text-muted text-sm text-center mt-6">
     ¿No tienes cuenta?
-    <a routerLink="/auth/register" class="text-[#2563EB] hover:text-blue-400 font-medium transition-colors duration-200 hover:underline">
+    <a routerLink="/auth/register" class="text-accent-blue hover:text-accent-blue/80 font-medium transition-colors duration-200 hover:underline">
       Regístrate gratis
     </a>
   </p>

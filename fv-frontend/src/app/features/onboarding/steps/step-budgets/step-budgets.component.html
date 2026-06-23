@@ -2,25 +2,25 @@
 
   <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700
               flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(139,92,246,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
       stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
       <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
     </svg>
   </div>
 
-  <h1 class="text-white text-3xl font-bold text-center mb-2 tracking-tight">
+  <h1 class="text-primary text-3xl font-bold text-center mb-2 tracking-tight">
     Crea un presupuesto
   </h1>
-  <p class="text-gray-400 text-center mb-8 max-w-md leading-relaxed text-sm">
+  <p class="text-muted text-center mb-8 max-w-md leading-relaxed text-sm">
     Asigna un limite de gasto por categoria o general mensualmente. FinanzaViva te avisara cuando te acerques al limite.
-    <span class="text-gray-600"> (Opcional lo puedes hacer mas adelante)</span>
+    <span class="text-subtle"> (Opcional lo puedes hacer mas adelante)</span>
   </p>
 
   <div class="w-full space-y-5">
 
     <div>
-      <label class="block text-gray-400 text-xs mb-2 font-medium">
+      <label class="block text-muted text-xs mb-2 font-medium">
         Categoria de gasto
       </label>
       @if (isLoadingCats()) {
@@ -59,16 +59,16 @@
     </div>
 
     <div>
-      <label class="block text-gray-400 text-xs mb-1.5 font-medium">Limite de gasto</label>
+      <label class="block text-muted text-xs mb-1.5 font-medium">Limite de gasto</label>
       <div class="relative">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">$</span>
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-subtle text-sm pointer-events-none">$</span>
         <input type="text" inputmode="decimal" [formControl]="form.controls.amount" placeholder="500"
-          (keydown)="filterAmount($event)" (input)="onAmountInput($event)" class="w-full border rounded-xl pl-8 pr-4 py-3 text-white text-sm
+          (keydown)="filterAmount($event)" (input)="onAmountInput($event)" class="w-full border rounded-xl pl-8 pr-4 py-3 text-primary text-sm
                  outline-none transition-colors" style="background-color:#1e293b"
           [style.border-color]="form.controls.amount.invalid && form.controls.amount.touched ? '#7f1d1d' : '#334155'">
       </div>
       @if (form.controls.amount.invalid && form.controls.amount.touched) {
-      <p class="text-red-400 text-xs mt-1">Ingresa un monto mayor a 0</p>
+      <p class="text-danger text-xs mt-1">Ingresa un monto mayor a 0</p>
       }
     </div>
 
@@ -85,27 +85,27 @@
     </button>
     @if (isEditing()) {
     <button type="button" (click)="cancelEdit()"
-      class="w-full py-2 text-gray-500 text-sm hover:text-gray-400 transition-colors cursor-pointer">
+      class="w-full py-2 text-subtle text-sm hover:text-muted transition-colors cursor-pointer">
       Cancelar edicion
     </button>
     }
 
     @if (hasBudgets()) {
     <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
-      <p class="text-gray-400 text-xs font-medium mb-3">Presupuestos creados</p>
+      <p class="text-muted text-xs font-medium mb-3">Presupuestos creados</p>
       <div class="space-y-2">
         @for (b of createdBudgets(); track $index) {
         <div class="flex items-center justify-between py-2 px-3 rounded-lg"
           [style.background-color]="editingIndex() === $index ? '#2d1b69' : '#1e293b'"
           [style.border]="editingIndex() === $index ? '1px solid #a855f7' : 'none'">
           <div class="flex items-center gap-2">
-            <span class="text-gray-300 text-sm">{{ b.categoryName }}</span>
-            <span class="text-gray-600 text-xs">Mensual</span>
+            <span class="text-primary/80 text-sm">{{ b.categoryName }}</span>
+            <span class="text-subtle text-xs">Mensual</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-purple-400 text-sm font-medium">{{ b.amount | currency:'USD':'symbol':'1.2-2' }}</span>
+            <span class="text-accent-purple text-sm font-medium">{{ b.amount | currency:'USD':'symbol':'1.2-2' }}</span>
             <button type="button" (click)="startEdit($index)"
-              class="text-gray-600 hover:text-purple-400 transition-colors p-0.5 cursor-pointer">
+              class="text-subtle hover:text-accent-purple transition-colors p-0.5 cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -113,7 +113,7 @@
               </svg>
             </button>
             <button type="button" (click)="removeBudget($index)"
-              class="text-gray-600 hover:text-red-400 transition-colors p-0.5 cursor-pointer">
+              class="text-subtle hover:text-danger transition-colors p-0.5 cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -132,7 +132,7 @@
       Continuar
     </button>
     } @else {
-    <button type="button" (click)="skip()" class="w-full py-2 text-gray-600 text-sm hover:text-gray-400
+    <button type="button" (click)="skip()" class="w-full py-2 text-subtle text-sm hover:text-muted
                      transition-colors cursor-pointer">
       Omitir por ahora
     </button>
