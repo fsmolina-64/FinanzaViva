@@ -32,7 +32,14 @@ export class QuickTransactionModal implements OnInit {
 
     selectedType = signal<ModalType>('EXPENSE');
 
-    amountStr = '0';
+    /**
+     * integerStr: parte entera como string  ('0', '12', '1500')
+     * decimalStr: null = modo entero | '' | '5' | '50' = modo decimal
+     * Separación clara de estado → sin ambigüedad de "modo"
+     */
+    integerStr = '0';
+    decimalStr: string | null = null;
+
     selectedCategoryId = '';
     selectedAccountId = '';
     toAccountId = '';
@@ -47,6 +54,9 @@ export class QuickTransactionModal implements OnInit {
         { key: 'INCOME', label: 'Ingreso' },
         { key: 'TRANSFER', label: 'Transferencia' }
     ];
+
+    /** true cuando el usuario ya presionó el punto decimal */
+    get inDecimalMode(): boolean { return this.decimalStr !== null; }
 
     filteredCategories = computed(() => {
         const t = this.selectedType();
@@ -101,14 +111,41 @@ export class QuickTransactionModal implements OnInit {
 
     pad(key: string): void {
         if (this.showDebtConfirm()) return;
-        if (key === '<') { this.amountStr = this.amountStr.length <= 1 ? '0' : this.amountStr.slice(0, -1); return; }
-        if (key === ',' || key === '.') {
-            if (this.amountStr.includes('.')) return;
-            key = '.';
+
+        // Borrar: si estamos en decimal y está vacío, salir del modo decimal
+        if (key === '<') {
+            if (this.inDecimalMode) {
+                if (this.decimalStr!.length === 0) {
+                    this.decimalStr = null;
+                } else {
+                    this.decimalStr = this.decimalStr!.slice(0, -1);
+                }
+            } else {
+                this.integerStr = this.integerStr.length <= 1 ? '0' : this.integerStr.slice(0, -1);
+            }
+            return;
         }
-        const parts = this.amountStr.split('.');
-        if (parts[1] !== undefined && parts[1].length >= 2) return;
-        this.amountStr = this.amountStr === '0' && key !== '.' ? key : this.amountStr + key;
+
+        // Activar modo decimal (solo una vez)
+        if (key === '.') {
+            if (!this.inDecimalMode) this.decimalStr = '';
+            return;
+        }
+
+        if (!/^\d$/.test(key)) return;
+
+        if (this.inDecimalMode) {
+            if (this.decimalStr!.length >= 2) return; // máximo 2 decimales
+            this.decimalStr = this.decimalStr + key;
+        } else {
+            if (this.integerStr === '0') {
+                this.integerStr = key;
+            } else {
+                const next = this.integerStr + key;
+                if (parseInt(next) > 9_999_999) return;
+                this.integerStr = next;
+            }
+        }
     }
 
     @HostListener('document:keydown', ['$event'])
@@ -119,23 +156,56 @@ export class QuickTransactionModal implements OnInit {
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
         if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); this.pad('<'); return; }
+        if (e.key === '.' || e.key === ',' || e.code === 'NumpadDecimal') { e.preventDefault(); this.pad('.'); return; }
 
         const map: Record<string, string> = {
             '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
             '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
             'Numpad0': '0', 'Numpad1': '1', 'Numpad2': '2', 'Numpad3': '3',
             'Numpad4': '4', 'Numpad5': '5', 'Numpad6': '6', 'Numpad7': '7',
-            'Numpad8': '8', 'Numpad9': '9', 'NumpadDecimal': '.', '.': '.', ',': '.', 'Comma': '.',
+            'Numpad8': '8', 'Numpad9': '9',
         };
-
         const mapped = map[e.key] ?? map[e.code];
         if (mapped) { e.preventDefault(); this.pad(mapped); }
     }
 
-    getAmount(): number { return parseFloat(this.amountStr) || 0; }
+    // ─── Helpers de monto ─────────────────────────────────────────────────────
+
+    getAmount(): number {
+        const integer = parseInt(this.integerStr) || 0;
+        if (this.decimalStr === null || this.decimalStr === '') return integer;
+        // '5' → padEnd(2,'0') → '50' → 50/100 = 0.50
+        const decimal = parseInt(this.decimalStr.padEnd(2, '0')) / 100;
+        return integer + decimal;
+    }
+
+    getIntegerDisplay(): string {
+        return parseInt(this.integerStr).toLocaleString('en-US');
+    }
+
+    /**
+     * null → '__'  (tenue, modo entero)
+     * ''   → '__'  (brillante, recién activado, esperando dígitos)
+     * '5'  → '5_'
+     * '50' → '50'
+     */
+    getDecimalDisplay(): string {
+        if (this.decimalStr === null) return '__';
+        const filled = this.decimalStr;
+        const placeholder = '__'.slice(filled.length);
+        return filled + placeholder;
+    }
 
     formatAmount(): string {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(this.getAmount());
+    }
+
+    amountColorClass(): string {
+        switch (this.selectedType()) {
+            case 'EXPENSE': return 'text-red-400';
+            case 'INCOME': return 'text-emerald-400';
+            default: return 'text-blue-400';
+        }
     }
 
     getSelectedAccountBalance(): number {
@@ -143,16 +213,12 @@ export class QuickTransactionModal implements OnInit {
         return parseFloat(String(acc?.balance ?? '0'));
     }
 
+    // ─── Submit ───────────────────────────────────────────────────────────────
 
     submit(): void {
         if (this.getAmount() <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
         if (!this.selectedAccountId) { this.toast.warning('Selecciona una cuenta'); return; }
-
-        if (this.selectedType() === 'TRANSFER') {
-            this.submitTransfer();
-        } else {
-            this.submitTransaction();
-        }
+        this.selectedType() === 'TRANSFER' ? this.submitTransfer() : this.submitTransaction();
     }
 
     private submitTransaction(): void {
@@ -172,7 +238,6 @@ export class QuickTransactionModal implements OnInit {
             this.showDebtConfirm.set(true);
             return;
         }
-
         this.executeTransaction(payload);
     }
 
@@ -207,9 +272,7 @@ export class QuickTransactionModal implements OnInit {
     private submitTransfer(): void {
         if (!this.toAccountId) { this.toast.warning('Selecciona la cuenta destino'); return; }
         if (this.selectedAccountId === this.toAccountId) { this.toast.warning('Las cuentas deben ser diferentes'); return; }
-        if (this.getAmount() > this.getSelectedAccountBalance()) {
-            this.toast.error('Saldo insuficiente en la cuenta origen'); return;
-        }
+        if (this.getAmount() > this.getSelectedAccountBalance()) { this.toast.error('Saldo insuficiente en la cuenta origen'); return; }
 
         const payload: CreateTransferPayload = {
             fromAccountId: this.selectedAccountId,
@@ -236,7 +299,8 @@ export class QuickTransactionModal implements OnInit {
     }
 
     private reset(): void {
-        this.amountStr = '0';
+        this.integerStr = '0';
+        this.decimalStr = null;
         this.description = '';
         this.toAccountId = '';
         this.selectedDate = this.today;
