@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { staggerCards } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AcademyService } from '../../core/services/academy.service';
@@ -9,7 +10,8 @@ import { AcademyModule } from '../../core/models/academy.model';
   selector: 'app-academy',
   imports: [CommonModule, RouterModule],
   templateUrl: './academy.html',
-  styleUrl: './academy.css'
+  styleUrl: './academy.css',
+  animations: [staggerCards]
 })
 export class Academy implements OnInit {
   modules = signal<AcademyModule[]>([]);

@@ -1,4 +1,4 @@
-<div class="toast-container">
+<div class="toast-container animate-slide-in-right">
   @for (toast of toastService.toasts(); track toast.id) {
   <div class="toast" [ngClass]="'toast-' + toast.type">
     <span class="toast-icon">{{ getIcon(toast.type) }}</span>

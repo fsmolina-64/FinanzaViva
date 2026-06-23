@@ -1,7 +1,7 @@
 .profile-hero {
   position: relative;
-  background: linear-gradient(145deg, #1E293B 0%, #0F172A 100%);
-  border: 1px solid rgba(71, 85, 105, 0.5);
+  background: linear-gradient(145deg, #2C2C2E 0%, #1C1C1E 100%);
+  border: 1px solid rgba(72, 72, 74, 0.5);
   border-radius: 1.25rem;
   padding: 1.5rem;
   overflow: hidden;
@@ -13,18 +13,18 @@
   right: -80px;
   width: 240px;
   height: 240px;
-  background: radial-gradient(circle, rgba(241, 245, 249, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(242, 242, 247, 0.06) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .xp-bar-glow {
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.45), 0 0 4px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 10px rgba(174, 174, 178, 0.45), 0 0 4px rgba(52, 199, 89, 0.3);
 }
 
 .profile-tabs {
   display: flex;
-  background: #1E293B;
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: #2C2C2E;
+  border: 1px solid rgba(58, 58, 60, 0.6);
   border-radius: 1rem;
   padding: 0.25rem;
   gap: 0.2rem;
@@ -40,7 +40,7 @@
   border-radius: 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #94A3B8;
+  color: #AEAEB2;
   transition: all 0.2s ease;
   cursor: pointer;
   background: none;
@@ -49,45 +49,45 @@
 }
 
 .profile-tab-btn:hover:not(.tab-active) {
-  color: #F1F5F9;
-  background: rgba(241, 245, 249, 0.07);
+  color: #F2F2F7;
+  background: rgba(242, 242, 247, 0.07);
 }
 
 .profile-tab-btn.tab-active {
-  background: linear-gradient(135deg, rgba(241,245,249,0.15), rgba(241,245,249,0.05));
-  color: #F1F5F9;
-  box-shadow: 0 2px 14px rgba(241,245,249,0.15);
+  background: linear-gradient(135deg, rgba(242,242,247,0.15), rgba(242,242,247,0.05));
+  color: #F2F2F7;
+  box-shadow: 0 2px 14px rgba(242,242,247,0.15);
 }
 
 .stat-card {
-  background: rgba(241, 245, 249, 0.05);
-  border: 1px solid rgba(241, 245, 249, 0.09);
+  background: rgba(242, 242, 247, 0.05);
+  border: 1px solid rgba(242, 242, 247, 0.09);
   border-radius: 0.875rem;
   padding: 0.875rem;
   transition: border-color 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: rgba(241, 245, 249, 0.18);
+  border-color: rgba(242, 242, 247, 0.18);
 }
 
 .section-card {
-  background: #1E293B;
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: #2C2C2E;
+  border: 1px solid rgba(58, 58, 60, 0.6);
   border-radius: 1.25rem;
   padding: 1.25rem;
 }
 
 .section-title {
-  color: #F1F5F9;
+  color: #F2F2F7;
   font-weight: 600;
   font-size: 0.9375rem;
   margin-bottom: 1rem;
 }
 
 .danger-zone {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06), rgba(239, 68, 68, 0.02));
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.06), rgba(255, 59, 48, 0.02));
+  border: 1px solid rgba(255, 59, 48, 0.2);
   border-radius: 1.25rem;
   padding: 1.25rem;
 }
@@ -97,8 +97,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.12);
+  background: rgba(255, 59, 48, 0.05);
+  border: 1px solid rgba(255, 59, 48, 0.12);
   border-radius: 0.875rem;
   padding: 0.875rem 1rem;
 }
@@ -117,8 +117,8 @@
 }
 
 .modal-card {
-  background: #1E293B;
-  border: 1px solid rgba(239, 68, 68, 0.22);
+  background: #2C2C2E;
+  border: 1px solid rgba(255, 59, 48, 0.22);
   border-radius: 1.25rem;
   padding: 1.5rem;
   width: 100%;

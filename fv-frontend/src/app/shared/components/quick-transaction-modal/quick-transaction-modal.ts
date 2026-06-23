@@ -66,9 +66,7 @@ export class QuickTransactionModal implements OnInit {
 
     topCategories = computed(() => this.filteredCategories().slice(0, 9));
 
-    toAccounts = computed(() =>
-        this.accounts().filter(a => a.id !== this.selectedAccountId)
-    );
+
 
     constructor(
         private financeService: FinanceService,

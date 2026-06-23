@@ -1,7 +1,8 @@
 .nav-active {
-  background-color: rgba(241, 245, 249, 0.1);
-  color: #F1F5F9;
-  border-left: 3px solid #F1F5F9;
+  background: rgba(242, 242, 247, 0.1) !important;
+  color: #F2F2F7 !important;
+  border-left: 3px solid #F2F2F7;
+  box-shadow: inset 0 0 0 1px rgba(242, 242, 247, 0.06);
 }
 
 .nav-item {
@@ -13,11 +14,33 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(241,245,249,0.05), transparent);
+  background: linear-gradient(135deg, rgba(242,242,247,0.06), transparent);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 .nav-item:hover::after {
   opacity: 1;
+}
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(242,242,247,0.1) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(242,242,247,0.1);
+  border-radius: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(242,242,247,0.2);
 }

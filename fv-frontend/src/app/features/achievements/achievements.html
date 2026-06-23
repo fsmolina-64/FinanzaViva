@@ -1,4 +1,4 @@
-<div class="space-y-6 animate-slide-up">
+<div class="space-y-6 animate-fade-in-up">
 
     <div>
         <h1 class="text-2xl font-bold text-primary">Logros</h1>
@@ -8,7 +8,7 @@
     <div class="flex gap-1 bg-card/60 p-1 rounded-2xl border border-default">
         @for (tab of tabs; track tab.key) {
         <button (click)="activeTab.set(tab.key)"
-            class="flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300" [ngClass]="activeTab() === tab.key
+            class="flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300 btn-press" [ngClass]="activeTab() === tab.key
         ? 'bg-gradient-to-r from-accent-blue to-accent-blue/80 text-primary shadow-lg shadow-accent-blue/25'
         : 'text-muted hover:text-primary'">
             {{ tab.label }}
@@ -19,15 +19,15 @@
     @if (loading()) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @for (i of [1,2,3,4]; track i) {
-        <div class="bg-card rounded-2xl h-28 animate-pulse border border-default"></div>
+        <div class="bg-card rounded-2xl h-28 animate-pulse border border-default/60 card-hover group shadow-sm" style="animation-delay: 80ms"></div>
         }
     </div>
     }
 
     @if (!loading() && activeTab() === 'logros') {
-    <div class="space-y-6 animate-fade-in">
+    <div [@staggerCards] class="space-y-6 animate-fade-in">
 
-        <div class="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-default">
+        <div class="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-default/60 card-hover hover-lift group shadow-sm">
             <div>
                 <p class="text-muted text-xs">Desbloqueados</p>
                 <p class="text-primary font-bold text-xl">{{ unlocked().length }} / {{ achievements().length }}</p>
@@ -47,7 +47,7 @@
         <div>
             <div class="flex items-center gap-2 mb-3">
                 <span class="text-lg">{{ getCategoryIcon(cat) }}</span>
-                <p class="text-muted text-sm font-semibold">{{ getCategoryLabel(cat) }}</p>
+                <p class="text-xs font-semibold text-subtle">{{ getCategoryLabel(cat) }}</p>
                 <span
                     class="text-xs text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
                     {{ groupedUnlocked()[cat].length }}
@@ -56,7 +56,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 @for (a of groupedUnlocked()[cat]; track a.id) {
                 <div
-                    class="bg-card rounded-2xl p-4 border border-amber-500/30 hover:border-strong transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10">
+                    class="bg-card rounded-2xl p-4 border border-amber-500/30 hover-lift group-hover:border-strong transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:shadow-primary/10 card-hover group shadow-sm"
+                    [style.animation-delay.ms]="$index * 80">
                     <div class="flex items-start gap-3">
                         <div
                             class="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl">
@@ -86,12 +87,13 @@
         <div>
             <div class="flex items-center gap-2 mb-3">
                 <span class="text-lg opacity-40">{{ getCategoryIcon(cat) }}</span>
-                <p class="text-subtle text-sm font-semibold">{{ getCategoryLabel(cat) }} — Por desbloquear</p>
+                <p class="text-xs font-semibold text-subtle">{{ getCategoryLabel(cat) }} — Por desbloquear</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 @for (a of groupedLocked()[cat]; track a.id) {
                 <div
-                    class="bg-card rounded-2xl p-4 border border-default hover:border-strong transition-all duration-200">
+                    class="bg-card rounded-2xl p-4 border border-default/60 hover-lift group-hover:border-strong transition-all duration-200 card-hover group shadow-sm"
+                    [style.animation-delay.ms]="$index * 80">
                     <div class="flex items-start gap-3">
                         <div
                             class="w-12 h-12 bg-elevated/60 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -125,9 +127,9 @@
     }
 
     @if (!loading() && activeTab() === 'recompensas') {
-    <div class="space-y-4 animate-fade-in">
+    <div [@staggerCards] class="space-y-4 animate-fade-in">
 
-        <div class="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-default">
+        <div class="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-default/60 card-hover hover-lift group shadow-sm">
             <div>
                 <p class="text-muted text-xs">Desbloqueadas</p>
                 <p class="text-primary font-bold text-xl">
@@ -146,7 +148,7 @@
             </p>
             @if (equippedCount() > 0) {
             <button (click)="unequipAll()" [disabled]="unequippingAll() || !!equipping()"
-                class="text-xs font-semibold px-4 py-2 rounded-xl border transition-all duration-200 disabled:opacity-40 cursor-pointer bg-danger/10 text-danger border-red-500/20 hover:bg-danger/90/20 flex-shrink-0">
+                class="text-xs font-semibold px-4 py-2 rounded-xl border transition-all duration-200 disabled:opacity-40 cursor-pointer bg-danger/10 text-danger border-red-500/20 hover:bg-danger/90/20 flex-shrink-0 btn-press">
                 {{ unequippingAll() ? 'Desequipando...' : 'Desequipar todo' }}
             </button>
             }
@@ -159,11 +161,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             @for (r of rewards(); track r.id) {
 
-            <div class="rounded-2xl p-4 border transition-all duration-300" [ngClass]="r.isEquipped
+            <div class="rounded-2xl p-4 border transition-all duration-300 card-hover hover-lift group shadow-sm" [ngClass]="r.isEquipped
         ? 'bg-emerald-950/20 border-emerald-500/50 shadow-lg shadow-emerald-500/8'
         : r.unlocked
-          ? 'bg-card border-default hover:border-strong'
-          : 'bg-card border-default/40 opacity-40 pointer-events-none'">
+          ? 'bg-card border-default group-hover:border-strong'
+          : 'bg-card border-default/40 opacity-40 pointer-events-none'"
+                [style.animation-delay.ms]="$index * 80">
 
                 <div class="flex items-start gap-3">
 
@@ -207,12 +210,12 @@
 
                     @if (r.isEquipped) {
                     <button (click)="toggleEquip(r.id)" [disabled]="equipping() === r.id || unequippingAll()"
-                        class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-danger/10 text-danger border border-red-500/20 hover:bg-danger/90/20">
+                        class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-danger/10 text-danger border border-red-500/20 hover:bg-danger/90/20 btn-press">
                         {{ equipping() === r.id ? 'Actualizando...' : 'Desequipar' }}
                     </button>
                     } @else {
                     <button (click)="toggleEquip(r.id)" [disabled]="equipping() === r.id || unequippingAll()"
-                        class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-elevated text-primary border border-strong hover:bg-elevated">
+                        class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-elevated text-primary border border-strong hover:bg-elevated btn-press">
                         {{ equipping() === r.id ? 'Equipando...' : 'Equipar' }}
                     </button>
                     }

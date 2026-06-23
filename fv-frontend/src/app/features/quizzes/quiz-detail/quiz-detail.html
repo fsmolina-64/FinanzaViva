@@ -1,7 +1,7 @@
-<div class="space-y-6 animate-slide-up">
+<div class="space-y-6 animate-slide-up animate-fade-in-up">
 
     <button (click)="goBack()"
-        class="text-muted hover:text-primary transition-colors text-sm cursor-pointer bg-transparent border-none p-0">
+        class="text-muted hover:text-primary transition-colors text-sm cursor-pointer bg-transparent border-none p-0 btn-press">
         &larr; Volver al módulo
     </button>
 
@@ -16,7 +16,7 @@
     <div class="text-center py-20">
         <p class="text-muted">Este módulo no tiene quiz disponible.</p>
         <button (click)="goBack()"
-            class="mt-4 text-blue-400 hover:text-blue-300 text-sm transition-colors cursor-pointer bg-transparent border-none p-0">
+            class="mt-4 text-blue-400 hover:text-blue-300 text-sm transition-colors cursor-pointer bg-transparent border-none p-0 btn-press">
             Volver al módulo
         </button>
     </div>
@@ -25,7 +25,7 @@
     @if (!loading() && quiz()) {
     <div class="space-y-5 animate-fade-in">
 
-        <div class="bg-card rounded-2xl p-5 border border-default">
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60" style="animation-delay: 80ms">
             <div class="flex items-start justify-between">
                 <div>
                     <h1 class="text-primary font-bold text-lg">{{ quiz()!.title }}</h1>
@@ -53,7 +53,7 @@
         </div>
 
         @if (result()) {
-        <div class="rounded-2xl p-6 border text-center space-y-3"
+        <div class="rounded-2xl p-6 border text-center space-y-4 card-hover shadow-sm" style="animation-delay: 160ms"
             [ngClass]="result()!.passed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-danger/10 border-danger/30'">
             <div class="text-4xl font-bold" [ngClass]="result()!.passed ? 'text-emerald-400' : 'text-danger'">
                 {{ result()!.score }}%
@@ -67,11 +67,11 @@
             }
             <div class="flex items-center justify-center gap-3 mt-2">
                 <button (click)="restart()"
-                    class="bg-elevated hover:bg-elevated text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200">
+                    class="bg-elevated hover:bg-elevated text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 btn-press">
                     Intentar de nuevo
                 </button>
                 <button (click)="goBack()"
-                    class="bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    class="bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
                     Volver al módulo
                 </button>
             </div>
@@ -80,7 +80,7 @@
         <div class="space-y-4">
             <h3 class="text-primary font-semibold text-sm">Revisión de respuestas</h3>
             @for (q of quiz()!.questions; track q.id) {
-            <div class="bg-card rounded-2xl p-5 border space-y-3"
+            <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border space-y-4"
                 [ngClass]="isQuestionCorrect(q.id) ? 'border-emerald-500/30' : 'border-danger/30'">
                 <div class="flex items-start gap-2">
                     <span class="text-xs font-bold mt-0.5 flex-shrink-0"
@@ -109,12 +109,12 @@
         }
 
         @if (!result() && currentQuestion()) {
-        <div class="bg-card rounded-2xl p-5 border border-default space-y-4">
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60 space-y-4" style="animation-delay: 120ms">
             <p class="text-primary font-semibold">{{ currentQuestion()!.text }}</p>
             <div class="space-y-2">
                 @for (opt of currentQuestion()!.answers; track opt.id) {
                 <button (click)="selectOption(currentQuestion()!.id, opt.id)"
-                    class="w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200"
+                    class="w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200 btn-press"
                     [ngClass]="getOptionState(currentQuestion()!.id, opt.id)">
                     {{ opt.text }}
                 </button>
@@ -124,16 +124,16 @@
 
         <div class="flex items-center justify-between gap-3">
             <button (click)="prev()" [disabled]="currentIndex() === 0"
-                class="px-4 py-2.5 rounded-xl border border-strong text-muted text-sm font-medium disabled:opacity-40 hover:border-strong transition-all duration-200">
+                class="px-4 py-2.5 rounded-xl border border-strong text-muted text-sm font-medium disabled:opacity-40 hover:border-strong transition-all duration-200 btn-press">
                 &larr; Anterior
             </button>
             @if (currentIndex() < quiz()!.questions.length - 1) { <button (click)="next()"
-                class="px-4 py-2.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-sm font-medium transition-all duration-200">
+                class="px-4 py-2.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-sm font-medium transition-all duration-200 btn-press">
                 Siguiente &rarr;
                 </button>
                 } @else {
                 <button (click)="submit()" [disabled]="!allAnswered() || submitting()"
-                    class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
                     {{ submitting() ? 'Enviando...' : 'Enviar respuestas' }}
                 </button>
                 }
@@ -141,7 +141,7 @@
         }
 
         @if (history().length > 0) {
-        <div class="bg-card rounded-2xl p-5 border border-default">
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60" style="animation-delay: 200ms">
             <h3 class="text-primary font-semibold mb-3 text-sm">Historial de intentos</h3>
             <div class="space-y-2">
                 @for (h of history(); track h.id) {
@@ -157,8 +157,8 @@
                                 {{ h.passed ? 'Aprobado' : 'Reprobado' }}
                             </span>
                             @if (h.answers && h.answers.length > 0) {
-                            <button (click)="toggleAttempt(h.id)"
-                                class="text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-transparent border-none p-0">
+<button (click)="toggleAttempt(h.id)"
+                            class="text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-transparent border-none p-0 btn-press">
                                 {{ expandedAttemptId() === h.id ? 'Ocultar' : 'Ver respuestas' }}
                             </button>
                             }

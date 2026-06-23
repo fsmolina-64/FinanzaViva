@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
+import { staggerCards } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -34,7 +35,8 @@ const METRIC_MAP: Record<string, (u: UserProfile) => number> = {
 @Component({
   selector: 'app-achievements',
   imports: [CommonModule],
-  templateUrl: './achievements.html'
+  templateUrl: './achievements.html',
+  animations: [staggerCards]
 })
 export class Achievements implements OnInit {
   activeTab = signal<Tab>('logros');

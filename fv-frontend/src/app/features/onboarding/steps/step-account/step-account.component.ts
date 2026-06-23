@@ -28,6 +28,8 @@ export class StepAccountComponent {
   isDeletingId     = signal<string | null>(null);
   errorMsg         = signal<string | null>(null);
   editingId        = signal<string | null>(null);
+  showIncomeChoiceModal = signal(false);
+  private pendingAccountPayload: { name: string; type: AccountType; initialBalance: number } | null = null;
   createdAccounts   = computed(() => this.onboardingService.collectedData().accounts);
   hasAccounts       = computed(() => this.createdAccounts().length > 0);
 
@@ -75,20 +77,37 @@ export class StepAccountComponent {
 
     if (this.editingId()) {
       this.updateAccount();
+      return;
+    }
+
+    const balance = Number(this.form.value.balance);
+    if (balance > 0) {
+      this.pendingAccountPayload = {
+        name:           this.form.value.name!.trim(),
+        type:           this.selectedType(),
+        initialBalance: balance,
+      };
+      this.showIncomeChoiceModal.set(true);
     } else {
-      this.createAccount();
+      this.createAccountWithChoice(false);
     }
   }
 
-  private createAccount(): void {
+  createAccountWithChoice(countAsIncome: boolean): void {
+    this.showIncomeChoiceModal.set(false);
     this.isLoading.set(true);
     this.errorMsg.set(null);
 
-    const payload = {
-      name:           this.form.value.name!.trim(),
-      type:           this.selectedType(),
-      initialBalance: Number(this.form.value.balance),
-    };
+    const payload = this.pendingAccountPayload
+      ? { ...this.pendingAccountPayload, countAsIncome }
+      : {
+          name:           this.form.value.name!.trim(),
+          type:           this.selectedType(),
+          initialBalance: Number(this.form.value.balance),
+          countAsIncome,
+        };
+
+    this.pendingAccountPayload = null;
 
     this.api.post<any>('/finances/accounts', payload).subscribe({
       next: (account) => {

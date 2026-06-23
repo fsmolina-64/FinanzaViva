@@ -15,7 +15,7 @@
     <div class="form-group">
       <label class="text-primary text-sm font-medium mb-2 block">Nombre completo</label>
       <input formControlName="displayName" type="text" placeholder="Tu nombre"
-        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong" />
+        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong" />
       @if (displayName.touched && displayName.errors?.['required']) {
       <p class="text-danger text-xs mt-1.5">El nombre es requerido</p>
       }
@@ -27,7 +27,7 @@
     <div class="form-group">
       <label class="text-primary text-sm font-medium mb-2 block">Correo electrónico</label>
       <input formControlName="email" type="email" placeholder="tu@email.com"
-        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong" />
+        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong" />
       @if (email.touched && email.errors?.['required']) {
       <p class="text-danger text-xs mt-1.5">El correo es requerido</p>
       }
@@ -40,9 +40,9 @@
       <label class="text-primary text-sm font-medium mb-2 block">Contraseña</label>
       <div class="relative">
         <input formControlName="password" [type]="showPassword() ? 'text' : 'password'" placeholder="********"
-          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong" />
+          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong" />
         <button type="button" (click)="togglePassword()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors duration-200 text-xs">
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary btn-press transition-all duration-200 text-xs">
           {{ showPassword() ? 'OCULTAR' : 'VER' }}
         </button>
       </div>
@@ -57,14 +57,14 @@
     <div class="form-group">
       <label class="text-primary text-sm font-medium mb-2 block">Confirmar contraseña</label>
       <input formControlName="confirmPassword" [type]="showPassword() ? 'text' : 'password'" placeholder="********"
-        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-all duration-200 hover:border-strong" />
+        class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong" />
       @if (confirmPassword.touched && form.errors?.['mismatch']) {
       <p class="text-danger text-xs mt-1.5">Las contrasenas no coinciden</p>
       }
     </div>
 
     <button type="submit" [disabled]="loading()"
-      class="w-full bg-accent-blue hover:bg-accent-blue/90 text-primary font-semibold py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-blue/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
+      class="w-full bg-accent-blue hover:bg-accent-blue/90 text-primary font-semibold py-3 rounded-xl btn-press transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-blue/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-2">
       @if (loading()) {
       <span>Creando cuenta...</span>
       } @else {
@@ -74,10 +74,10 @@
 
   </form>
 
-  <p class="text-muted text-sm text-center mt-6">
+  <p class="text-muted text-sm text-center mt-6 group">
     Ya tienes cuenta?
     <a routerLink="/auth/login"
-      class="text-accent-blue hover:text-accent-blue/80 font-medium transition-colors duration-200 hover:underline">
+      class="text-accent-blue group-hover:text-accent-blue/80 font-medium transition-all duration-200 hover:underline">
       Inicia sesión
     </a>
   </p>

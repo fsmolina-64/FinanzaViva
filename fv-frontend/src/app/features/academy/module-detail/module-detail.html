@@ -1,4 +1,4 @@
-<div class="space-y-6 animate-slide-up">
+<div class="space-y-6 animate-slide-up animate-fade-in-up">
 
     <div class="flex items-center gap-3">
         <a routerLink="/academy" class="text-muted hover:text-primary transition-colors text-sm no-underline">
@@ -17,7 +17,7 @@
     @if (!loading() && module()) {
     <div class="animate-fade-in space-y-5">
 
-        <div class="bg-gradient-to-br from-card to-card rounded-2xl p-6 border border-default">
+        <div class="bg-gradient-to-br from-card to-card card-hover shadow-sm rounded-2xl p-6 border border-default/60" style="animation-delay: 80ms">
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
                     <h1 class="text-primary text-xl font-bold">{{ module()!.title }}</h1>
@@ -57,13 +57,14 @@
                 @for (lesson of module()!.lessons ?? []; track lesson.id) {
                 <div [class.cursor-not-allowed]="!canOpen(lesson)">
                     <a [routerLink]="canOpen(lesson) ? ['/academy/lesson', lesson.id] : null"
-                        class="lesson-row flex items-center gap-4 bg-card rounded-xl px-5 py-4 border border-default transition-all duration-200 no-underline block"
+                        class="lesson-row flex items-center gap-4 bg-card card-hover group rounded-xl px-5 py-4 border border-default/60 shadow-sm transition-all duration-200 no-underline block"
                         [ngClass]="canOpen(lesson)
                             ? 'hover:border-strong hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 cursor-pointer'
-                            : 'opacity-50 cursor-not-allowed'">
+                            : 'opacity-50 cursor-not-allowed'"
+                        [style.animation-delay.ms]="$index * 80 + 160">
 
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                            [ngClass]="lesson.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-elevated text-muted'">
+                        <div                         class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm transition-colors duration-300"
+                            [ngClass]="lesson.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30' : 'bg-elevated text-muted group-hover:bg-elevated/80'">
                             {{ lesson.status === 'COMPLETED' ? '✓' : lesson.order }}
                         </div>
 
@@ -86,7 +87,7 @@
         @if (!quizLoading() && quiz()) {
         <div>
             <h2 class="text-muted text-xs font-semibold uppercase tracking-widest mb-3 px-1">Evaluación</h2>
-            <div class="rounded-2xl p-5 border transition-all duration-300" [ngClass]="quizState() === 'passed'
+            <div class="rounded-2xl p-5 border card-hover shadow-sm transition-all duration-300" style="animation-delay: 240ms" [ngClass]="quizState() === 'passed'
                     ? 'bg-emerald-500/10 border-emerald-500/30'
                     : quizState() === 'available'
                         ? 'bg-blue-500/10 border-blue-500/30 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10'
@@ -116,7 +117,7 @@
                     </div>
 
                     <button (click)="navigateToQuiz()" [disabled]="quizState() === 'locked'"
-                        class="flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
+                        class="flex-shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 btn-press disabled:cursor-not-allowed"
                         [ngClass]="quizState() === 'passed'
                             ? 'bg-accent-emerald hover:bg-accent-emerald/90 text-primary'
                             : quizState() === 'available'

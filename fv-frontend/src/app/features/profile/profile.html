@@ -1,4 +1,4 @@
-<div class="space-y-5 animate-slide-up">
+<div class="space-y-5 animate-fade-in-up">
 
   <div>
     <h1 class="text-2xl font-bold text-primary">Mi Perfil</h1>
@@ -7,9 +7,9 @@
 
   @if (loading()) {
   <div class="space-y-4">
-    <div class="bg-card rounded-2xl h-40 animate-pulse border border-default/50"></div>
-    <div class="bg-card rounded-2xl h-12 animate-pulse border border-default/50"></div>
-    <div class="bg-card rounded-2xl h-52 animate-pulse border border-default/50"></div>
+    <div class="bg-card rounded-2xl h-40 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 80ms"></div>
+    <div class="bg-card rounded-2xl h-12 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 160ms"></div>
+    <div class="bg-card rounded-2xl h-52 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 240ms"></div>
   </div>
   }
 
@@ -78,11 +78,11 @@
 
       <div class="relative z-10 flex gap-2 mt-4">
         <button (click)="startEdit()"
-          class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+          class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
           Editar perfil
         </button>
         <button (click)="logout()"
-          class="px-4 py-2.5 rounded-xl border border-danger/30 text-danger hover:bg-danger/10 text-sm font-semibold transition-all duration-200">
+          class="px-4 py-2.5 rounded-xl border border-danger/30 text-danger hover:bg-danger/10 text-sm font-semibold transition-all duration-200 btn-press">
           Salir
         </button>
       </div>
@@ -90,7 +90,7 @@
 
     <div class="profile-tabs">
       @for (tab of tabs; track tab.key) {
-      <button (click)="setTab(tab.key)" [class.tab-active]="activeTab() === tab.key" class="profile-tab-btn">
+      <button (click)="setTab(tab.key)" [class.tab-active]="activeTab() === tab.key" class="profile-tab-btn btn-press">
         <span>{{ tab.icon }}</span>
         <span>{{ tab.label }}</span>
       </button>
@@ -101,7 +101,7 @@
     <div class="animate-tab-in space-y-4">
 
       @if (editing()) {
-      <div class="form-slide bg-card rounded-2xl p-5 border border-blue-500/30 space-y-4">
+      <div class="form-slide bg-card rounded-2xl p-5 border border-blue-500/30 space-y-4 card-hover shadow-sm" style="animation-delay: 80ms">
         <h3 class="text-primary font-semibold">Editar perfil</h3>
         <div>
           <label class="text-muted text-xs mb-1 block">Nombre de usuario</label>
@@ -127,11 +127,11 @@
         </div>
         <div class="flex gap-2">
           <button (click)="saveProfile()" [disabled]="saving()"
-            class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+            class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 btn-press">
             {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
           </button>
           <button (click)="cancelEdit()"
-            class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary text-sm font-semibold transition-all duration-200">
+            class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary text-sm font-semibold transition-all duration-200 btn-press">
             Cancelar
           </button>
         </div>
@@ -238,7 +238,7 @@
         </div>
       </div>
       <div class="section-card">
-        <button (click)="togglePasswordSection()" class="w-full flex items-center justify-between text-left">
+        <button (click)="togglePasswordSection()" class="w-full flex items-center justify-between text-left btn-press">
           <h3 class="section-title mb-0">Cambiar contraseña</h3>
           <span class="text-muted text-lg transition-transform duration-200"
             [class.rotate-180]="showPasswordSection()">▾</span>
@@ -254,7 +254,7 @@
                 class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
                 [ngClass]="passwordErrors().current ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showCurrentPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showCurrentPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
@@ -270,7 +270,7 @@
                 class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
                 [ngClass]="passwordErrors().new ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showNewPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showNewPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
@@ -286,7 +286,7 @@
                 class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
                 [ngClass]="passwordErrors().confirm ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showConfirmPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showConfirmPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
@@ -296,7 +296,7 @@
           </div>
 
           <button (click)="changePassword()" [disabled]="changingPassword()"
-            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 btn-press">
             {{ changingPassword() ? 'Guardando...' : 'Actualizar contraseña' }}
           </button>
 
@@ -317,7 +317,7 @@
             <p class="text-subtle text-xs mt-0.5">Borra todos tus datos de forma permanente</p>
           </div>
           <button (click)="openDeleteModal()"
-            class="flex-shrink-0 px-4 py-2 rounded-xl border border-danger/40 text-danger hover:bg-danger/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer">
+            class="flex-shrink-0 px-4 py-2 rounded-xl border border-danger/40 text-danger hover:bg-danger/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer btn-press">
             Eliminar
           </button>
         </div>
@@ -334,7 +334,7 @@
 
 @if (showDeleteModal()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card group" (click)="$event.stopPropagation()" style="animation-delay: 80ms">
 
     <div class="flex items-start gap-3 mb-5">
       <div
@@ -363,11 +363,11 @@
 
     <div class="flex gap-2">
       <button (click)="confirmDelete()" [disabled]="deleteConfirmText() !== 'ELIMINAR' || deleting()"
-        class="flex-1 py-2.5 rounded-xl bg-danger hover:bg-danger/90 disabled:opacity-35 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200">
+        class="flex-1 py-2.5 rounded-xl bg-danger hover:bg-danger/90 disabled:opacity-35 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 btn-press">
         {{ deleting() ? 'Eliminando...' : 'Eliminar cuenta' }}
       </button>
       <button (click)="closeDeleteModal()" [disabled]="deleting()"
-        class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary disabled:opacity-50 text-sm font-semibold transition-all duration-200">
+        class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary disabled:opacity-50 text-sm font-semibold transition-all duration-200 btn-press">
         Cancelar
       </button>
     </div>

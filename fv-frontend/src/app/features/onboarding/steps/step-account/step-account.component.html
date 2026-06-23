@@ -1,3 +1,34 @@
+@if (showIncomeChoiceModal()) {
+<div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-6 max-w-sm w-full space-y-4">
+    <h4 class="text-white font-semibold text-sm">Como registrar el balance inicial?</h4>
+    <p class="text-slate-400 text-xs">Elige como tratar el saldo de inicio en tu historial.</p>
+    <div class="space-y-2">
+      <button type="button" (click)="createAccountWithChoice(false)"
+        class="w-full bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300
+               text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+        Ajuste directo de balance
+        <span class="block text-xs font-normal text-slate-500 mt-0.5">
+          Se registra como balance inicial -- no cuenta como ingreso
+        </span>
+      </button>
+      <button type="button" (click)="createAccountWithChoice(true)"
+        class="w-full bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30
+               text-emerald-400 text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+        Registrar como ingreso
+        <span class="block text-xs font-normal text-slate-500 mt-0.5">
+          Aparecera en tus reportes de ingresos del periodo
+        </span>
+      </button>
+    </div>
+    <button type="button" (click)="showIncomeChoiceModal.set(false)"
+      class="w-full bg-slate-800 text-slate-400 text-sm py-2 rounded-lg hover:text-white transition-colors">
+      Cancelar
+    </button>
+  </div>
+</div>
+}
+
 <div class="flex flex-col items-center">
 
   <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600

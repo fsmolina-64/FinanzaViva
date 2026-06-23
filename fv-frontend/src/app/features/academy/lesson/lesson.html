@@ -1,4 +1,4 @@
-<div class="space-y-5 animate-slide-up">
+<div class="space-y-5 animate-slide-up animate-fade-in-up">
 
     <a [routerLink]="lesson() ? backLink : '/academy'"
         class="inline-flex items-center gap-1.5 text-muted hover:text-primary transition-colors text-sm no-underline group">
@@ -19,14 +19,14 @@
     @if (!loading() && lesson()) {
     <div class="animate-fade-in space-y-5">
 
-        <div class="bg-card rounded-2xl p-5 space-y-4 border transition-colors duration-300"
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 space-y-4 border transition-colors duration-300" style="animation-delay: 80ms"
             [class.border-emerald-500]="isCompleted" [class.border-emerald-500\/30]="isCompleted"
             [class.border-default]="!isCompleted">
 
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 space-y-2">
                     <h1 class="text-primary text-xl font-bold leading-tight">{{ lesson()!.title }}</h1>
-                    <div class="flex items-center gap-3 text-xs text-muted flex-wrap">
+                    <div class="flex items-center gap-4 text-xs text-muted flex-wrap">
                         <span class="flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
@@ -88,7 +88,7 @@
             </div>
         </div>
 
-        <div class="bg-card rounded-2xl border border-default overflow-hidden">
+        <div class="bg-card card-hover shadow-sm rounded-2xl border border-default/60 overflow-hidden" style="animation-delay: 160ms">
             <div class="p-6 space-y-6">
                 @for (block of lesson()!.content; track $index) {
                 @switch (block.type) {
@@ -141,7 +141,7 @@
                 }
 
                 @case ('tip') {
-                <div class="flex gap-3 rounded-xl p-4 bg-amber-500/10 border border-amber-500/25">
+                <div class="flex gap-4 rounded-xl p-5 bg-amber-500/10 border border-amber-500/25">
                     <div class="flex-shrink-0 mt-0.5">
                         <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
@@ -157,7 +157,7 @@
                 }
 
                 @case ('warning') {
-                <div class="flex gap-3 rounded-xl p-4 bg-danger/10 border border-red-500/25">
+                <div class="flex gap-4 rounded-xl p-5 bg-danger/10 border border-red-500/25">
                     <div class="flex-shrink-0 mt-0.5">
                         <svg class="w-4 h-4 text-danger" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
@@ -202,7 +202,7 @@
                     }
                     <div class="space-y-2">
                         @for (item of block.items ?? []; track $index) {
-                        <div class="flex items-start gap-3 p-3 rounded-lg bg-card/60 border border-default/60">
+                        <div class="flex items-center gap-3 rounded-xl p-5 bg-card/60 border border-default/60">
                             <div class="w-1.5 h-1.5 rounded-full bg-primary-light mt-2 flex-shrink-0"></div>
                             <p class="text-muted text-sm leading-relaxed">{{ item }}</p>
                         </div>
@@ -227,11 +227,11 @@
                         </svg>
                         <p class="text-accent-purple/80 font-bold text-xs uppercase tracking-wider">Reto práctico</p>
                     </div>
-                    <div class="p-4 space-y-3">
+                    <div class="p-5 space-y-4">
                         <p class="text-primary text-sm leading-relaxed font-medium">{{ block.question }}</p>
                         @if (block.hint) {
                         <button (click)="toggleHint($index)"
-                            class="flex items-center gap-1.5 text-accent-purple hover:text-accent-purple/80 text-xs font-medium transition-colors">
+                            class="flex items-center gap-1.5 text-accent-purple hover:text-accent-purple/80 text-xs font-medium transition-colors btn-press">
                             <svg class="w-3.5 h-3.5 transition-transform duration-200"
                                 [class.rotate-180]="isHintVisible($index)" fill="none" stroke="currentColor"
                                 stroke-width="2" viewBox="0 0 24 24">
@@ -284,7 +284,7 @@
                         </svg>
                         <span class="text-blue-400 font-bold text-xs uppercase tracking-wider">Formula</span>
                     </div>
-                    <div class="p-4 space-y-3">
+                    <div class="p-5 space-y-4">
                         <div class="bg-app/80 rounded-lg py-3 px-4">
                             <p class="font-mono text-blue-300 text-sm font-bold text-center tracking-wide">{{
                                 block.formula }}</p>
@@ -310,7 +310,7 @@
 
         @if (result()) {
         <div
-            class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
+            class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-4 card-hover shadow-sm" style="animation-delay: 240ms">
             @if (result()!.totalXpEarned > 0) {
             <div class="text-emerald-400 font-bold text-3xl">+{{ result()!.totalXpEarned }} XP</div>
             @if (result()!.lessonXpEarned > 0 && result()!.moduleXpEarned > 0) {
@@ -336,7 +336,7 @@
             }
             <div>
                 <button (click)="goNext()"
-                    class="inline-flex items-center gap-2 bg-accent-blue hover:bg-accent-blue/90 text-primary text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25">
+                    class="inline-flex items-center gap-2 bg-accent-blue hover:bg-accent-blue/90 text-primary text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25 btn-press">
                     {{ result()!.nextLesson ? 'Siguiente lección' : 'Volver al módulo' }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -349,7 +349,7 @@
         @if (!result()) {
         @if (!isCompleted) {
         <button (click)="complete()" [disabled]="completing()"
-            class="w-full bg-accent-blue hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary font-semibold py-3.5 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25 flex items-center justify-center gap-2">
+            class="w-full bg-accent-blue hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary font-semibold py-3.5 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25 flex items-center justify-center gap-2 btn-press">
             @if (completing()) {
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -373,7 +373,7 @@
                 Lección ya completada
             </div>
             <button (click)="reset()" [disabled]="resetting()"
-                class="sm:w-auto px-5 py-3 rounded-2xl border border-strong text-muted text-sm font-medium hover:text-primary hover:border-strong disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                class="sm:w-auto px-5 py-3 rounded-2xl border border-strong text-muted text-sm font-medium hover:text-primary hover:border-strong disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 btn-press">
                 {{ resetting() ? 'Actualizando...' : 'Marcar como pendiente' }}
             </button>
         </div>

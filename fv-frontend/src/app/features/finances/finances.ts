@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed, effect, untracked } from '@angular/core';
+import { tabSlideAnimation } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import {
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
   CreateTransactionPayload, CreateCategoryPayload, CreateBudgetPayload, TransferDisplay
 } from '../../core/models/finance.model';
+import { EditTransactionModal } from './edit-transaction-modal/edit-transaction-modal';
 import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -35,9 +37,10 @@ interface RecurringRule {
 @Component({
   selector: 'app-finances',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, EditTransactionModal],
   templateUrl: './finances.html',
-  styleUrl: './finances.css'
+  styleUrl: './finances.css',
+  animations: [tabSlideAnimation]
 })
 export class Finances implements OnInit {
 
@@ -70,6 +73,7 @@ export class Finances implements OnInit {
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
   editingTxId = signal<string | null>(null);
+  editingModalTx = signal<Transaction | TransferDisplay | null>(null);
   editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
   editTx = { categoryId: '', amount: 0, description: '', date: '', accountId: '' };
   editTxTransferToAccountId = '';
@@ -245,7 +249,7 @@ export class Finances implements OnInit {
       }
     }
 
-    return nonTransfers;
+    return nonTransfers.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   });
 
   recentTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
@@ -302,9 +306,11 @@ export class Finances implements OnInit {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(tx);
     }
-    return Array.from(map.entries()).map(([date, items]) => ({
-      date, label: this.formatDateLabel(date), items
-    }));
+    return Array.from(map.entries())
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+      .map(([date, items]) => ({
+        date, label: this.formatDateLabel(date), items
+      }));
   });
 
   calendarCells = computed(() => {
@@ -402,7 +408,8 @@ export class Finances implements OnInit {
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
 
   hasEditingOpen(): boolean {
-    return !!(this.editingAccountId() || this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
+    return !!(this.editingModalTx() || this.editingAccountId() || this.editingTxId() ||
+      this.editingCategoryId() || this.editingBudgetId() ||
       this.editingGoalId() || this.addingProgressGoalId() ||
       this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
       this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
@@ -425,6 +432,7 @@ export class Finances implements OnInit {
   }
 
   resetAllFormState(): void {
+    this.editingModalTx.set(null);
     this.showAccountForm.set(false);
     this.showTransactionForm.set(false);
     this.showBudgetForm.set(false);
@@ -541,10 +549,11 @@ export class Finances implements OnInit {
         this.financeService.updateAccount(acc.id, { balance: newBalance }).subscribe({
           next: updated => {
             this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
+            this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
             this.refreshSummary();
             this.pendingAccountEdit = null;
             this.cancelEditAccount();
-            this.toast.success('Cuenta actualizada');
+            this.toast.success('Balance actualizado');
           },
           error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
         });
@@ -658,31 +667,23 @@ export class Finances implements OnInit {
   }
 
   startEditTx(tx: Transaction | TransferDisplay): void {
-    this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : tx.id);
     this.confirmDeleteTxId.set(null);
-    this.editTxType.set(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER');
-    if (tx.type === 'TRANSFER') {
-      const td = tx as TransferDisplay;
-      this.editTx = {
-        categoryId: '',
-        amount: td.amount,
-        description: td.description ?? '',
-        date: new Date(td.date).toISOString().split('T')[0],
-        accountId: td.fromAccountId,
-      };
-      this.editTxTransferToAccountId = td.toAccountId;
-      this.editTxTransferGroupId = td.groupId;
-    } else {
-      this.editTx = {
-        categoryId: tx.categoryId,
-        amount: parseFloat(String(tx.amount)),
-        description: tx.description ?? '',
-        date: new Date(tx.date).toISOString().split('T')[0],
-        accountId: tx.accountId
-      };
-    }
+    this.confirmDeleteTransferGroupId.set(null);
+    this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : (tx as Transaction).id);
+    this.editingModalTx.set(tx);
   }
   cancelEditTx(): void { this.editingTxId.set(null); }
+
+  onEditModalSaved(): void {
+    this.editingModalTx.set(null);
+    this.editingTxId.set(null);
+    this.reloadAll();
+  }
+
+  onEditModalClosed(): void {
+    this.editingModalTx.set(null);
+    this.editingTxId.set(null);
+  }
 
   onEditTxTypeChange(t: 'INCOME' | 'EXPENSE' | 'TRANSFER'): void {
     this.editTxType.set(t);

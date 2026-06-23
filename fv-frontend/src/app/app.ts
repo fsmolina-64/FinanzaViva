@@ -2,6 +2,7 @@ import { Component, signal, inject } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
+import { routeAnimation } from './core/animations/animations';
 import { QuickTransactionModal } from './shared/components/quick-transaction-modal/quick-transaction-modal';
 import { ToastComponent } from './shared/components/toast/toast';
 import { QuickTransactionService, QuickTransactionResult } from './core/services/quick-transaction.service';
@@ -10,8 +11,11 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, CommonModule, QuickTransactionModal, ToastComponent],
+  animations: [routeAnimation],
   template: `
-    <router-outlet />
+    <div [@routeAnimation]="currentRoute()">
+      <router-outlet />
+    </div>
     <app-toast />
 
     @if (!isAuthRoute()) {
@@ -62,10 +66,12 @@ export class App {
 
   isAuthRoute = signal(true);
   fabMenuOpen = signal(false);
+  currentRoute = signal('');
 
   constructor() {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       const url: string = e.urlAfterRedirects;
+      this.currentRoute.set(url);
       this.isAuthRoute.set(url === '/' || url.startsWith('/auth/') || url.startsWith('/onboarding'));
       this.fabMenuOpen.set(false);
     });
