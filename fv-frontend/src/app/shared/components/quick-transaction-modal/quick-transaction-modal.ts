@@ -112,7 +112,6 @@ export class QuickTransactionModal implements OnInit {
     pad(key: string): void {
         if (this.showDebtConfirm()) return;
 
-        // Borrar: si estamos en decimal y está vacío, salir del modo decimal
         if (key === '<') {
             if (this.inDecimalMode) {
                 if (this.decimalStr!.length === 0) {
@@ -126,7 +125,6 @@ export class QuickTransactionModal implements OnInit {
             return;
         }
 
-        // Activar modo decimal (solo una vez)
         if (key === '.') {
             if (!this.inDecimalMode) this.decimalStr = '';
             return;
@@ -135,7 +133,7 @@ export class QuickTransactionModal implements OnInit {
         if (!/^\d$/.test(key)) return;
 
         if (this.inDecimalMode) {
-            if (this.decimalStr!.length >= 2) return; // máximo 2 decimales
+            if (this.decimalStr!.length >= 2) return;
             this.decimalStr = this.decimalStr + key;
         } else {
             if (this.integerStr === '0') {
@@ -169,12 +167,10 @@ export class QuickTransactionModal implements OnInit {
         if (mapped) { e.preventDefault(); this.pad(mapped); }
     }
 
-    // ─── Helpers de monto ─────────────────────────────────────────────────────
 
     getAmount(): number {
         const integer = parseInt(this.integerStr) || 0;
         if (this.decimalStr === null || this.decimalStr === '') return integer;
-        // '5' → padEnd(2,'0') → '50' → 50/100 = 0.50
         const decimal = parseInt(this.decimalStr.padEnd(2, '0')) / 100;
         return integer + decimal;
     }
@@ -183,12 +179,6 @@ export class QuickTransactionModal implements OnInit {
         return parseInt(this.integerStr).toLocaleString('en-US');
     }
 
-    /**
-     * null → '__'  (tenue, modo entero)
-     * ''   → '__'  (brillante, recién activado, esperando dígitos)
-     * '5'  → '5_'
-     * '50' → '50'
-     */
     getDecimalDisplay(): string {
         if (this.decimalStr === null) return '__';
         const filled = this.decimalStr;
@@ -213,7 +203,6 @@ export class QuickTransactionModal implements OnInit {
         return parseFloat(String(acc?.balance ?? '0'));
     }
 
-    // ─── Submit ───────────────────────────────────────────────────────────────
 
     submit(): void {
         if (this.getAmount() <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }

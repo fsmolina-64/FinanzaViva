@@ -391,7 +391,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d);; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
@@ -945,7 +945,6 @@ export class Finances implements OnInit {
     if (!this.editCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     this.financeService.updateCategory(id, { name: this.editCategory.name.trim() }).subscribe({
       next: updated => {
-        // If backend returned a new category (user override for global), replace the old
         if (updated.id !== id) {
           this.categories.update(l => [...l.filter(c => c.id !== id), updated]);
           this.toast.success('Categoría personalizada creada. La original permanece para otros usuarios.');
@@ -1244,7 +1243,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); ; done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d);; done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });

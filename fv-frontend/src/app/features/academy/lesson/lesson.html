@@ -77,12 +77,12 @@
 
             <div class="space-y-1">
                 <div class="flex justify-between text-xs text-slate-500">
-                    <span>Progreso de lectura</span>
-                    <span>{{ scrollProgress() }}%</span>
+                    <span>Progreso de lectura del módulo</span>
+                    <span>{{ moduleReadingProgress() }}%</span>
                 </div>
                 <div class="h-1.5 bg-slate-700/80 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-200"
-                        [style.width.%]="scrollProgress()">
+                        [style.width.%]="moduleReadingProgress()">
                     </div>
                 </div>
             </div>

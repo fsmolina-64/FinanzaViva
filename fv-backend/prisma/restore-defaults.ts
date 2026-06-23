@@ -12,22 +12,21 @@ const DEFAULT_NAMES = [
 ];
 
 const DEFAULTS: { name: string; icon: string; color: string; type: 'INCOME' | 'EXPENSE' }[] = [
-  { name: 'Salario',         icon: '💼', color: '#10B981', type: 'INCOME'  },
-  { name: 'Freelance',       icon: '💻', color: '#10B981', type: 'INCOME'  },
-  { name: 'Inversiones',     icon: '📈', color: '#10B981', type: 'INCOME'  },
-  { name: 'Alimentación',    icon: '🍔', color: '#EF4444', type: 'EXPENSE' },
-  { name: 'Transporte',      icon: '🚌', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Salario', icon: '💼', color: '#10B981', type: 'INCOME' },
+  { name: 'Freelance', icon: '💻', color: '#10B981', type: 'INCOME' },
+  { name: 'Inversiones', icon: '📈', color: '#10B981', type: 'INCOME' },
+  { name: 'Alimentación', icon: '🍔', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Transporte', icon: '🚌', color: '#EF4444', type: 'EXPENSE' },
   { name: 'Entretenimiento', icon: '🎮', color: '#EF4444', type: 'EXPENSE' },
-  { name: 'Salud',           icon: '🏥', color: '#EF4444', type: 'EXPENSE' },
-  { name: 'Educación',       icon: '📚', color: '#EF4444', type: 'EXPENSE' },
-  { name: 'Servicios',       icon: '💡', color: '#EF4444', type: 'EXPENSE' },
-  { name: 'Ropa',            icon: '👕', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Salud', icon: '🏥', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Educación', icon: '📚', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Servicios', icon: '💡', color: '#EF4444', type: 'EXPENSE' },
+  { name: 'Ropa', icon: '👕', color: '#EF4444', type: 'EXPENSE' },
 ];
 
 async function main() {
   console.log('Restaurando categorías predefinidas...\n');
 
-  // 1. Delete global categories that were renamed (not in defaults list)
   const corrupted = await prisma.category.findMany({
     where: { isGlobal: true, NOT: { name: { in: DEFAULT_NAMES } } },
   });
@@ -36,7 +35,6 @@ async function main() {
     await prisma.category.delete({ where: { id: c.id } });
   }
 
-  // 2. Create missing default categories
   for (const cat of DEFAULTS) {
     const exists = await prisma.category.findFirst({
       where: { name: cat.name, isGlobal: true },
@@ -51,7 +49,6 @@ async function main() {
     }
   }
 
-  // 3. Remove duplicates (keep the first one by id order)
   for (const name of DEFAULT_NAMES) {
     const all = await prisma.category.findMany({
       where: { name, isGlobal: true },

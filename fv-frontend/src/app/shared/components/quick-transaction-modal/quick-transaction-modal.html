@@ -57,16 +57,9 @@
         </div>
         } @else {
 
-        <!-- ── DISPLAY MONTO ─────────────────────────────────────────────── -->
         <div class="px-6 pt-5 pb-3 text-center select-none">
             <p class="text-slate-500 text-xs font-medium mb-2 uppercase tracking-widest">Monto</p>
 
-            <!--
-            Color heredado del wrapper → todos los spans lo usan.
-            Parte entera: siempre brillante.
-            Separador + decimales: opacity baja en modo entero, plena en modo decimal.
-            getDecimalDisplay() devuelve '__' (placeholder) o los dígitos + '_' de cursor.
-          -->
             <div class="flex items-baseline justify-center" [ngClass]="amountColorClass()">
                 <span class="text-3xl font-semibold opacity-50 mr-0.5">$</span>
                 <span class="text-6xl font-black tracking-tight tabular-nums leading-none">
@@ -80,7 +73,6 @@
                 </span>
             </div>
 
-            <!-- Hint de modo: aparece al entrar en decimales, desaparece al salir -->
             <p class="text-xs mt-1.5 font-medium transition-opacity duration-200" [ngClass]="amountColorClass()"
                 [style.opacity]="inDecimalMode ? '0.55' : '0'">
                 centavos -- presiona &larr; para volver
@@ -90,7 +82,6 @@
             <p class="text-amber-400 text-xs mt-1.5">Supera el saldo disponible -- se registrara como deuda</p>
             }
         </div>
-        <!-- ─────────────────────────────────────────────────────────────── -->
 
         <div class="px-4 pb-3">
             <div class="grid grid-cols-3 gap-2">

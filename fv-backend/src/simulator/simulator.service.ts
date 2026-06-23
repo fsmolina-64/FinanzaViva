@@ -1019,7 +1019,6 @@ export class SimulatorService {
     const baseXP = this.getBaseXP(game.maxRounds);
 
     const humanPlayers = game.players.filter((p: any) => !p.isBot);
-    // XP is based on the best human player's rank
     const bestHuman = humanPlayers.length > 0
       ? humanPlayers[0]
       : ranked[0];
@@ -1063,7 +1062,6 @@ export class SimulatorService {
           description: `Simulador completado — Posición #${bestHumanRank} de ${game.players.length} jugadores`,
         });
       } catch {
-        // XP award is best-effort
       }
     }
 

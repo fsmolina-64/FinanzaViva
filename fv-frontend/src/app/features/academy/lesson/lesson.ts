@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AcademyService } from '../../../core/services/academy.service';
 import { GamificationService } from '../../../core/services/gamification.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ReadingProgressService } from '../../../core/services/reading-progress.service';
 import { ContentBlock, Lesson, LessonCompleteResponse } from '../../../core/models/academy.model';
 
 @Component({
@@ -19,6 +20,7 @@ export class LessonComponent implements OnInit {
   result = signal<LessonCompleteResponse | null>(null);
   revealedHints = signal<Set<number>>(new Set());
   scrollProgress = signal(0);
+  moduleReadingProgress = signal(0);
 
   exerciseIndices = computed(() => {
     const map = new Map<number, number>();
@@ -42,13 +44,18 @@ export class LessonComponent implements OnInit {
     private router: Router,
     private academyService: AcademyService,
     private gamificationService: GamificationService,
-    private toast: ToastService
+    private toast: ToastService,
+    private readingProgressService: ReadingProgressService
   ) { }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('lessonId')!;
     this.academyService.getLesson(id).subscribe({
-      next: d => { this.lesson.set(d); this.loading.set(false); },
+      next: d => {
+        this.lesson.set(d);
+        this.loading.set(false);
+        this.readingProgressService.refreshProgress(d.moduleId, v => this.moduleReadingProgress.set(v));
+      },
       error: () => { this.loading.set(false); this.toast.error('Error al cargar la lección'); }
     });
   }
@@ -103,6 +110,10 @@ export class LessonComponent implements OnInit {
         this.lesson.update(l => l ? { ...l, status: 'COMPLETED' as const } : l);
         this.completing.set(false);
         this.toast.success('Lección completada');
+        const lesson = this.lesson();
+        if (lesson) {
+          this.readingProgressService.refreshProgress(lesson.moduleId, v => this.moduleReadingProgress.set(v));
+        }
         if (res.totalXpEarned > 0) {
           this.gamificationService.loadStats().subscribe();
         }

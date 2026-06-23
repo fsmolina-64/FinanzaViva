@@ -52,7 +52,6 @@ export class Achievements implements OnInit {
   groupedLocked = computed(() => this.groupByCategory(this.locked()));
   categories = computed(() => Object.keys(CATEGORY_META));
 
-  // Cuántas recompensas están actualmente equipadas
   equippedCount = computed(() => this.rewards().filter(r => r.isEquipped).length);
 
   tabs: { key: Tab; label: string }[] = [
@@ -109,7 +108,6 @@ export class Achievements implements OnInit {
     return a.condition.threshold ? (this.getProgress(a) / a.condition.threshold) * 100 : 0;
   }
 
-  // Equipa o desequipa según el estado actual (toggle)
   toggleEquip(rewardId: string): void {
     if (this.equipping()) return;
     this.equipping.set(rewardId);
@@ -119,7 +117,6 @@ export class Achievements implements OnInit {
         const target = this.rewards().find(r => r.id === rewardId);
         this.rewards.update(list => list.map(r => {
           if (r.id === rewardId) return { ...r, isEquipped: res.isEquipped };
-          // Si estamos equipando, desequipar las del mismo tipo
           if (res.isEquipped && r.type === target?.type) return { ...r, isEquipped: false };
           return r;
         }));
@@ -133,7 +130,6 @@ export class Achievements implements OnInit {
     });
   }
 
-  // Desequipa todas las que estén equipadas en paralelo
   unequipAll(): void {
     if (this.unequippingAll()) return;
     const equipped = this.rewards().filter(r => r.isEquipped);
@@ -147,7 +143,6 @@ export class Achievements implements OnInit {
         this.toast.success('Todas las recompensas desequipadas');
       },
       error: () => {
-        // Recarga desde el servidor para reflejar estado real tras fallo parcial
         this.achievementService.getRewards().subscribe({
           next: d => { this.rewards.set(d); this.unequippingAll.set(false); },
           error: () => this.unequippingAll.set(false)

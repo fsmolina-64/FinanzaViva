@@ -19,7 +19,6 @@
 
   <div class="w-full space-y-5">
 
-    <!-- Categoria -->
     <div>
       <label class="block text-gray-400 text-xs mb-2 font-medium">
         Categoria de gasto
@@ -32,7 +31,6 @@
       </div>
       } @else {
       <div class="flex flex-wrap gap-2">
-        <!-- General -->
         <button type="button" (click)="selectCategory('__general__')"
           [disabled]="!isEditing() && usedCategoryIds().has('__general__')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs
                  font-medium transition-all cursor-pointer border
@@ -43,7 +41,6 @@
           <span class="w-2 h-2 rounded-full flex-shrink-0 bg-purple-400"></span>
           General
         </button>
-        <!-- Por categoria -->
         @for (cat of categories(); track cat.id) {
         <button type="button" (click)="selectCategory(cat.id)"
           [disabled]="!isEditing() && usedCategoryIds().has(cat.id)" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs
@@ -61,7 +58,6 @@
       }
     </div>
 
-    <!-- Monto -->
     <div>
       <label class="block text-gray-400 text-xs mb-1.5 font-medium">Limite de gasto</label>
       <div class="relative">
@@ -94,7 +90,6 @@
     </button>
     }
 
-    <!-- Budgets creados -->
     @if (hasBudgets()) {
     <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
       <p class="text-gray-400 text-xs font-medium mb-3">Presupuestos creados</p>

@@ -127,7 +127,6 @@
     @if (!loading() && activeTab() === 'recompensas') {
     <div class="space-y-4 animate-fade-in">
 
-        <!-- Barra resumen + botón desequipar todo -->
         <div class="flex items-center gap-4 bg-[#1E293B] rounded-2xl px-5 py-4 border border-slate-700">
             <div>
                 <p class="text-slate-400 text-xs">Desbloqueadas</p>
@@ -142,7 +141,8 @@
                 </div>
             </div>
             <p class="text-violet-400 font-bold text-sm flex-shrink-0">
-                {{ rewards().length ? ((rewards().filter(r => r.unlocked).length / rewards().length) * 100 | number:'1.0-0') : 0 }}%
+                {{ rewards().length ? ((rewards().filter(r => r.unlocked).length / rewards().length) * 100 |
+                number:'1.0-0') : 0 }}%
             </p>
             @if (equippedCount() > 0) {
             <button (click)="unequipAll()" [disabled]="unequippingAll() || !!equipping()"
@@ -165,10 +165,8 @@
           ? 'bg-[#1E293B] border-slate-700 hover:border-slate-600'
           : 'bg-[#1E293B] border-slate-700/40 opacity-40 pointer-events-none'">
 
-                <!-- Cabecera de la card -->
                 <div class="flex items-start gap-3">
 
-                    <!-- Icono -->
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl transition-colors duration-300"
                         [ngClass]="r.isEquipped ? 'bg-emerald-500/20' : r.unlocked ? 'bg-slate-700/60' : 'bg-slate-800'">
                         @if (r.unlocked) {
@@ -178,7 +176,6 @@
                         }
                     </div>
 
-                    <!-- Texto -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                             <p class="font-semibold text-sm leading-tight"
@@ -193,7 +190,6 @@
                             }
                         </div>
 
-                        <!-- Badge de tipo -->
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
                             [ngClass]="getRewardTypeColor(r.type)">
                             {{ getRewardTypeLabel(r.type) }}
@@ -205,19 +201,16 @@
                     </div>
                 </div>
 
-                <!-- Botones de acción — solo si está desbloqueada -->
                 @if (r.unlocked) {
                 <div class="mt-3 pt-3 border-t"
                     [ngClass]="r.isEquipped ? 'border-emerald-500/20' : 'border-slate-700/60'">
 
                     @if (r.isEquipped) {
-                    <!-- Botón desequipar -->
                     <button (click)="toggleEquip(r.id)" [disabled]="equipping() === r.id || unequippingAll()"
                         class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
                         {{ equipping() === r.id ? 'Actualizando...' : 'Desequipar' }}
                     </button>
                     } @else {
-                    <!-- Botón equipar -->
                     <button (click)="toggleEquip(r.id)" [disabled]="equipping() === r.id || unequippingAll()"
                         class="w-full py-2 rounded-xl text-xs font-semibold transition-all duration-200 disabled:opacity-40 cursor-pointer bg-slate-700 text-white border border-slate-600 hover:bg-slate-600">
                         {{ equipping() === r.id ? 'Equipando...' : 'Equipar' }}

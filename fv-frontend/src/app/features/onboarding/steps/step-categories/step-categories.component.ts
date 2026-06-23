@@ -5,45 +5,45 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { OnboardingCategory, OnboardingService } from '../../../../core/services/onboarding.service';
 
 interface Category {
-  id:       string;
-  name:     string;
-  icon:     string;
-  color:    string;
-  type:     'INCOME' | 'EXPENSE';
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  type: 'INCOME' | 'EXPENSE';
   isGlobal: boolean;
 }
 
 type TabType = 'INCOME' | 'EXPENSE';
 
 @Component({
-  selector:    'app-step-categories',
-  standalone:  true,
-  imports:     [ReactiveFormsModule],
+  selector: 'app-step-categories',
+  standalone: true,
+  imports: [ReactiveFormsModule],
   templateUrl: './step-categories.component.html',
 })
 export class StepCategoriesComponent implements OnInit {
-  private api          = inject(ApiService);
-  private fb           = inject(FormBuilder);
-  private onboarding   = inject(OnboardingService);
-  private toast        = inject(ToastService);
+  private api = inject(ApiService);
+  private fb = inject(FormBuilder);
+  private onboarding = inject(OnboardingService);
+  private toast = inject(ToastService);
 
   next = output<void>();
   categoryCreated = output<OnboardingCategory>();
 
-  categories   = signal<Category[]>([]);
-  activeTab    = signal<TabType>('EXPENSE');
-  isLoading    = signal(true);
+  categories = signal<Category[]>([]);
+  activeTab = signal<TabType>('EXPENSE');
+  isLoading = signal(true);
 
-  editingId    = signal<string | null>(null);
-  editName     = signal('');
+  editingId = signal<string | null>(null);
+  editName = signal('');
   isEditSaving = signal(false);
 
-  deletingId   = signal<string | null>(null);
-  deleteError  = signal<string | null>(null);
+  deletingId = signal<string | null>(null);
+  deleteError = signal<string | null>(null);
 
-  showAddForm  = signal(false);
-  addLoading   = signal(false);
-  addError     = signal<string | null>(null);
+  showAddForm = signal(false);
+  addLoading = signal(false);
+  addError = signal<string | null>(null);
 
   addForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(30)]],
@@ -60,8 +60,8 @@ export class StepCategoriesComponent implements OnInit {
   private loadCategories(): void {
     this.isLoading.set(true);
     this.api.get<Category[]>('/finances/categories').subscribe({
-      next:  (cats) => { this.categories.set(cats); this.isLoading.set(false); },
-      error: ()     => this.isLoading.set(false),
+      next: (cats) => { this.categories.set(cats); this.isLoading.set(false); },
+      error: () => this.isLoading.set(false),
     });
   }
 
@@ -117,7 +117,6 @@ export class StepCategoriesComponent implements OnInit {
     this.api.delete<any>(`/finances/categories/${cat.id}`).subscribe({
       next: () => {
         this.categories.update(cats => cats.filter(c => c.id !== cat.id));
-        // Remove from customCategories if it was user-created
         this.onboarding.collectedData.update(d => ({
           ...d,
           customCategories: d.customCategories.filter(c => c.id !== cat.id),
@@ -146,10 +145,10 @@ export class StepCategoriesComponent implements OnInit {
     this.addError.set(null);
 
     const payload = {
-      name:  this.addForm.value.name!.trim(),
-      type:  this.activeTab(),
+      name: this.addForm.value.name!.trim(),
+      type: this.activeTab(),
       color: '#10b981',
-      icon:  'tag',
+      icon: 'tag',
     };
 
     this.api.post<Category>('/finances/categories', payload).subscribe({
