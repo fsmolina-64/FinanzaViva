@@ -95,10 +95,8 @@ export const routeAnimation = trigger('routeAnimation', [
 ]);
 
 export const tabSlideAnimation = trigger('tabSlide', [
-  transition('* => *', [
-    query(':enter', [
-      style({ opacity: 0, transform: 'translateY(8px)' }),
-      animate('250ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
-    ], { optional: true }),
+  transition(':enter', [
+    style({ opacity: 0, transform: 'translateY(8px)' }),
+    animate('250ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
   ]),
 ]);

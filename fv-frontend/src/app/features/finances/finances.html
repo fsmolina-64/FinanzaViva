@@ -104,10 +104,8 @@
     </div>
     }
 
-    <div [@tabSlide]="activeTab()">
-
     @if (activeTab() === 'resumen') {
-    <div class="space-y-4">
+    <div @tabSlide class="space-y-4">
 
       <div class="grid grid-cols-3 gap-3">
         <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
@@ -355,7 +353,7 @@
     }
 
     @if (activeTab() === 'transacciónes') {
-    <div class="space-y-4">
+    <div @tabSlide class="space-y-4">
 
       <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover space-y-3">
 
@@ -708,6 +706,7 @@
     }
 
     @if (activeTab() === 'presupuestos') {
+    <div @tabSlide class="space-y-4">
 
     @if (showDebtConfirm()) {
     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
@@ -1127,10 +1126,11 @@
       </div>
 
     </div>
+    </div>
     }
 
     @if (activeTab() === 'metas') {
-    <div class="space-y-4">
+    <div @tabSlide class="space-y-4">
 
       <div class="flex items-center justify-between">
         <h3 class="text-primary font-semibold">Mis metas</h3>
@@ -1291,8 +1291,6 @@
 
       </div>
     }
-
-    </div>
 
   </div>
   }
