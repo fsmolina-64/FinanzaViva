@@ -9,6 +9,7 @@ import { AcademyModule } from './academy/academy.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { SimulatorModule } from './simulator/simulator.module';
 import { AchievementsModule } from './achievements/achievements.module';
+import { RankingModule } from './ranking/ranking.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     QuizzesModule,
     SimulatorModule,
     AchievementsModule,
+    RankingModule,
     EventEmitterModule.forRoot(),
   ],
 })

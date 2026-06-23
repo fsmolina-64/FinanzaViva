@@ -20,6 +20,7 @@ export class MainLayout {
     { path: '/academy', icon: 'academia.png', label: 'Academia' },
     { path: '/simulator', icon: 'simulador.png', label: 'Simulador' },
     { path: '/achievements', icon: 'logro.png', label: 'Logros' },
+    { path: '/ranking', icon: 'ranking.png', label: 'Ranking' },
     { path: '/profile', icon: 'perfil.png', label: 'Perfil' },
   ];
 
