@@ -1,8 +1,11 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { ToastService } from './toast.service';
 import {
   GamificationStats,
+  StreakResponse,
+  StreakStatus,
   XpRequest,
   XpResponse
 } from '../models/gamification.model';
@@ -12,8 +15,12 @@ import {
 })
 export class GamificationService {
   stats = signal<GamificationStats | null>(null);
+  streakStatus = signal<StreakStatus | null>(null);
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private toast: ToastService
+  ) {}
 
   loadStats(): Observable<GamificationStats> {
     return this.api.get<GamificationStats>('/gamification/stats').pipe(
@@ -37,12 +44,24 @@ export class GamificationService {
     );
   }
 
-  registerStreak(): Observable<{ currentStreak: number }> {
-    return this.api.post<{ currentStreak: number }>('/gamification/streak', {}).pipe(
+  registerStreak(): Observable<StreakResponse> {
+    return this.api.post<StreakResponse>('/gamification/streak', {}).pipe(
       tap(response => {
+        this.streakStatus.set(response.streakStatus);
         const current = this.stats();
         if (current) {
           this.stats.set({ ...current, currentStreak: response.currentStreak });
+        }
+        switch (response.streakStatus) {
+          case 'ACTIVE':
+            this.toast.success(`🔥 ¡Bienvenido! Tu racha aumentó a ${response.currentStreak} días`);
+            break;
+          case 'AT_RISK':
+            this.toast.success('⚡ ¡Llegaste a tiempo! Tu racha se restableció');
+            break;
+          case 'LOST':
+            this.toast.warning('💪 Racha perdida. ¡Empezamos desde cero!');
+            break;
         }
       })
     );

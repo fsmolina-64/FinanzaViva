@@ -18,6 +18,13 @@ export interface GamificationStats {
   updatedAt: string;
 }
 
+export type StreakStatus = 'ACTIVE' | 'AT_RISK' | 'LOST';
+
+export interface StreakResponse {
+  currentStreak: number;
+  streakStatus: StreakStatus | null;
+}
+
 export interface XpRequest {
   amount: number;
   reason: string;

@@ -45,6 +45,8 @@ export class StepCategoriesComponent implements OnInit {
   addLoading = signal(false);
   addError = signal<string | null>(null);
 
+  hasCreatedCategory = signal(false);
+
   addForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(30)]],
   });
@@ -55,6 +57,9 @@ export class StepCategoriesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCategories();
+    if (this.onboarding.collectedData().customCategories.length > 0) {
+      this.hasCreatedCategory.set(true);
+    }
   }
 
   private loadCategories(): void {
@@ -155,6 +160,7 @@ export class StepCategoriesComponent implements OnInit {
       next: (cat) => {
         this.categories.update(cats => [...cats, cat]);
         this.categoryCreated.emit({ id: cat.id, name: cat.name, type: cat.type, color: cat.color });
+        this.hasCreatedCategory.set(true);
         this.addLoading.set(false);
         this.addForm.reset();
         this.showAddForm.set(false);

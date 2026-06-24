@@ -100,7 +100,7 @@ export class GamificationService {
       where: { userId },
     });
 
-    if (!stats) return;
+    if (!stats) return null;
 
     const now = new Date();
     const last = stats.lastActivityAt;
@@ -109,17 +109,38 @@ export class GamificationService {
       ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
-    let newStreak = stats.currentStreak;
+    // Same day — no update, no notification
+    if (diffDays === 0) {
+      return {
+        currentStreak: stats.currentStreak,
+        streakStatus: null,
+      };
+    }
 
-    if (diffDays === null || diffDays > 1) {
+    let newStreak: number;
+    let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
+
+    if (diffDays === null) {
+      // First time ever
       newStreak = 1;
+      streakStatus = 'ACTIVE';
     } else if (diffDays === 1) {
-      newStreak += 1;
+      // Consecutive day — streak grows
+      newStreak = stats.currentStreak + 1;
+      streakStatus = 'ACTIVE';
+    } else if (diffDays === 2) {
+      // Exactly 1 day gap — recover, streak stays same
+      newStreak = stats.currentStreak;
+      streakStatus = 'AT_RISK';
+    } else {
+      // 2+ days gap — streak lost, reset to 1
+      newStreak = 1;
+      streakStatus = 'LOST';
     }
 
     const longestStreak = Math.max(newStreak, stats.longestStreak);
 
-    return this.prisma.userGameStats.update({
+    await this.prisma.userGameStats.update({
       where: { userId },
       data: {
         currentStreak: newStreak,
@@ -127,6 +148,8 @@ export class GamificationService {
         lastActivityAt: now,
       },
     });
+
+    return { currentStreak: newStreak, streakStatus };
   }
 
   async checkAndEmitLevelUp(userId: string) {

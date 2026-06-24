@@ -35,6 +35,14 @@ export class MainLayout implements OnInit {
     }
   }
 
+  getRankLabel(rank: string): string {
+    const labels: Record<string, string> = {
+      ROOKIE: 'Novato', APPRENTICE: 'Aprendiz', INTERMEDIATE: 'Intermedio',
+      ADVANCED: 'Avanzado', EXPERT: 'Experto', MASTER: 'Master'
+    };
+    return labels[rank] ?? rank;
+  }
+
   toggleSidebar(): void {
     this.sidebarOpen.update(v => !v);
   }

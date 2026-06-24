@@ -57,19 +57,32 @@ export interface OnboardingData {
 export class OnboardingService {
   private readonly COMPLETED_KEY = 'fv_onboarding_completed';
   private readonly STEP_KEY      = 'fv_onboarding_step';
+  private readonly DATA_KEY      = 'fv_onboarding_data';
 
-  onboardingCompleted = signal<boolean | null>(this.readFromStorage());
+  onboardingCompleted = signal<boolean | null>(null);
   collectedData       = signal<OnboardingData>({
     accounts: [], goals: [], budgets: [], customCategories: [],
     editedCategories: [], deletedCategories: [],
   });
 
   constructor(private api: ApiService) {
-    this.clearAll();
+    this.restoreFromStorage();
   }
 
-  private readFromStorage(): boolean | null {
-    return null;
+  private restoreFromStorage(): void {
+    const raw = localStorage.getItem(this.DATA_KEY);
+    if (raw) {
+      try {
+        const data = JSON.parse(raw) as OnboardingData;
+        this.collectedData.set(data);
+      } catch {
+        localStorage.removeItem(this.DATA_KEY);
+      }
+    }
+  }
+
+  private persist(): void {
+    localStorage.setItem(this.DATA_KEY, JSON.stringify(this.collectedData()));
   }
 
   isCompleted(): boolean | null {
@@ -84,6 +97,7 @@ export class OnboardingService {
   setCompleted(): void {
     this.cacheStatus(true);
     localStorage.removeItem(this.STEP_KEY);
+    localStorage.removeItem(this.DATA_KEY);
   }
 
   clearAll(): void {
@@ -91,6 +105,7 @@ export class OnboardingService {
     this.collectedData.set({ accounts: [], goals: [], budgets: [], customCategories: [], editedCategories: [], deletedCategories: [] });
     localStorage.removeItem(this.COMPLETED_KEY);
     localStorage.removeItem(this.STEP_KEY);
+    localStorage.removeItem(this.DATA_KEY);
   }
 
   saveStep(step: number): void {
@@ -111,30 +126,37 @@ export class OnboardingService {
 
   addAccount(account: OnboardingAccount): void {
     this.collectedData.update(d => ({ ...d, accounts: [...d.accounts, account] }));
+    this.persist();
   }
 
   addGoal(goal: OnboardingGoal): void {
     this.collectedData.update(d => ({ ...d, goals: [...d.goals, goal] }));
+    this.persist();
   }
 
   addBudget(budget: OnboardingBudget): void {
     this.collectedData.update(d => ({ ...d, budgets: [...d.budgets, budget] }));
+    this.persist();
   }
 
   addCustomCategory(cat: OnboardingCategory): void {
     this.collectedData.update(d => ({ ...d, customCategories: [...d.customCategories, cat] }));
+    this.persist();
   }
 
   removeAccount(id: string): void {
     this.collectedData.update(d => ({ ...d, accounts: d.accounts.filter(a => a.id !== id) }));
+    this.persist();
   }
 
   removeBudget(id: string): void {
     this.collectedData.update(d => ({ ...d, budgets: d.budgets.filter(b => b.id !== id) }));
+    this.persist();
   }
 
   removeGoal(id: string): void {
     this.collectedData.update(d => ({ ...d, goals: d.goals.filter(g => g.id !== id) }));
+    this.persist();
   }
 
   addEditedCategory(cat: OnboardingEditedCategory): void {
@@ -142,6 +164,7 @@ export class OnboardingService {
       ...d,
       editedCategories: [...d.editedCategories.filter(c => c.id !== cat.id), cat],
     }));
+    this.persist();
   }
 
   addDeletedCategory(cat: OnboardingDeletedCategory): void {
@@ -149,5 +172,6 @@ export class OnboardingService {
       ...d,
       deletedCategories: [...d.deletedCategories.filter(c => c.id !== cat.id), cat],
     }));
+    this.persist();
   }
 }

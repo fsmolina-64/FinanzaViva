@@ -5,6 +5,7 @@ import { ToastService }     from '../../../../core/services/toast.service';
 import { OnboardingService, OnboardingAccount } from '../../../../core/services/onboarding.service';
 import { CurrencyPipe } from '@angular/common';
 import { filterAmountKey, sanitizeNumberInput } from '../../../../shared/utils/amount.utils';
+import { forkJoin } from 'rxjs';
 
 type AccountType = 'CASH' | 'BANK' | 'DIGITAL_WALLET';
 
@@ -13,7 +14,6 @@ type AccountType = 'CASH' | 'BANK' | 'DIGITAL_WALLET';
   standalone: true,
   imports: [ReactiveFormsModule, CurrencyPipe],
   templateUrl: './step-account.component.html',
-  styleUrl: './step-account.component.css',
 })
 export class StepAccountComponent {
   private api = inject(ApiService);
@@ -35,7 +35,7 @@ export class StepAccountComponent {
 
   form = this.fb.group({
     name:    ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
-    balance: [0,  [Validators.required, Validators.min(0)]],
+    balance: ['0',  [Validators.required, Validators.min(0)]],
   });
 
   accountTypes = [
@@ -49,19 +49,18 @@ export class StepAccountComponent {
   onBalanceInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const cleaned = sanitizeNumberInput(input.value);
-    const parsed = parseFloat(cleaned) || 0;
     if (input.value !== cleaned) {
       const pos = input.selectionStart;
       input.value = cleaned;
       if (pos) input.setSelectionRange(pos, pos);
     }
-    this.form.controls.balance.setValue(parsed);
+    this.form.controls.balance.setValue(cleaned, { emitEvent: false });
   }
 
   startEdit(account: OnboardingAccount): void {
     this.editingId.set(account.id);
     this.selectedType.set(account.type as AccountType);
-    this.form.patchValue({ name: account.name, balance: account.balance });
+    this.form.patchValue({ name: account.name, balance: String(account.balance) });
     this.errorMsg.set(null);
   }
 
@@ -172,16 +171,55 @@ export class StepAccountComponent {
     this.errorMsg.set(null);
 
     this.api.delete(`/finances/accounts/${account.id}`).subscribe({
-      next: () => {
-        this.onboardingService.removeAccount(account.id);
-        this.isDeletingId.set(null);
-        this.toast.success('Cuenta eliminada.');
-        if (this.editingId() === account.id) this.cancelEdit();
-      },
+      next: () => this.onAccountDeleted(account.id),
       error: (err) => {
+        const msg = err?.error?.message || '';
+        if (msg.includes('transacciones asociadas')) {
+          this.retryDeleteWithTransactions(account);
+        } else {
+          this.isDeletingId.set(null);
+          this.errorMsg.set(msg || 'No se pudo eliminar la cuenta.');
+        }
+      },
+    });
+  }
+
+  private onAccountDeleted(id: string): void {
+    this.onboardingService.removeAccount(id);
+    this.isDeletingId.set(null);
+    this.toast.success('Cuenta eliminada.');
+    if (this.editingId() === id) this.cancelEdit();
+  }
+
+  private retryDeleteWithTransactions(account: OnboardingAccount): void {
+    this.api.get<any[]>('/finances/transactions').subscribe({
+      next: (txs) => {
+        const accountTxs = txs.filter(t => t.accountId === account.id);
+        if (accountTxs.length === 0) {
+          this.isDeletingId.set(null);
+          this.errorMsg.set('No se pudo eliminar la cuenta.');
+          return;
+        }
+        forkJoin(accountTxs.map(tx => this.api.delete(`/finances/transactions/${tx.id}`)))
+          .subscribe({
+            next: () => {
+              this.api.delete(`/finances/accounts/${account.id}`).subscribe({
+                next: () => this.onAccountDeleted(account.id),
+                error: () => {
+                  this.isDeletingId.set(null);
+                  this.errorMsg.set('No se pudo eliminar la cuenta.');
+                },
+              });
+            },
+            error: () => {
+              this.isDeletingId.set(null);
+              this.errorMsg.set('No se pudieron eliminar las transacciones asociadas.');
+            },
+          });
+      },
+      error: () => {
         this.isDeletingId.set(null);
-        const msg = err?.error?.message || 'No se pudo eliminar la cuenta. Puede tener transacciones asociadas.';
-        this.errorMsg.set(msg);
+        this.errorMsg.set('No se pudo eliminar la cuenta.');
       },
     });
   }

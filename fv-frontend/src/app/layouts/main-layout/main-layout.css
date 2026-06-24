@@ -44,3 +44,11 @@
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(242,242,247,0.2);
 }
+
+.ranking-icon {
+  transform: scale(1.1);
+}
+
+.group:hover .ranking-icon {
+  transform: scale(1.35);
+}

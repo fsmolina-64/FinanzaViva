@@ -7,17 +7,34 @@
         </h1>
         <p class="text-muted text-sm mt-1">Tu resumen de progreso</p>
       </div>
-      @if (stats()) {
-      <div class="text-right animate-scale-in">
-        <div class="flex items-center gap-2 bg-card px-4 py-2.5 rounded-xl border border-default/60 shadow-sm">
-          <span class="text-amber-400 font-bold text-lg">{{ stats()!.currentStreak }}</span>
-          <span class="text-muted text-sm">días de racha</span>
+      <div class="flex items-start gap-3">
+        @if (rankingPosition()) {
+        <a routerLink="/ranking"
+          class="flex items-center gap-2 bg-card px-4 py-2.5 rounded-xl border border-default/60 shadow-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors cursor-pointer no-underline">
+          <span class="text-blue-400 font-bold text-lg">#{{ rankingPosition() }}</span>
+          <span class="text-muted text-sm">ranking global</span>
+        </a>
+        }
+        @if (stats()) {
+        <div class="text-right animate-scale-in">
+          <div class="flex items-center gap-2 bg-card px-4 py-2.5 rounded-xl border border-default/60 shadow-sm"
+            [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'">
+            <span class="font-bold text-lg"
+              [class.text-amber-400]="gamificationService.streakStatus() !== 'AT_RISK'"
+              [class.text-muted]="gamificationService.streakStatus() === 'AT_RISK'">
+              {{ stats()!.currentStreak }}
+            </span>
+            <span class="text-muted text-sm">días de racha</span>
+          </div>
+          @if (gamificationService.streakStatus() === 'AT_RISK') {
+          <p class="text-amber-500/70 text-xs mt-1.5 pr-0.5 font-medium">⚡ Recupera tu racha hoy</p>
+          }
+          @if (stats()!.longestStreak > 1 && gamificationService.streakStatus() !== 'AT_RISK') {
+          <p class="text-subtle text-xs mt-1.5 pr-0.5">Mejor: {{ stats()!.longestStreak }} días</p>
+          }
         </div>
-        @if (stats()!.longestStreak > 1) {
-        <p class="text-subtle text-xs mt-1.5 pr-0.5">Mejor: {{ stats()!.longestStreak }} días</p>
         }
       </div>
-      }
     </div>
 
   @if (stats()) {

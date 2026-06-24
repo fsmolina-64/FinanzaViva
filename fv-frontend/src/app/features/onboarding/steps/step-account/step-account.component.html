@@ -1,14 +1,14 @@
 @if (showIncomeChoiceModal()) {
 <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-  <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-6 max-w-sm w-full space-y-4">
-    <h4 class="text-white font-semibold text-sm">Como registrar el balance inicial?</h4>
-    <p class="text-slate-400 text-xs">Elige como tratar el saldo de inicio en tu historial.</p>
+  <div class="bg-card rounded-2xl border border-default p-6 max-w-sm w-full space-y-4">
+    <h4 class="text-primary font-semibold text-sm">Como registrar el balance inicial?</h4>
+    <p class="text-muted text-xs">Elige como tratar el saldo de inicio en tu historial.</p>
     <div class="space-y-2">
       <button type="button" (click)="createAccountWithChoice(false)"
-        class="w-full bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300
+        class="w-full bg-elevated hover:bg-card border border-default text-muted
                text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
         Ajuste directo de balance
-        <span class="block text-xs font-normal text-slate-500 mt-0.5">
+        <span class="block text-xs font-normal text-subtle mt-0.5">
           Se registra como balance inicial -- no cuenta como ingreso
         </span>
       </button>
@@ -16,13 +16,13 @@
         class="w-full bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30
                text-emerald-400 text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
         Registrar como ingreso
-        <span class="block text-xs font-normal text-slate-500 mt-0.5">
+        <span class="block text-xs font-normal text-subtle mt-0.5">
           Aparecera en tus reportes de ingresos del periodo
         </span>
       </button>
     </div>
     <button type="button" (click)="showIncomeChoiceModal.set(false)"
-      class="w-full bg-slate-800 text-slate-400 text-sm py-2 rounded-lg hover:text-white transition-colors">
+      class="w-full bg-app text-muted text-sm py-2 rounded-lg hover:text-primary transition-colors">
       Cancelar
     </button>
   </div>
@@ -31,11 +31,9 @@
 
 <div class="flex flex-col items-center">
 
-  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600
-              flex items-center justify-center mb-6"
-       style="box-shadow:0 8px 32px rgba(16,185,129,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary"
-         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+  <div class="w-14 h-14 rounded-2xl bg-card flex items-center justify-center mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-emerald-400"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round"
             d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
     </svg>
@@ -50,23 +48,29 @@
 
   <div class="grid grid-cols-3 gap-3 w-full mb-6">
     @for (type of accountTypes; track type.value) {
-      <button type="button" class="type-btn"
-              [class.type-btn--selected]="selectedType() === type.value"
+      <button type="button"
+              class="flex flex-col items-center gap-2 p-4 rounded-2xl border bg-card w-full cursor-pointer transition-all duration-200 hover:border-strong hover:scale-[1.03]"
+              [class.border-accent-purple!]="selectedType() === type.value"
+              [class.bg-accent-purple/[0.08]]="selectedType() === type.value"
+              [class.border-default]="selectedType() !== type.value"
               (click)="selectedType.set(type.value)">
         <div class="w-9 h-9 rounded-xl flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg"
                class="w-5 h-5 transition-colors"
-               [class]="selectedType() === type.value ? 'type-btn__icon--selected' : 'type-btn__icon--default'"
+               [class.text-accent-purple]="selectedType() === type.value"
+               [class.text-muted]="selectedType() !== type.value"
                fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="type.path" />
           </svg>
         </div>
         <span class="text-sm font-medium transition-colors"
-              [class]="selectedType() === type.value ? 'type-btn__label--selected' : 'type-btn__label--default'">
+              [class.text-accent-purple]="selectedType() === type.value"
+              [class.text-muted]="selectedType() !== type.value">
           {{ type.label }}
         </span>
         <span class="text-xs transition-colors"
-              [class]="selectedType() === type.value ? 'type-btn__desc--selected' : 'type-btn__desc--default'">
+              [class.text-accent-purple]="selectedType() === type.value"
+              [class.text-subtle]="selectedType() !== type.value">
           {{ type.desc }}
         </span>
       </button>
@@ -77,8 +81,8 @@
     <div>
       <label class="block text-muted text-xs mb-1.5 font-medium">Nombre de la cuenta</label>
       <input type="text" [formControl]="form.controls.name" placeholder="Ej: Mi cuenta del banco"
-             class="field-input"
-             [class.field-input--error]="form.controls.name.invalid && form.controls.name.touched">
+             class="w-full bg-input border border-default rounded-xl px-4 py-3 text-primary text-sm outline-none transition-colors focus:border-accent-purple"
+             [class.!border-danger]="form.controls.name.invalid && form.controls.name.touched">
       @if (form.controls.name.invalid && form.controls.name.touched) {
         <p class="text-danger text-xs mt-1">Ingresa un nombre entre 2 y 50 caracteres</p>
       }
@@ -87,11 +91,11 @@
     <div>
       <label class="block text-muted text-xs mb-1.5 font-medium">Balance inicial</label>
       <div class="relative">
-        <span class="dollar-prefix">$</span>
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">$</span>
         <input type="text" inputmode="decimal" [formControl]="form.controls.balance" placeholder="0.00"
                (keydown)="filterBalance($event)" (input)="onBalanceInput($event)"
-               class="field-input field-input--balance"
-               [class.field-input--error]="form.controls.balance.invalid && form.controls.balance.touched">
+               class="w-full bg-input border border-default rounded-xl pl-8 pr-4 py-3 text-primary text-sm outline-none transition-colors focus:border-accent-purple"
+               [class.!border-danger]="form.controls.balance.invalid && form.controls.balance.touched">
       </div>
       <p class="text-subtle text-xs mt-1.5 leading-relaxed">
         Este valor es tu punto de partida. No se registra como ingreso o gasto en tus reportes.
@@ -102,7 +106,7 @@
     </div>
 
     @if (errorMsg()) {
-      <div class="bg-red-950 border border-red-800 rounded-xl px-4 py-3">
+      <div class="bg-danger/10 border border-danger/30 rounded-xl px-4 py-3">
         <p class="text-danger text-sm">{{ errorMsg() }}</p>
       </div>
     }
@@ -128,13 +132,16 @@
     }
 
     @if (hasAccounts()) {
-      <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
+      <div class="rounded-xl p-4 bg-card border border-default">
         <p class="text-muted text-xs font-medium mb-3">Cuentas creadas</p>
         <div class="space-y-2">
           @for (acc of createdAccounts(); track acc.id) {
             <div class="flex items-center justify-between py-2 px-3 rounded-lg"
-                 [style.background-color]="editingId() === acc.id ? '#2d1b69' : '#1e293b'"
-                 [style.border]="editingId() === acc.id ? '1px solid #a855f7' : 'none'">
+                 [class.bg-accent-purple/10]="editingId() === acc.id"
+                 [class.border-accent-purple]="editingId() === acc.id"
+                 [class.bg-elevated]="editingId() !== acc.id"
+                 [class.border-transparent]="editingId() !== acc.id"
+                 class="border">
               <div>
                 <span class="text-primary/80 text-sm">{{ acc.name }}</span>
                 <span class="text-subtle text-xs ml-2">{{ acc.type }}</span>
