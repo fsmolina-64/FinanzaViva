@@ -1,4 +1,15 @@
-.top-1 { border-left: 3px solid #F59E0B; }
-.top-2 { border-left: 3px solid #94A3B8; }
-.top-3 { border-left: 3px solid #B45309; }
-.ranking-row { transition: background-color 150ms ease; cursor: pointer; }
+.top-1 {
+    border-left: 3px solid #F59E0B;
+}
+
+.top-2 {
+    border-left: 3px solid #94A3B8;
+}
+
+.top-3 {
+    border-left: 3px solid #B45309;
+}
+
+.ranking-row {
+    transition: background-color 150ms ease;
+}
