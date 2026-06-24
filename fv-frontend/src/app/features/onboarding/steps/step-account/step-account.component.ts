@@ -14,7 +14,6 @@ type AccountType = 'CASH' | 'BANK' | 'DIGITAL_WALLET';
   standalone: true,
   imports: [ReactiveFormsModule, CurrencyPipe],
   templateUrl: './step-account.component.html',
-  styleUrl: './step-account.component.css',
 })
 export class StepAccountComponent {
   private api = inject(ApiService);

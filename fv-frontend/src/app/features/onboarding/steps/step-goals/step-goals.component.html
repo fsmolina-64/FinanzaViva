@@ -1,9 +1,8 @@
 <div class="flex flex-col items-center">
 
-  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600
-              flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(244,63,94,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor" stroke-width="2">
+  <div class="w-14 h-14 rounded-2xl bg-card flex items-center justify-center mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-rose-400" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   </div>
@@ -19,9 +18,8 @@
   <div class="flex flex-wrap gap-2 mb-6 justify-center">
     @for (ex of examples; track ex.label) {
       <button type="button" (click)="fillExample(ex)"
-              class="px-3 py-1.5 rounded-xl text-xs text-muted cursor-pointer
-                     hover:border-strong hover:text-primary transition-colors"
-              style="background-color:#0F172A; border:1px solid #1E293B">
+              class="px-3 py-1.5 rounded-xl text-xs text-muted bg-card border border-default cursor-pointer
+                     hover:border-strong hover:text-primary transition-colors">
         {{ ex.label }}
       </button>
     }
@@ -66,8 +64,8 @@ class="w-full bg-input border border-default rounded-xl px-4 py-3
     </div>
 
     @if (errorMsg()) {
-      <div class="bg-yellow-950 border border-yellow-800 rounded-xl px-4 py-3">
-        <p class="text-yellow-400 text-sm">{{ errorMsg() }}</p>
+      <div class="rounded-xl px-4 py-3 bg-danger/10 border border-accent-amber/30">
+        <p class="text-amber-400 text-sm">{{ errorMsg() }}</p>
       </div>
     }
 
@@ -92,13 +90,13 @@ class="w-full bg-input border border-default rounded-xl px-4 py-3
     }
 
     @if (hasGoals()) {
-      <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
+      <div class="rounded-xl p-4 bg-card border border-default">
         <p class="text-muted text-xs font-medium mb-3">Metas creadas</p>
         <div class="space-y-2">
           @for (g of createdGoals(); track g.id) {
-            <div class="flex items-center justify-between py-2 px-3 rounded-lg"
-                 [style.background-color]="editingId() === g.id ? '#2d1b69' : '#1e293b'"
-                 [style.border]="editingId() === g.id ? '1px solid #a855f7' : 'none'">
+            <div class="flex items-center justify-between py-2 px-3 rounded-lg bg-elevated"
+                 [class.ring-1]="editingId() === g.id"
+                 [class.ring-accent-purple]="editingId() === g.id">
               <span class="text-primary/80 text-sm">{{ g.name }}</span>
               <div class="flex items-center gap-2">
                 <span class="text-rose-400 text-sm font-medium">{{ g.targetAmount | currency:'USD':'symbol':'1.2-2' }}</span>

@@ -1,10 +1,8 @@
 <div class="flex flex-col items-center">
 
-  <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-violet-700
-              flex items-center justify-center mb-6"
-    style="box-shadow:0 0 0 12px rgba(139,92,246,0.08), 0 8px 32px rgba(139,92,246,0.25)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor" stroke-width="2.5">
+  <div class="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-6 ring-1 ring-accent-purple/30">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-accent-purple" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   </div>
@@ -18,9 +16,9 @@
 
   <div class="w-full space-y-3 mb-10">
 
-    <div class="rounded-2xl border border-default p-5" style="background-color:#0F172A">
+    <div class="rounded-2xl border border-default p-5 bg-card">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-accent-emerald/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -40,9 +38,9 @@
     </div>
 
     @if (data().customCategories.length > 0) {
-    <div class="rounded-2xl border border-default p-5" style="background-color:#0F172A">
+    <div class="rounded-2xl border border-default p-5 bg-card">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(245,158,11,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-accent-amber/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -63,9 +61,9 @@
     }
 
     @if (data().editedCategories.length > 0) {
-    <div class="rounded-2xl border border-amber-800/40 p-5" style="background-color:#1c1917">
+    <div class="rounded-2xl border border-accent-amber/30 p-5 bg-accent-amber/5">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(251,191,36,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-accent-amber/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -76,7 +74,7 @@
         <span class="text-primary font-medium text-sm">Categorias modificadas</span>
       </div>
       @for (cat of data().editedCategories; track cat.id) {
-      <div class="flex items-center gap-2 py-2 border-t border-amber-900/30">
+      <div class="flex items-center gap-2 py-2 border-t border-accent-amber/20">
         <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
           [style.background-color]="cat.type === 'INCOME' ? '#10b981' : '#ef4444'"></span>
         <span class="text-muted text-sm line-through">{{ cat.oldName }}</span>
@@ -92,9 +90,9 @@
     }
 
     @if (data().deletedCategories.length > 0) {
-    <div class="rounded-2xl border border-red-800/40 p-5" style="background-color:#1f1315">
+    <div class="rounded-2xl border border-danger/30 p-5 bg-danger/5">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(248,113,113,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-danger/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-danger" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -104,7 +102,7 @@
         <span class="text-primary font-medium text-sm">Categorias eliminadas</span>
       </div>
       @for (cat of data().deletedCategories; track cat.id) {
-      <div class="flex items-center gap-2 py-2 border-t border-red-900/30">
+      <div class="flex items-center gap-2 py-2 border-t border-danger/20">
         <span class="w-2.5 h-2.5 rounded-full flex-shrink-0"
           [style.background-color]="cat.type === 'INCOME' ? '#10b981' : '#ef4444'"></span>
         <span class="text-muted text-sm line-through">{{ cat.name }}</span>
@@ -115,9 +113,9 @@
     }
 
     @if (data().budgets.length > 0) {
-    <div class="rounded-2xl border border-default p-5" style="background-color:#0F172A">
+    <div class="rounded-2xl border border-default p-5 bg-card">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(139,92,246,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-accent-violet/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -141,9 +139,9 @@
     }
 
     @if (data().goals.length > 0) {
-    <div class="rounded-2xl border border-default p-5" style="background-color:#0F172A">
+    <div class="rounded-2xl border border-default p-5 bg-card">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-xl flex items-center justify-center" style="background:rgba(244,63,94,0.12)">
+        <div class="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

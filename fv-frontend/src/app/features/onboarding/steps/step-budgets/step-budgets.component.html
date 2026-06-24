@@ -1,9 +1,8 @@
 <div class="flex flex-col items-center">
 
-  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700
-              flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(139,92,246,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor" stroke-width="2">
+  <div class="w-14 h-14 rounded-2xl bg-card flex items-center justify-center mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-violet-400" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
       <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
     </svg>
@@ -26,18 +25,20 @@
       @if (isLoadingCats()) {
       <div class="flex flex-wrap gap-2 animate-pulse">
         @for (i of [1,2,3,4,5]; track i) {
-        <div class="h-8 w-24 rounded-xl" style="background-color:#1e293b"></div>
+        <div class="h-8 w-24 rounded-xl bg-elevated"></div>
         }
       </div>
       } @else {
       <div class="flex flex-wrap gap-2">
         <button type="button" (click)="selectCategory('__general__')"
           [disabled]="!isEditing() && usedCategoryIds().has('__general__')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs
-                 font-medium transition-all cursor-pointer border
+                 font-medium transition-all cursor-pointer border border-default
                  disabled:opacity-30 disabled:cursor-not-allowed"
-          [style.border-color]="selectedCatId() === '__general__' ? '#a855f7' : '#334155'"
-          [style.background-color]="selectedCatId() === '__general__' ? 'rgba(168,85,247,0.1)' : '#1e293b'"
-          [style.color]="selectedCatId() === '__general__' ? '#c084fc' : '#9ca3af'">
+          [class.bg-accent-purple/10]="selectedCatId() === '__general__'"
+          [class.border-accent-purple]="selectedCatId() === '__general__'"
+          [class.text-accent-purple]="selectedCatId() === '__general__'"
+          [class.bg-elevated]="selectedCatId() !== '__general__'"
+          [class.text-subtle]="selectedCatId() !== '__general__'">
           <span class="w-2 h-2 rounded-full flex-shrink-0 bg-purple-400"></span>
           General
         </button>
@@ -46,9 +47,12 @@
           [disabled]="!isEditing() && usedCategoryIds().has(cat.id)" class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs
                  font-medium transition-all cursor-pointer border
                  disabled:opacity-30 disabled:cursor-not-allowed"
-          [style.border-color]="selectedCatId() === cat.id ? cat.color : '#334155'"
-          [style.background-color]="selectedCatId() === cat.id ? cat.color + '1a' : '#1e293b'"
-          [style.color]="selectedCatId() === cat.id ? cat.color : '#9ca3af'">
+          [style.border-color]="selectedCatId() === cat.id ? cat.color : undefined"
+          [class.bg-elevated]="selectedCatId() !== cat.id"
+          [style.background-color]="selectedCatId() === cat.id ? cat.color + '1a' : undefined"
+          [style.color]="selectedCatId() === cat.id ? cat.color : undefined"
+          [class.text-subtle]="selectedCatId() !== cat.id"
+          [class.border-default]="selectedCatId() !== cat.id">
           <span class="w-2 h-2 rounded-full flex-shrink-0"
             [style.background-color]="cat.isGlobal ? '#ef4444' : '#10b981'"></span>
           {{ cat.name }}
@@ -64,8 +68,9 @@
         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-subtle text-sm pointer-events-none">$</span>
         <input type="text" inputmode="decimal" [formControl]="form.controls.amount" placeholder="500"
           (keydown)="filterAmount($event)" (input)="onAmountInput($event)" class="w-full border rounded-xl pl-8 pr-4 py-3 text-primary text-sm
-                 outline-none transition-colors" style="background-color:#1e293b"
-          [style.border-color]="form.controls.amount.invalid && form.controls.amount.touched ? '#7f1d1d' : '#334155'">
+                 outline-none transition-colors bg-input"
+          [class.border-danger]="form.controls.amount.invalid && form.controls.amount.touched"
+          [class.border-default]="!form.controls.amount.invalid || !form.controls.amount.touched">
       </div>
       @if (form.controls.amount.invalid && form.controls.amount.touched) {
       <p class="text-danger text-xs mt-1">Ingresa un monto mayor a 0</p>
@@ -73,7 +78,7 @@
     </div>
 
     @if (errorMsg()) {
-    <div class="rounded-xl px-4 py-3" style="background-color:#1c1917; border:1px solid #78350f">
+    <div class="rounded-xl px-4 py-3 bg-danger/10 border border-accent-amber/30">
       <p class="text-amber-400 text-sm">{{ errorMsg() }}</p>
     </div>
     }
@@ -91,13 +96,13 @@
     }
 
     @if (hasBudgets()) {
-    <div class="rounded-xl p-4" style="background-color:#0f172a; border:1px solid #1e293b">
+    <div class="rounded-xl p-4 bg-card border border-default">
       <p class="text-muted text-xs font-medium mb-3">Presupuestos creados</p>
       <div class="space-y-2">
         @for (b of createdBudgets(); track $index) {
-        <div class="flex items-center justify-between py-2 px-3 rounded-lg"
-          [style.background-color]="editingIndex() === $index ? '#2d1b69' : '#1e293b'"
-          [style.border]="editingIndex() === $index ? '1px solid #a855f7' : 'none'">
+        <div class="flex items-center justify-between py-2 px-3 rounded-lg bg-elevated"
+          [class.ring-1]="editingIndex() === $index"
+          [class.ring-accent-purple]="editingIndex() === $index">
           <div class="flex items-center gap-2">
             <span class="text-primary/80 text-sm">{{ b.categoryName }}</span>
             <span class="text-subtle text-xs">Mensual</span>

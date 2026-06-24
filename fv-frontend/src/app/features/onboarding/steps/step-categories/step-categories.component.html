@@ -1,9 +1,8 @@
 <div class="flex flex-col items-center">
 
-  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600
-              flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(245,158,11,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
-      stroke="currentColor" stroke-width="2">
+  <div class="w-14 h-14 rounded-2xl bg-card flex items-center justify-center mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-amber-400" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="1.5">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
     </svg>
@@ -16,7 +15,7 @@
     Organiza tus transacciones. Puedes crear, editar o eliminar mas adelante desde la seccion de Finanzas.
   </p>
 
-  <div class="flex gap-1 p-1 rounded-xl mb-6 w-full max-w-xs" style="background-color:#1e293b">
+  <div class="flex gap-1 p-1 rounded-xl mb-6 w-full max-w-xs bg-elevated">
     <button type="button" (click)="setTab('EXPENSE')"
       class="flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
       [class]="activeTab() === 'EXPENSE' ? 'bg-white text-gray-900' : 'text-subtle hover:text-primary'">
@@ -34,7 +33,7 @@
     @if (isLoading()) {
     <div class="space-y-2 animate-pulse">
       @for (i of [1,2,3,4]; track i) {
-      <div class="h-12 rounded-xl" style="background-color:#1e293b"></div>
+      <div class="h-12 rounded-xl bg-elevated"></div>
       }
     </div>
 
@@ -46,8 +45,7 @@
     } @else {
     <div class="space-y-2">
       @for (cat of filteredCategories(); track cat.id) {
-      <div class="flex items-center gap-3 rounded-xl px-4 py-3"
-        style="background-color:#1e293b; border:1px solid #334155">
+      <div class="flex items-center gap-3 rounded-xl px-4 py-3 bg-card border border-default">
 
         <span class="w-3 h-3 rounded-full flex-shrink-0"
           [style.background-color]="cat.isGlobal ? '#ef4444' : '#10b981'"></span>
@@ -118,7 +116,7 @@
   </button>
 
   } @else {
-  <div class="w-full rounded-2xl p-4 mb-6" style="background-color:#1e293b; border:1px solid #334155">
+  <div class="w-full rounded-2xl p-4 mb-6 bg-card border border-default">
     <p class="text-primary/80 text-sm font-medium mb-3">
       Nueva categoria de {{ activeTab() === 'INCOME' ? 'ingreso' : 'gasto' }}
     </p>
@@ -138,7 +136,7 @@
         @if (addLoading()) { Guardando... } @else { Agregar }
       </button>
       <button type="button" (click)="toggleAddForm()" class="px-4 py-2 rounded-xl text-subtle text-sm
-                       hover:text-primary transition-colors cursor-pointer" style="background-color:#0f172a">
+                       hover:text-primary transition-colors cursor-pointer bg-elevated">
         Cancelar
       </button>
     </div>
