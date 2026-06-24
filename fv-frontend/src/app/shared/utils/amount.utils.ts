@@ -8,9 +8,31 @@ export function filterAmountKey(e: KeyboardEvent): void {
   ];
   if (allowed.includes(e.key)) return;
   if (e.ctrlKey || e.metaKey) return;
-  if (e.key === ',' || e.key === 'Comma') { e.preventDefault(); insertAtCursor(e.target as HTMLInputElement, '.'); return; }
-  if (e.key === DECIMAL_SEPARATOR) return;
-  if (e.key >= '0' && e.key <= '9') return;
+  if (e.key === ',' || e.key === 'Comma') {
+    e.preventDefault();
+    insertAtCursor(e.target as HTMLInputElement, '.');
+    return;
+  }
+  const input = e.target as HTMLInputElement;
+  if (e.key === DECIMAL_SEPARATOR) {
+    if (input.value.includes('.')) e.preventDefault();
+    return;
+  }
+  if (e.key >= '0' && e.key <= '9') {
+    const dotIdx = input.value.indexOf('.');
+    const selStart = input.selectionStart ?? 0;
+    const selEnd = input.selectionEnd ?? 0;
+    const hasSel = selStart !== selEnd;
+    if (dotIdx < 0) {
+      const newLen = hasSel ? input.value.length - (selEnd - selStart) + 1 : input.value.length + 1;
+      if (newLen > 9) { e.preventDefault(); }
+    } else if (selStart > dotIdx) {
+      const dec = input.value.substring(dotIdx + 1);
+      const newLen = hasSel ? dec.length - (selEnd - selStart) + 1 : dec.length + 1;
+      if (newLen > 2) { e.preventDefault(); }
+    }
+    return;
+  }
   e.preventDefault();
 }
 
@@ -31,6 +53,7 @@ export function sanitizeNumberInput(val: any): string {
   str = str.replace(/[^0-9.]/g, '');
   const parts = str.split('.');
   if (parts.length > 2) str = parts[0] + '.' + parts.slice(1).join('');
+  if (parts[0].length > 9) parts[0] = parts[0].substring(0, 9);
   if (parts[0].length > 1 && parts[0].startsWith('0')) parts[0] = parts[0].replace(/^0+/, '');
   if (parts[0] === '' && parts.length > 1) parts[0] = '0';
   str = parts[0] + (parts.length > 1 ? '.' + parts[1] : '');

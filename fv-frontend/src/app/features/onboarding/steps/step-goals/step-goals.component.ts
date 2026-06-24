@@ -31,7 +31,7 @@ export class StepGoalsComponent {
 
   form = this.fb.group({
     name:         ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
-    targetAmount: [null as number | null, [Validators.required, Validators.min(1)]],
+    targetAmount: ['', [Validators.required, Validators.min(0.01)]],
     deadline:     [''],
   });
 
@@ -47,24 +47,23 @@ export class StepGoalsComponent {
   onAmountInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const cleaned = sanitizeNumberInput(input.value);
-    const parsed = parseFloat(cleaned) || null;
     if (input.value !== cleaned) {
       const pos = input.selectionStart;
       input.value = cleaned;
       if (pos) input.setSelectionRange(pos, pos);
     }
-    this.form.controls.targetAmount.setValue(parsed);
+    this.form.controls.targetAmount.setValue(cleaned, { emitEvent: false });
   }
 
   fillExample(ex: { label: string; amount: number }): void {
-    this.form.patchValue({ name: ex.label, targetAmount: ex.amount });
+    this.form.patchValue({ name: ex.label, targetAmount: String(ex.amount) });
   }
 
   startEdit(goal: OnboardingGoal): void {
     this.editingId.set(goal.id);
     this.form.patchValue({
       name:         goal.name,
-      targetAmount: goal.targetAmount,
+      targetAmount: String(goal.targetAmount),
       deadline:     goal.deadline || '',
     });
     this.errorMsg.set(null);

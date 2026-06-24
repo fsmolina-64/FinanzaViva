@@ -145,9 +145,16 @@
   </div>
   }
 
+  @if (hasCreatedCategory()) {
   <button type="button" (click)="next.emit()" class="w-full bg-white text-gray-900 font-semibold py-3 rounded-xl
                  hover:bg-gray-100 hover:scale-[1.02] transition-all duration-200 text-sm cursor-pointer">
     Continuar
   </button>
+  } @else {
+  <button type="button" (click)="next.emit()" class="w-full py-2 text-subtle text-sm hover:text-muted
+                 transition-colors cursor-pointer">
+    Omitir por ahora
+  </button>
+  }
 
 </div>

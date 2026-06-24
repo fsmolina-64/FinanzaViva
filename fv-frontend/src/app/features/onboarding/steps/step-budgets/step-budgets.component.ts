@@ -46,7 +46,7 @@ export class StepBudgetsComponent implements OnInit {
   isCategoryUsed = computed(() => (id: string) => this.usedCategoryIds().has(id));
 
   form = this.fb.group({
-    amount: [null as number | null, [Validators.required, Validators.min(1)]],
+    amount: ['', [Validators.required, Validators.min(0.01)]],
   });
 
   ngOnInit(): void {
@@ -78,13 +78,12 @@ export class StepBudgetsComponent implements OnInit {
   onAmountInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const cleaned = sanitizeNumberInput(input.value);
-    const parsed = parseFloat(cleaned) || null;
     if (input.value !== cleaned) {
       const pos = input.selectionStart;
       input.value = cleaned;
       if (pos) input.setSelectionRange(pos, pos);
     }
-    this.form.controls.amount.setValue(parsed);
+    this.form.controls.amount.setValue(cleaned, { emitEvent: false });
   }
 
   private getDateRange(): { startDate: string; endDate: string } {
@@ -101,7 +100,7 @@ export class StepBudgetsComponent implements OnInit {
     const budget = this.createdBudgets()[index];
     this.editingIndex.set(index);
     this.selectedCatId.set(budget.categoryId || GENERAL_ID);
-    this.form.patchValue({ amount: budget.amount });
+    this.form.patchValue({ amount: String(budget.amount) });
     this.errorMsg.set(null);
   }
 
