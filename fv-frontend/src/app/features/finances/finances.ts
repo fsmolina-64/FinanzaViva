@@ -249,7 +249,13 @@ export class Finances implements OnInit {
       }
     }
 
-    return nonTransfers.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return nonTransfers.sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+      const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+      return bMs - aMs;
+    });
   });
 
   recentTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
@@ -295,7 +301,13 @@ export class Finances implements OnInit {
     }
 
     return result
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+        const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+        return bMs - aMs;
+      })
       .slice(0, 5);
   });
 
@@ -338,10 +350,16 @@ export class Finances implements OnInit {
     const key = this.calendarDayKey();
     if (!key) return [];
     const typeF = this.calTypeFilter();
-    return this.transactions().filter(t => {
-      if (t.date.substring(0, 10) !== key) return false;
-      return typeF === 'ALL' || t.type === typeF;
-    });
+    return this.transactions()
+      .filter(t => {
+        if (t.date.substring(0, 10) !== key) return false;
+        return typeF === 'ALL' || t.type === typeF;
+      })
+      .sort((a, b) => {
+        const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+        const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+        return bMs - aMs;
+      });
   });
 
   generalBudgets = computed(() => this.budgets().filter(b => !b.categoryId));

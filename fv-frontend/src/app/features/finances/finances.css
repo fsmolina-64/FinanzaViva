@@ -44,3 +44,58 @@
 .kpi-card:nth-child(3) {
   animation: fade-in 0.3s 0.19s ease both;
 }
+
+/* ── Numpad buttons ─────────────────────────────────────────── */
+.numpad-key {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 150ms ease;
+}
+
+.numpad-key:active,
+.numpad-key.is-pressed {
+  transform: scale(0.89) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition-duration: 80ms;
+  transition-timing-function: ease-out;
+}
+
+/* Shine highlight fija (top edge) */
+.numpad-key::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+/* Flash overlay cuando se presiona via teclado */
+.numpad-key.is-pressed::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  animation: numpad-flash 280ms ease forwards;
+}
+
+@keyframes numpad-flash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Amount card glow transition */
+.amount-card {
+  transition: border-color 300ms ease, background 300ms ease;
+}

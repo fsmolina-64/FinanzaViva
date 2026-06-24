@@ -29,6 +29,16 @@ export class EditTransactionModal implements OnInit {
   isBalanceTx  = false;
   showExtras   = false;
 
+  // ── Keyboard press visual feedback ───────────────────────────
+  pressedKey = signal<string | null>(null);
+  private pressedTimer: any = null;
+
+  private visualPress(key: string): void {
+    if (this.pressedTimer) clearTimeout(this.pressedTimer);
+    this.pressedKey.set(key);
+    this.pressedTimer = setTimeout(() => this.pressedKey.set(null), 200);
+  }
+
   integerStr = '0';
   decimalStr: string | null = null;
 
@@ -153,15 +163,19 @@ export class EditTransactionModal implements OnInit {
     if (e.key === 'Escape') { this.close(); return; }
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); this.pad('<'); return; }
-    if (e.key === '.' || e.key === ',' || e.code === 'NumpadDecimal') { e.preventDefault(); this.pad('.'); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault(); this.visualPress('<'); this.pad('<'); return;
+    }
+    if (e.key === '.' || e.key === ',' || e.code === 'NumpadDecimal') {
+      e.preventDefault(); this.visualPress('.'); this.pad('.'); return;
+    }
     const map: Record<string, string> = {
       '0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
       'Numpad0':'0','Numpad1':'1','Numpad2':'2','Numpad3':'3','Numpad4':'4',
       'Numpad5':'5','Numpad6':'6','Numpad7':'7','Numpad8':'8','Numpad9':'9',
     };
     const mapped = map[e.key] ?? map[e.code];
-    if (mapped) { e.preventDefault(); this.pad(mapped); }
+    if (mapped) { e.preventDefault(); this.visualPress(mapped); this.pad(mapped); }
   }
 
   getAmount(): number {
@@ -272,6 +286,15 @@ export class EditTransactionModal implements OnInit {
         this.submitting.set(false);
       }
     });
+  }
+
+  amountCardClass(): string {
+    switch (this.editMode()) {
+      case 'EXPENSE':  return 'border-red-500/15 from-red-500/5';
+      case 'INCOME':   return 'border-emerald-500/15 from-emerald-500/5';
+      case 'TRANSFER': return 'border-blue-500/15 from-blue-500/5';
+      default:         return 'border-purple-500/15 from-purple-500/5';
+    }
   }
 
   close(): void { this.closed.emit(); }
