@@ -43,13 +43,14 @@ export class Dashboard implements OnInit {
   achievements = signal<Achievement[]>([]);
   rewards = signal<Reward[]>([]);
   loading = signal(true);
+  rankingPosition = signal<number | null>(null);
 
   readonly TOTAL_MODULES = 7;
   readonly TOTAL_LESSONS = 28;
 
   constructor(
     private financeService: FinanceService,
-    private gamificationService: GamificationService,
+    public gamificationService: GamificationService,
     private achievementService: AchievementService,
     private api: ApiService,
     private toast: ToastService,
@@ -59,13 +60,22 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {
     this.gamificationService.registerStreak().subscribe({
-      next: () => this.loadStats(),
-      error: () => this.loadStats()
+      next: () => { this.loadStats(); this.loadRankingPosition(); },
+      error: () => { this.loadStats(); this.loadRankingPosition(); }
     });
     this.loadSummary();
     this.loadUserData();
     this.loadAchievements();
     this.loadRewards();
+  }
+
+  private loadRankingPosition(): void {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+    this.api.get<{ position: number }>('/ranking/user/' + userId).subscribe({
+      next: (data) => this.rankingPosition.set(data.position),
+      error: () => {}
+    });
   }
 
   private loadStats(): void {
