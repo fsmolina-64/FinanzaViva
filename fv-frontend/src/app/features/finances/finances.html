@@ -1295,16 +1295,6 @@
   </div>
   }
 
-  @if (editingModalTx()) {
-  <app-edit-transaction-modal
-    [transaction]="editingModalTx()!"
-    [accounts]="accounts()"
-    [categories]="categories()"
-    (saved)="onEditModalSaved()"
-    (closed)="onEditModalClosed()">
-  </app-edit-transaction-modal>
-  }
-
   @if (showExportModal()) {
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
     (click)="showExportModal.set(false)">

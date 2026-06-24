@@ -4,13 +4,15 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
 import { routeAnimation, fabMenuAnimation } from './core/animations/animations';
 import { QuickTransactionModal } from './shared/components/quick-transaction-modal/quick-transaction-modal';
+import { EditTransactionModal } from './features/finances/edit-transaction-modal/edit-transaction-modal';
 import { ToastComponent } from './shared/components/toast/toast';
 import { QuickTransactionService, QuickTransactionResult } from './core/services/quick-transaction.service';
+import { EditTransactionModalService } from './core/services/edit-transaction-modal.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, QuickTransactionModal, ToastComponent],
+  imports: [RouterOutlet, CommonModule, QuickTransactionModal, EditTransactionModal, ToastComponent],
   animations: [routeAnimation, fabMenuAnimation],
   template: `
     <div [@routeAnimation]="currentRoute()">
@@ -27,6 +29,10 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
         (transactionCreated)="onCreated($event)"
         (transferCreated)="onTransferCreated()">
       </app-quick-transaction-modal>
+      }
+
+      @if (editTx.show()) {
+      <app-edit-transaction-modal />
       }
 
       @if (fabMenuOpen()) {
@@ -61,7 +67,8 @@ import { QuickTransactionService, QuickTransactionResult } from './core/services
   `
 })
 export class App {
-  readonly quickTx = inject(QuickTransactionService);
+  readonly quickTx    = inject(QuickTransactionService);
+  readonly editTx     = inject(EditTransactionModalService);
   private readonly router = inject(Router);
 
   isAuthRoute = signal(true);

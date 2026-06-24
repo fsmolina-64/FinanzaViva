@@ -1,4 +1,5 @@
-import { Component, OnInit, signal, computed, effect, untracked } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, untracked, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { tabSlideAnimation } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -14,7 +15,7 @@ import {
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
   CreateTransactionPayload, CreateCategoryPayload, CreateBudgetPayload, TransferDisplay
 } from '../../core/models/finance.model';
-import { EditTransactionModal } from './edit-transaction-modal/edit-transaction-modal';
+import { EditTransactionModalService } from '../../core/services/edit-transaction-modal.service';
 import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -37,7 +38,7 @@ interface RecurringRule {
 @Component({
   selector: 'app-finances',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, EditTransactionModal],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './finances.html',
   styleUrl: './finances.css',
   animations: [tabSlideAnimation]
@@ -73,7 +74,6 @@ export class Finances implements OnInit {
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
   editingTxId = signal<string | null>(null);
-  editingModalTx = signal<Transaction | TransferDisplay | null>(null);
   editTxType = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
   editTx = { categoryId: '', amount: 0, description: '', date: '', accountId: '' };
   editTxTransferToAccountId = '';
@@ -376,6 +376,9 @@ export class Finances implements OnInit {
     return this.recurringRules().filter(r => r.nextDate <= today);
   });
 
+  private editTxService = inject(EditTransactionModalService);
+  private destroyRef    = inject(DestroyRef);
+
   constructor(
     private financeService: FinanceService,
     private toast: ToastService,
@@ -410,6 +413,13 @@ export class Finances implements OnInit {
   }
 
   ngOnInit(): void {
+    this.editTxService.saved$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.editingTxId.set(null);
+        this.reloadAll();
+      });
+
     let loaded = 0;
     const done = () => { if (++loaded >= 7) this.loading.set(false); };
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
@@ -426,7 +436,7 @@ export class Finances implements OnInit {
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
 
   hasEditingOpen(): boolean {
-    return !!(this.editingModalTx() || this.editingAccountId() || this.editingTxId() ||
+    return !!(this.editTxService.show() || this.editingAccountId() || this.editingTxId() ||
       this.editingCategoryId() || this.editingBudgetId() ||
       this.editingGoalId() || this.addingProgressGoalId() ||
       this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
@@ -450,7 +460,6 @@ export class Finances implements OnInit {
   }
 
   resetAllFormState(): void {
-    this.editingModalTx.set(null);
     this.showAccountForm.set(false);
     this.showTransactionForm.set(false);
     this.showBudgetForm.set(false);
@@ -687,21 +696,9 @@ export class Finances implements OnInit {
   startEditTx(tx: Transaction | TransferDisplay): void {
     this.confirmDeleteTxId.set(null);
     this.confirmDeleteTransferGroupId.set(null);
-    this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : (tx as Transaction).id);
-    this.editingModalTx.set(tx);
+    this.editTxService.open(tx);
   }
   cancelEditTx(): void { this.editingTxId.set(null); }
-
-  onEditModalSaved(): void {
-    this.editingModalTx.set(null);
-    this.editingTxId.set(null);
-    this.reloadAll();
-  }
-
-  onEditModalClosed(): void {
-    this.editingModalTx.set(null);
-    this.editingTxId.set(null);
-  }
 
   onEditTxTypeChange(t: 'INCOME' | 'EXPENSE' | 'TRANSFER'): void {
     this.editTxType.set(t);
