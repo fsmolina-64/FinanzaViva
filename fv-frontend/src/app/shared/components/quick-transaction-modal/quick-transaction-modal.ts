@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../../core/services/finance.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { fadeIn } from '../../../core/animations/animations';
 import {
     Account, Category, Transaction, TransactionAlert,
     CreateTransactionPayload, CreateTransferPayload, TransferResponse
@@ -14,7 +15,8 @@ type ModalType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
     selector: 'app-quick-transaction-modal',
     standalone: true,
     imports: [CommonModule, FormsModule],
-    templateUrl: './quick-transaction-modal.html'
+    templateUrl: './quick-transaction-modal.html',
+    animations: [fadeIn]
 })
 export class QuickTransactionModal implements OnInit {
     @Input() initialType: ModalType = 'EXPENSE';
@@ -47,6 +49,16 @@ export class QuickTransactionModal implements OnInit {
     selectedDate = new Date().toISOString().split('T')[0];
     showExtras = false;
 
+    // ── Keyboard press visual feedback ───────────────────────────
+    pressedKey = signal<string | null>(null);
+    private pressedTimer: any = null;
+
+    private visualPress(key: string): void {
+        if (this.pressedTimer) clearTimeout(this.pressedTimer);
+        this.pressedKey.set(key);
+        this.pressedTimer = setTimeout(() => this.pressedKey.set(null), 200);
+    }
+
     readonly today = new Date().toISOString().split('T')[0];
     readonly numpadKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '<'];
     readonly typeOptions: { key: ModalType; label: string }[] = [
@@ -66,9 +78,7 @@ export class QuickTransactionModal implements OnInit {
 
     topCategories = computed(() => this.filteredCategories().slice(0, 9));
 
-    toAccounts = computed(() =>
-        this.accounts().filter(a => a.id !== this.selectedAccountId)
-    );
+
 
     constructor(
         private financeService: FinanceService,
@@ -153,18 +163,20 @@ export class QuickTransactionModal implements OnInit {
         const tag = (e.target as HTMLElement)?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-        if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); this.pad('<'); return; }
-        if (e.key === '.' || e.key === ',' || e.code === 'NumpadDecimal') { e.preventDefault(); this.pad('.'); return; }
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            e.preventDefault(); this.visualPress('<'); this.pad('<'); return;
+        }
+        if (e.key === '.' || e.key === ',' || e.code === 'NumpadDecimal') {
+            e.preventDefault(); this.visualPress('.'); this.pad('.'); return;
+        }
 
         const map: Record<string, string> = {
-            '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
-            '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
-            'Numpad0': '0', 'Numpad1': '1', 'Numpad2': '2', 'Numpad3': '3',
-            'Numpad4': '4', 'Numpad5': '5', 'Numpad6': '6', 'Numpad7': '7',
-            'Numpad8': '8', 'Numpad9': '9',
+            '0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
+            'Numpad0':'0','Numpad1':'1','Numpad2':'2','Numpad3':'3','Numpad4':'4',
+            'Numpad5':'5','Numpad6':'6','Numpad7':'7','Numpad8':'8','Numpad9':'9',
         };
         const mapped = map[e.key] ?? map[e.code];
-        if (mapped) { e.preventDefault(); this.pad(mapped); }
+        if (mapped) { e.preventDefault(); this.visualPress(mapped); this.pad(mapped); }
     }
 
 
@@ -297,6 +309,14 @@ export class QuickTransactionModal implements OnInit {
         this.showDebtConfirm.set(false);
         this.pendingPayload = null;
         this.preselectCategory();
+    }
+
+    amountCardClass(): string {
+        switch (this.selectedType()) {
+            case 'EXPENSE':  return 'border-red-500/15 from-red-500/5';
+            case 'INCOME':   return 'border-emerald-500/15 from-emerald-500/5';
+            default:         return 'border-blue-500/15 from-blue-500/5';
+        }
     }
 
     close(): void { this.closed.emit(); }

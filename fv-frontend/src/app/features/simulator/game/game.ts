@@ -294,9 +294,9 @@ export class Game implements OnInit {
       case 'INICIO': return 'bg-emerald-600/20 border-emerald-500/40';
       case 'TAX': case 'SCAM': return 'bg-red-600/20 border-red-500/40';
       case 'LOTTERY': case 'PENSION': case 'PENSION_ESPECIAL': return 'bg-yellow-600/20 border-yellow-500/40';
-      case 'JAIL': case 'GO_TO_JAIL': return 'bg-slate-600/30 border-slate-500/50';
+      case 'JAIL': case 'GO_TO_JAIL': return 'bg-strong/30 border-default/50';
       case 'WILDCARD': return 'bg-amber-600/20 border-amber-500/40';
-      default: return 'bg-slate-700/50 border-slate-600';
+      default: return 'bg-elevated/50 border-strong';
     }
   }
 
@@ -315,9 +315,9 @@ export class Game implements OnInit {
       case 'INICIO': return 'bg-emerald-500';
       case 'TAX': case 'SCAM': return 'bg-red-500';
       case 'LOTTERY': case 'PENSION': case 'PENSION_ESPECIAL': return 'bg-yellow-500';
-      case 'JAIL': case 'GO_TO_JAIL': return 'bg-slate-400';
+      case 'JAIL': case 'GO_TO_JAIL': return 'bg-muted';
       case 'WILDCARD': return 'bg-amber-500';
-      default: return 'bg-slate-500';
+      default: return 'bg-subtle';
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
@@ -11,7 +11,7 @@ import { ToastComponent } from '../../shared/components/toast/toast';
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.css'
 })
-export class MainLayout {
+export class MainLayout implements OnInit {
   sidebarOpen = signal(true);
 
   navItems = [
@@ -20,6 +20,7 @@ export class MainLayout {
     { path: '/academy', icon: 'academia.png', label: 'Academia' },
     { path: '/simulator', icon: 'simulador.png', label: 'Simulador' },
     { path: '/achievements', icon: 'logro.png', label: 'Logros' },
+    { path: '/ranking', icon: '/ranking.png', label: 'Ranking' },
     { path: '/profile', icon: 'perfil.png', label: 'Perfil' },
   ];
 
@@ -27,6 +28,12 @@ export class MainLayout {
     public authService: AuthService,
     public gamificationService: GamificationService
   ) { }
+
+  ngOnInit(): void {
+    if (this.authService.currentUser()) {
+      this.gamificationService.loadStats().subscribe();
+    }
+  }
 
   toggleSidebar(): void {
     this.sidebarOpen.update(v => !v);

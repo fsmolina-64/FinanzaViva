@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
+import { staggerCards } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -34,7 +35,8 @@ const METRIC_MAP: Record<string, (u: UserProfile) => number> = {
 @Component({
   selector: 'app-achievements',
   imports: [CommonModule],
-  templateUrl: './achievements.html'
+  templateUrl: './achievements.html',
+  animations: [staggerCards]
 })
 export class Achievements implements OnInit {
   activeTab = signal<Tab>('logros');
@@ -171,7 +173,7 @@ export class Achievements implements OnInit {
       BADGE: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
       SIMULATOR_EVENT: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       FRAME: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-    } as any)[type] ?? 'bg-slate-500/20 text-slate-400 border-slate-600';
+    } as any)[type] ?? 'bg-muted/20 text-muted border-strong';
   }
 
   groupLen(group: Record<string, Achievement[]>, cat: string): number {

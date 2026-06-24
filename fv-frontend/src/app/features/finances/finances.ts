@@ -1,4 +1,6 @@
-import { Component, OnInit, signal, computed, effect, untracked } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, untracked, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { tabSlideAnimation } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +15,7 @@ import {
   BudgetHealth, FinanceSummary, TransactionAlert, AccountType,
   CreateTransactionPayload, CreateCategoryPayload, CreateBudgetPayload, TransferDisplay
 } from '../../core/models/finance.model';
+import { EditTransactionModalService } from '../../core/services/edit-transaction-modal.service';
 import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -37,7 +40,8 @@ interface RecurringRule {
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './finances.html',
-  styleUrl: './finances.css'
+  styleUrl: './finances.css',
+  animations: [tabSlideAnimation]
 })
 export class Finances implements OnInit {
 
@@ -245,7 +249,13 @@ export class Finances implements OnInit {
       }
     }
 
-    return nonTransfers;
+    return nonTransfers.sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+      const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+      return bMs - aMs;
+    });
   });
 
   recentTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
@@ -291,7 +301,13 @@ export class Finances implements OnInit {
     }
 
     return result
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+        const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+        return bMs - aMs;
+      })
       .slice(0, 5);
   });
 
@@ -302,9 +318,11 @@ export class Finances implements OnInit {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(tx);
     }
-    return Array.from(map.entries()).map(([date, items]) => ({
-      date, label: this.formatDateLabel(date), items
-    }));
+    return Array.from(map.entries())
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+      .map(([date, items]) => ({
+        date, label: this.formatDateLabel(date), items
+      }));
   });
 
   calendarCells = computed(() => {
@@ -332,10 +350,16 @@ export class Finances implements OnInit {
     const key = this.calendarDayKey();
     if (!key) return [];
     const typeF = this.calTypeFilter();
-    return this.transactions().filter(t => {
-      if (t.date.substring(0, 10) !== key) return false;
-      return typeF === 'ALL' || t.type === typeF;
-    });
+    return this.transactions()
+      .filter(t => {
+        if (t.date.substring(0, 10) !== key) return false;
+        return typeF === 'ALL' || t.type === typeF;
+      })
+      .sort((a, b) => {
+        const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
+        const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
+        return bMs - aMs;
+      });
   });
 
   generalBudgets = computed(() => this.budgets().filter(b => !b.categoryId));
@@ -351,6 +375,9 @@ export class Finances implements OnInit {
     const today = new Date().toISOString().split('T')[0];
     return this.recurringRules().filter(r => r.nextDate <= today);
   });
+
+  private editTxService = inject(EditTransactionModalService);
+  private destroyRef    = inject(DestroyRef);
 
   constructor(
     private financeService: FinanceService,
@@ -386,6 +413,13 @@ export class Finances implements OnInit {
   }
 
   ngOnInit(): void {
+    this.editTxService.saved$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.editingTxId.set(null);
+        this.reloadAll();
+      });
+
     let loaded = 0;
     const done = () => { if (++loaded >= 7) this.loading.set(false); };
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
@@ -402,7 +436,8 @@ export class Finances implements OnInit {
   openQuickModal(type: 'INCOME' | 'EXPENSE' | 'TRANSFER' = 'EXPENSE') { this.quickTxService.open(type); }
 
   hasEditingOpen(): boolean {
-    return !!(this.editingAccountId() || this.editingTxId() || this.editingCategoryId() || this.editingBudgetId() ||
+    return !!(this.editTxService.show() || this.editingAccountId() || this.editingTxId() ||
+      this.editingCategoryId() || this.editingBudgetId() ||
       this.editingGoalId() || this.addingProgressGoalId() ||
       this.confirmDeleteTxId() || this.confirmDeleteCategoryId() ||
       this.confirmDeleteBudgetId() || this.confirmDeleteGoalId() ||
@@ -541,10 +576,11 @@ export class Finances implements OnInit {
         this.financeService.updateAccount(acc.id, { balance: newBalance }).subscribe({
           next: updated => {
             this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
+            this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
             this.refreshSummary();
             this.pendingAccountEdit = null;
             this.cancelEditAccount();
-            this.toast.success('Cuenta actualizada');
+            this.toast.success('Balance actualizado');
           },
           error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
         });
@@ -658,29 +694,9 @@ export class Finances implements OnInit {
   }
 
   startEditTx(tx: Transaction | TransferDisplay): void {
-    this.editingTxId.set(tx.type === 'TRANSFER' ? (tx as TransferDisplay).groupId : tx.id);
     this.confirmDeleteTxId.set(null);
-    this.editTxType.set(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER');
-    if (tx.type === 'TRANSFER') {
-      const td = tx as TransferDisplay;
-      this.editTx = {
-        categoryId: '',
-        amount: td.amount,
-        description: td.description ?? '',
-        date: new Date(td.date).toISOString().split('T')[0],
-        accountId: td.fromAccountId,
-      };
-      this.editTxTransferToAccountId = td.toAccountId;
-      this.editTxTransferGroupId = td.groupId;
-    } else {
-      this.editTx = {
-        categoryId: tx.categoryId,
-        amount: parseFloat(String(tx.amount)),
-        description: tx.description ?? '',
-        date: new Date(tx.date).toISOString().split('T')[0],
-        accountId: tx.accountId
-      };
-    }
+    this.confirmDeleteTransferGroupId.set(null);
+    this.editTxService.open(tx);
   }
   cancelEditTx(): void { this.editingTxId.set(null); }
 

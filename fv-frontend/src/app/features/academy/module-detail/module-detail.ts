@@ -86,8 +86,8 @@ export class ModuleDetail implements OnInit {
     return ({
       COMPLETED: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       AVAILABLE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      LOCKED: 'bg-slate-700 text-slate-500 border-slate-600'
-    } as any)[status] ?? 'bg-slate-700 text-slate-500';
+      LOCKED: 'bg-elevated text-subtle border-strong'
+    } as any)[status] ?? 'bg-elevated text-subtle';
   }
 
   getLessonStatusLabel(status: string): string {

@@ -98,6 +98,16 @@ export const routes: Routes = [
           import('./features/achievements/achievements').then(m => m.Achievements)
       },
       {
+        path: 'ranking',
+        loadComponent: () =>
+          import('./features/ranking/ranking.component').then(m => m.RankingComponent)
+      },
+      {
+        path: 'ranking/user/:id',
+        loadComponent: () =>
+          import('./features/ranking/user-profile-readonly/user-profile-readonly.component').then(m => m.UserProfileReadonlyComponent)
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile').then(m => m.Profile)

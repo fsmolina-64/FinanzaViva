@@ -302,11 +302,11 @@ export class PdfExportService {
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#1E293B';
+    ctx.fillStyle = '#2C2C2E';
     ctx.font = 'bold 26px Arial';
     const totalLabel = total >= 1000 ? `$${(total / 1000).toFixed(1)}k` : `$${total.toFixed(0)}`;
     ctx.fillText(totalLabel, cx, cy - 12);
-    ctx.fillStyle = '#94A3B8';
+    ctx.fillStyle = '#AEAEB2';
     ctx.font = '15px Arial';
     ctx.fillText('Total', cx, cy + 14);
 
@@ -325,13 +325,13 @@ export class PdfExportService {
       ctx.fill();
 
       const label = item.name.length > 19 ? item.name.substring(0, 18) + '.' : item.name;
-      ctx.fillStyle = '#1E293B';
+      ctx.fillStyle = '#2C2C2E';
       ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(label, lx + 26, ly + 14);
 
-      ctx.fillStyle = '#64748B';
+      ctx.fillStyle = '#636366';
       ctx.font = '12px Arial';
       ctx.fillText(`$${item.amount.toFixed(2)}   ${pct}%`, lx + 26, ly + 30);
 
@@ -355,37 +355,37 @@ export class PdfExportService {
     const trackW = 590;
     const trackX = 236;
 
-    ctx.fillStyle = '#E2E8F0';
+    ctx.fillStyle = '#E5E5EA';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 16, trackW, barH, 15); ctx.fill();
     const incW = Math.max(10, (income / maxVal) * trackW);
-    ctx.fillStyle = '#10B981';
+    ctx.fillStyle = '#34C759';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 16, incW, barH, 15); ctx.fill();
 
-    ctx.fillStyle = '#1E293B';
+    ctx.fillStyle = '#2C2C2E';
     ctx.font = 'bold 17px Arial';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText('INGRESOS', trackX - 14, 16 + barH / 2);
 
-    ctx.fillStyle = '#10B981';
+    ctx.fillStyle = '#34C759';
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'left';
     const incLabelX = Math.min(trackX + incW + 10, trackX + trackW - 70);
     ctx.fillText(`$${income.toFixed(2)}`, incLabelX, 16 + barH / 2);
 
-    ctx.fillStyle = '#E2E8F0';
+    ctx.fillStyle = '#E5E5EA';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 70, trackW, barH, 15); ctx.fill();
     const expW = Math.max(10, (expenses / maxVal) * trackW);
-    ctx.fillStyle = '#EF4444';
+    ctx.fillStyle = '#FF3B30';
     ctx.beginPath(); this.rrectCanvas(ctx, trackX, 70, expW, barH, 15); ctx.fill();
 
-    ctx.fillStyle = '#1E293B';
+    ctx.fillStyle = '#2C2C2E';
     ctx.font = 'bold 17px Arial';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText('GASTOS', trackX - 14, 70 + barH / 2);
 
-    ctx.fillStyle = '#EF4444';
+    ctx.fillStyle = '#FF3B30';
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'left';
     const expLabelX = Math.min(trackX + expW + 10, trackX + trackW - 70);

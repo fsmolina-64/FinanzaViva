@@ -2,29 +2,29 @@
 
   <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600
               flex items-center justify-center mb-6" style="box-shadow:0 8px 32px rgba(245,158,11,0.2)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24"
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24"
       stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round"
         d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
     </svg>
   </div>
 
-  <h1 class="text-white text-3xl font-bold text-center mb-2 tracking-tight">
+  <h1 class="text-primary text-3xl font-bold text-center mb-2 tracking-tight">
     Tus categorias
   </h1>
-  <p class="text-gray-400 text-center mb-7 max-w-md leading-relaxed text-sm">
+  <p class="text-muted text-center mb-7 max-w-md leading-relaxed text-sm">
     Organiza tus transacciones. Puedes crear, editar o eliminar mas adelante desde la seccion de Finanzas.
   </p>
 
   <div class="flex gap-1 p-1 rounded-xl mb-6 w-full max-w-xs" style="background-color:#1e293b">
     <button type="button" (click)="setTab('EXPENSE')"
       class="flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
-      [class]="activeTab() === 'EXPENSE' ? 'bg-white text-gray-900' : 'text-gray-500 hover:text-gray-300'">
+      [class]="activeTab() === 'EXPENSE' ? 'bg-white text-gray-900' : 'text-subtle hover:text-primary'">
       Gastos
     </button>
     <button type="button" (click)="setTab('INCOME')"
       class="flex-1 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
-      [class]="activeTab() === 'INCOME' ? 'bg-white text-gray-900' : 'text-gray-500 hover:text-gray-300'">
+      [class]="activeTab() === 'INCOME' ? 'bg-white text-gray-900' : 'text-subtle hover:text-primary'">
       Ingresos
     </button>
   </div>
@@ -39,8 +39,8 @@
     </div>
 
     } @else if (filteredCategories().length === 0) {
-    <div class="rounded-2xl border border-dashed border-gray-700 p-6 text-center mb-3">
-      <p class="text-gray-500 text-sm">No hay categorias en esta seccion</p>
+    <div class="rounded-2xl border border-dashed border-default p-6 text-center mb-3">
+      <p class="text-subtle text-sm">No hay categorias en esta seccion</p>
     </div>
 
     } @else {
@@ -54,32 +54,32 @@
 
         @if (editingId() === cat.id) {
         <input type="text" [value]="editName()" (input)="editName.set($any($event.target).value)"
-          (keydown.enter)="saveEdit(cat)" (keydown.escape)="cancelEdit()" class="flex-1 bg-transparent text-white text-sm outline-none
+          (keydown.enter)="saveEdit(cat)" (keydown.escape)="cancelEdit()" class="flex-1 bg-transparent text-primary text-sm outline-none
                        border-b border-purple-500 pb-0.5" autofocus>
-        <button type="button" (click)="saveEdit(cat)" [disabled]="isEditSaving()" class="text-purple-400 text-xs font-medium hover:text-purple-300
+        <button type="button" (click)="saveEdit(cat)" [disabled]="isEditSaving()" class="text-accent-purple text-xs font-medium hover:text-accent-purple/80
                              transition-colors cursor-pointer disabled:opacity-50">
           @if (isEditSaving()) { Guardando } @else { Guardar }
         </button>
         <button type="button" (click)="cancelEdit()"
-          class="text-gray-600 text-xs hover:text-gray-400 transition-colors cursor-pointer">
+          class="text-subtle text-xs hover:text-muted transition-colors cursor-pointer">
           Cancelar
         </button>
 
         } @else {
-        <span class="flex-1 text-gray-200 text-sm">{{ cat.name }}</span>
+        <span class="flex-1 text-primary text-sm">{{ cat.name }}</span>
         @if (cat.isGlobal) {
-        <span class="text-xs text-gray-600">predefinida</span>
+        <span class="text-xs text-subtle">predefinida</span>
         }
         @if (!cat.isGlobal) {
         <button type="button" (click)="startEdit(cat)"
-          class="text-gray-600 hover:text-gray-300 transition-colors cursor-pointer p-1">
+          class="text-subtle hover:text-primary transition-colors cursor-pointer p-1">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
         </button>
-        <button type="button" (click)="deleteCategory(cat)" [disabled]="deletingId() === cat.id" class="text-gray-600 hover:text-red-400 transition-colors cursor-pointer p-1
+        <button type="button" (click)="deleteCategory(cat)" [disabled]="deletingId() === cat.id" class="text-subtle hover:text-danger transition-colors cursor-pointer p-1
                                disabled:opacity-40 disabled:cursor-not-allowed">
           @if (deletingId() === cat.id) {
           <svg class="w-3.5 h-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -102,14 +102,14 @@
     }
 
     @if (deleteError()) {
-    <p class="text-red-400 text-xs mt-2 text-center">{{ deleteError() }}</p>
+    <p class="text-danger text-xs mt-2 text-center">{{ deleteError() }}</p>
     }
   </div>
 
   @if (!showAddForm()) {
   <button type="button" (click)="toggleAddForm()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-                   border border-dashed border-gray-700 text-gray-500 text-sm
-                   hover:border-gray-500 hover:text-gray-300 transition-colors cursor-pointer mb-6">
+                   border border-dashed border-default text-subtle text-sm
+                   hover:border-strong hover:text-primary transition-colors cursor-pointer mb-6">
     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
       stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -119,16 +119,16 @@
 
   } @else {
   <div class="w-full rounded-2xl p-4 mb-6" style="background-color:#1e293b; border:1px solid #334155">
-    <p class="text-gray-300 text-sm font-medium mb-3">
+    <p class="text-primary/80 text-sm font-medium mb-3">
       Nueva categoria de {{ activeTab() === 'INCOME' ? 'ingreso' : 'gasto' }}
     </p>
 
-    <input type="text" [formControl]="addForm.controls.name" placeholder="Nombre de la categoria" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5
-               text-white text-sm outline-none focus:border-purple-500 transition-colors mb-3"
+    <input type="text" [formControl]="addForm.controls.name" placeholder="Nombre de la categoria" class="w-full bg-input border border-default rounded-xl px-4 py-2.5
+               text-primary text-sm outline-none focus:border-accent-purple transition-colors mb-3"
       [class.border-red-800]="addForm.controls.name.invalid && addForm.controls.name.touched">
 
     @if (addError()) {
-    <p class="text-red-400 text-xs mb-3">{{ addError() }}</p>
+    <p class="text-danger text-xs mb-3">{{ addError() }}</p>
     }
 
     <div class="flex gap-2">
@@ -137,8 +137,8 @@
                   disabled:opacity-50 disabled:cursor-not-allowed">
         @if (addLoading()) { Guardando... } @else { Agregar }
       </button>
-      <button type="button" (click)="toggleAddForm()" class="px-4 py-2 rounded-xl text-gray-500 text-sm
-                       hover:text-gray-300 transition-colors cursor-pointer" style="background-color:#0f172a">
+      <button type="button" (click)="toggleAddForm()" class="px-4 py-2 rounded-xl text-subtle text-sm
+                       hover:text-primary transition-colors cursor-pointer" style="background-color:#0f172a">
         Cancelar
       </button>
     </div>
