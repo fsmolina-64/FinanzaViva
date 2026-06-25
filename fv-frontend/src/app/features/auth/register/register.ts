@@ -51,7 +51,7 @@ export class Register {
     const { displayName, email, password } = this.form.value;
 
     this.authService.register({ displayName, email, password }).subscribe({
-      next: () => this.router.navigate(['/auth/login']),
+      next: () => this.router.navigate(['/onboarding']),
       error: (err) => {
         this.error.set(err.error?.message || 'Error al registrarse');
         this.loading.set(false);
