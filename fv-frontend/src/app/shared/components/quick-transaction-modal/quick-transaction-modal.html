@@ -89,18 +89,18 @@
         </div>
 
         <!-- Numpad -->
-        <div class="px-4 pb-3">
-            <div class="grid grid-cols-3 gap-2.5">
+        <div class="px-3 pb-3">
+            <div class="grid grid-cols-3 gap-1.5">
                 @for (key of numpadKeys; track key) {
                 <button (click)="pad(key)"
-                    class="numpad-key h-14 rounded-2xl font-bold select-none transition-colors duration-100 btn-press"
+                    class="numpad-key h-11 rounded-xl font-bold select-none transition-colors duration-100 btn-press"
                     [class.is-pressed]="pressedKey() === key" [ngClass]="key === '<'
-            ? 'bg-red-950/40 hover:bg-red-950/60 border border-red-900/30 text-red-400/80 text-xl'
+            ? 'bg-red-950/40 hover:bg-red-950/60 border border-red-900/30 text-red-400/80 text-base'
             : key === '.'
             ? (inDecimalMode
-               ? 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-2xl'
-               : 'bg-elevated/40 hover:bg-elevated/60 border border-default/25 text-muted text-2xl')
-            : 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-xl'">
+               ? 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-lg'
+               : 'bg-elevated/40 hover:bg-elevated/60 border border-default/25 text-muted text-lg')
+            : 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-base'">
                     @if (key === '<') { &#8592; } @else { {{ key }} } </button>
                         }
             </div>
