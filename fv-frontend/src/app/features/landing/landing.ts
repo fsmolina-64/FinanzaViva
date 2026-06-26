@@ -1,10 +1,11 @@
 import { Component, AfterViewInit, OnDestroy, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CommonModule],
   styles: [`
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(28px); }
@@ -18,37 +19,21 @@ import { RouterLink } from '@angular/router';
     .anim-2 { animation: fadeUp 0.6s 0.12s ease both; }
     .anim-3 { animation: fadeUp 0.6s 0.24s ease both; }
     .anim-4 { animation: fadeUp 0.6s 0.36s ease both; }
-    .anim-5 { animation: fadeUp 0.6s 0.48s ease both; }
     .anim-mockup { animation: scaleIn 0.75s 0.55s cubic-bezier(0.16,1,0.3,1) both; }
 
     .reveal {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
-                  transform 0.65s cubic-bezier(0.16,1,0.3,1);
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1);
     }
     .reveal.show { opacity: 1; transform: translateY(0); }
-
-    .reveal-l {
-      opacity: 0;
-      transform: translateX(-28px);
-      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
-                  transform 0.65s cubic-bezier(0.16,1,0.3,1);
-    }
+    .reveal-l { opacity: 0; transform: translateX(-28px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }
     .reveal-l.show { opacity: 1; transform: translateX(0); }
-
-    .reveal-r {
-      opacity: 0;
-      transform: translateX(28px);
-      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
-                  transform 0.65s cubic-bezier(0.16,1,0.3,1);
-    }
+    .reveal-r { opacity: 0; transform: translateX(28px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }
     .reveal-r.show { opacity: 1; transform: translateX(0); }
-
-    .d1 { transition-delay: 0.08s; }
-    .d2 { transition-delay: 0.16s; }
-    .d3 { transition-delay: 0.24s; }
-    .d4 { transition-delay: 0.32s; }
+    .d1 { transition-delay: 0.08s; } .d2 { transition-delay: 0.16s; }
+    .d3 { transition-delay: 0.24s; } .d4 { transition-delay: 0.32s; }
 
     .grid-pattern {
       background-image:
@@ -56,31 +41,52 @@ import { RouterLink } from '@angular/router';
         linear-gradient(90deg, rgba(148,163,184,.04) 1px, transparent 1px);
       background-size: 56px 56px;
     }
-    .gold-text { color: #E5C158; }
-    .gold-border { border-color: rgba(229,193,88,.3); }
-    .gold-bg { background-color: rgba(229,193,88,.1); }
+
+    /* ── Paleta dorada ── */
+    .gold-text  { color: #E5C158; }
+    .gold-border{ border-color: rgba(229,193,88,.3); }
+    .gold-bg    { background-color: rgba(229,193,88,.1); }
+    .gold-btn {
+      background: linear-gradient(135deg,#C9A227 0%,#E5C158 50%,#C9A227 100%);
+      color: #1a1400;
+      box-shadow: 0 8px 32px rgba(229,193,88,.25);
+    }
+    .gold-btn:hover {
+      background: linear-gradient(135deg,#E5C158 0%,#f0d070 50%,#E5C158 100%);
+      box-shadow: 0 12px 40px rgba(229,193,88,.4);
+    }
     .icon-gold {
       display: inline-block;
       filter: sepia(1) saturate(5) hue-rotate(2deg) brightness(1.15);
     }
     .gold-glow {
       display: inline-block;
-      filter: sepia(1) saturate(6) hue-rotate(2deg) brightness(1.25) drop-shadow(0 0 8px rgba(229,193,88,0.45));
+      filter: sepia(1) saturate(6) hue-rotate(2deg) brightness(1.25)
+              drop-shadow(0 0 8px rgba(229,193,88,0.45));
     }
-    .gold-btn {
-      background: linear-gradient(135deg, #C9A227 0%, #E5C158 50%, #C9A227 100%);
-      color: #1a1400;
-      box-shadow: 0 8px 32px rgba(229,193,88,0.25);
+    .svg-gold { color: #E5C158; }
+
+    /* ── Carrusel ── */
+    .carousel-slide { transition: opacity 0.45s ease, transform 0.45s ease; }
+    .carousel-dot {
+      width:8px; height:8px; border-radius:9999px;
+      background:rgba(229,193,88,.25); cursor:pointer; transition:all .3s;
     }
-    .gold-btn:hover {
-      background: linear-gradient(135deg, #E5C158 0%, #f0d070 50%, #E5C158 100%);
-      box-shadow: 0 12px 40px rgba(229,193,88,0.4);
+    .carousel-dot.active { width:24px; background:#E5C158; }
+
+    /* ── Nav icon cards ── */
+    .nav-card {
+      background: rgba(229,193,88,0.05);
+      border: 1px solid rgba(229,193,88,.2);
+      transition: all .2s;
     }
+    .nav-card:hover { background: rgba(229,193,88,0.12); transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(229,193,88,.15); }
   `],
   template: `
 
   <!-- ═══ NAVBAR ════════════════════════════════════════════════════════ -->
-  <nav class="fixed inset-x-0 top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-700">
+  <nav class="fixed inset-x-0 top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-700/60">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
         <img src="/logo-oficial.png" alt="FinanzaViva" class="w-8 h-8 object-contain">
@@ -96,7 +102,7 @@ import { RouterLink } from '@angular/router';
           </svg>
         </a>
         <a routerLink="/auth/login"
-           class="hidden sm:inline-flex px-4 py-2 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all duration-200">
+           class="hidden sm:inline-flex px-4 py-2 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-200">
           Iniciar sesión
         </a>
         <a routerLink="/auth/register"
@@ -110,8 +116,8 @@ import { RouterLink } from '@angular/router';
   <!-- ═══ HERO ═══════════════════════════════════════════════════════════ -->
   <section class="min-h-screen bg-slate-900 grid-pattern flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center relative overflow-hidden">
     <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-blue-600/6 rounded-full blur-[100px]"></div>
-      <div class="absolute bottom-0 right-1/4 w-[300px] h-[200px] bg-[#E5C158]/4 rounded-full blur-[80px]"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-[#E5C158]/4 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-0 right-1/4 w-[300px] h-[200px] bg-[#E5C158]/3 rounded-full blur-[80px]"></div>
     </div>
 
     <div class="anim-1 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 border gold-border text-[#E5C158] text-sm font-medium mb-8">
@@ -126,80 +132,73 @@ import { RouterLink } from '@angular/router';
       Domina tu dinero.
     </h1>
 
-    <p class="anim-3 text-slate-400 text-lg sm:text-xl max-w-lg mt-7 leading-relaxed">
-      Academia financiera, quizzes interactivos, simulador de inversiones y gestión real de tus finanzas — todo en un solo lugar.
+    <p class="anim-3 text-slate-400 text-lg sm:text-xl max-w-lg mt-6 leading-relaxed">
+      Academia financiera · Simulador de inversiones · Gestión real de tus finanzas.<br>
+      Todo en un solo lugar, sin costo.
     </p>
 
-    <div class="anim-4 mt-10 flex flex-col sm:flex-row gap-4">
+    <div class="anim-4 mt-9 flex flex-col sm:flex-row gap-4">
       <a routerLink="/auth/register"
          class="px-8 py-4 rounded-xl gold-btn font-bold text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]">
-        Empieza gratis — sin costo →
+        Empieza gratis →
       </a>
       <a routerLink="/auth/login"
-         class="px-8 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium text-base hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all duration-200">
+         class="px-8 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium text-base hover:bg-slate-800 hover:text-white transition-all duration-200">
         Iniciar sesión
       </a>
     </div>
 
     <div class="anim-4 mt-5 flex flex-wrap justify-center gap-5 text-xs text-slate-500">
-      <span class="flex items-center gap-1.5"><span class="text-emerald-400">✓</span> Sin tarjeta de crédito</span>
-      <span class="flex items-center gap-1.5"><span class="text-emerald-400">✓</span> 100% gratuito</span>
-      <span class="flex items-center gap-1.5"><span class="text-emerald-400">✓</span> Acceso inmediato</span>
+      <span class="flex items-center gap-1.5"><span class="gold-text">✓</span> Sin tarjeta de crédito</span>
+      <span class="flex items-center gap-1.5"><span class="gold-text">✓</span> 100% gratuito</span>
+      <span class="flex items-center gap-1.5"><span class="gold-text">✓</span> Acceso inmediato</span>
     </div>
 
-    <!-- Dashboard mockup -->
-    <div class="anim-mockup mt-14 w-full max-w-4xl">
+    <!-- Dashboard mockup compacto -->
+    <div class="anim-mockup mt-14 w-full max-w-3xl">
       <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl shadow-black/60 text-left">
-        <!-- Top bar -->
         <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-700 bg-slate-900/60">
-          <div>
-            <div class="text-white font-bold text-sm">Hola, Sofía 👋</div>
-            <div class="text-slate-400 text-xs">Tu resumen de progreso</div>
-          </div>
           <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-full gold-bg border gold-border flex items-center justify-center gold-text text-xs font-bold">S</div>
+            <div>
+              <div class="text-white font-bold text-sm">Hola, Sofía 👋</div>
+              <div class="text-slate-400 text-xs">Nivel 2 · ROOKIE</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
             <span class="px-2.5 py-1 rounded-full gold-bg gold-text border gold-border text-xs font-semibold"><span class="icon-gold">🔥</span> Racha: 3</span>
-            <div class="w-8 h-8 rounded-full gold-bg border gold-border flex items-center justify-center gold-text text-sm font-bold">S</div>
+            <span class="px-2.5 py-1 rounded-full gold-bg gold-text border gold-border text-xs font-bold">450 XP</span>
           </div>
         </div>
-        <!-- XP bar -->
-        <div class="px-5 py-4 border-b border-slate-700">
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="text-white font-semibold text-sm">Nivel 2</span>
-              <span class="px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-[11px] font-semibold">ROOKIE</span>
-            </div>
-            <span class="gold-text font-bold text-sm">450 XP Total</span>
+        <div class="px-5 py-3 border-b border-slate-700">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-slate-400 text-xs">350 / 500 XP para Nivel 3</span>
+            <span class="gold-text text-xs font-bold">70%</span>
           </div>
-          <div class="text-slate-500 text-[11px] mb-2">350 / 500 XP para Nivel 3</div>
           <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
             <div class="h-full rounded-full" style="width:70%;background:linear-gradient(90deg,#C9A227,#E5C158,#C9A227)"></div>
           </div>
         </div>
-        <!-- Stat cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
-          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border">
-            <div class="text-xl mb-2 icon-gold">🎓</div>
+          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border flex flex-col gap-1.5">
+            <img src="academia.png" class="w-7 h-7 object-contain" alt="Academia">
             <div class="text-white font-semibold text-sm">Academia</div>
-            <div class="text-slate-400 text-xs mt-1">3 / 7 módulos</div>
-            <div class="text-slate-500 text-xs">12 / 28 lecciones</div>
+            <div class="text-slate-400 text-xs">3/7 módulos</div>
           </div>
-          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border">
-            <div class="text-xl mb-2 icon-gold">🧠</div>
-            <div class="text-white font-semibold text-sm">Quizzes</div>
-            <div class="text-slate-400 text-xs mt-1">4 / 7 aprobados</div>
-            <div class="gold-text text-xs font-medium">78% tasa</div>
+          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border flex flex-col gap-1.5">
+            <img src="billetera-premium.png" class="w-7 h-7 object-contain" alt="Finanzas">
+            <div class="text-white font-semibold text-sm">Finanzas</div>
+            <div class="text-slate-400 text-xs">$54 balance</div>
           </div>
-          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border">
-            <div class="text-xl mb-2 icon-gold">🎮</div>
+          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border flex flex-col gap-1.5">
+            <img src="simulador.png" class="w-7 h-7 object-contain" alt="Simulador">
             <div class="text-white font-semibold text-sm">Simulador</div>
-            <div class="text-slate-400 text-xs mt-1">2 victorias</div>
-            <div class="text-slate-500 text-xs">5 partidas jugadas</div>
+            <div class="text-slate-400 text-xs">2 victorias</div>
           </div>
-          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border">
-            <div class="text-xl mb-2 icon-gold">🏆</div>
+          <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border flex flex-col gap-1.5">
+            <img src="logro.png" class="w-7 h-7 object-contain" alt="Logros">
             <div class="text-white font-semibold text-sm">Logros</div>
-            <div class="text-slate-400 text-xs mt-1">5 / 23</div>
-            <div class="gold-text text-xs font-medium">+850 XP ganados</div>
+            <div class="text-slate-400 text-xs">5/23 logros</div>
           </div>
         </div>
       </div>
@@ -215,7 +214,7 @@ import { RouterLink } from '@angular/router';
       </div>
       <div class="reveal d1" #revealEl>
         <div class="text-3xl font-extrabold gold-text">7</div>
-        <div class="text-sm text-slate-400 mt-1">Módulos disponibles</div>
+        <div class="text-sm text-slate-400 mt-1">Módulos financieros</div>
       </div>
       <div class="reveal d2" #revealEl>
         <div class="text-3xl font-extrabold gold-text">28</div>
@@ -228,661 +227,116 @@ import { RouterLink } from '@angular/router';
     </div>
   </section>
 
-  <!-- ═══ QUÉ ES FINANZAVIVA — PROPUESTA DE VALOR ══════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
+  <!-- ═══ CARRUSEL — QUÉ INCLUYE LA APP ═══════════════════════════════ -->
+  <section class="bg-slate-900 py-20 px-6 border-t border-slate-800">
     <div class="max-w-5xl mx-auto">
 
-      <div class="text-center mb-14 reveal" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">💡</span> ¿Qué es FinanzaViva?</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          La plataforma de educación financiera<br>
-          <span class="gold-text">hecha para jóvenes ecuatorianos</span>
+      <!-- Header -->
+      <div class="text-center mb-10 reveal" #revealEl>
+        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-4">
+          <span class="icon-gold">💡</span> ¿Qué incluye FinanzaViva?
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">
+          Todo lo que necesitas<br><span class="gold-text">en un solo lugar</span>
         </h2>
-        <p class="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-          FinanzaViva combina <strong class="text-white">aprendizaje gamificado</strong>, simulación de inversiones y gestión real de tus finanzas en un solo lugar — sin jerga técnica, sin costo.
+        <p class="text-slate-400 max-w-xl mx-auto text-sm">
+          Desliza para explorar las 4 áreas principales de la app.
         </p>
       </div>
 
-      <!-- 3 pilares -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-        <div class="reveal d1 bg-slate-800 rounded-2xl p-7 border gold-border flex flex-col gap-4" #revealEl style="background:rgba(229,193,88,0.04)">
-          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center text-3xl"><span class="icon-gold">📚</span></div>
-          <h3 class="text-white font-bold text-xl">Aprende</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">7 módulos de finanzas personales con lecciones cortas, quizzes y retroalimentación inmediata. Desde presupuesto hasta mercado de valores.</p>
-          <span class="gold-text text-xs font-semibold">Academia · Quizzes interactivos</span>
-        </div>
-        <div class="reveal d2 bg-slate-800 rounded-2xl p-7 border gold-border flex flex-col gap-4" #revealEl style="background:rgba(229,193,88,0.04)">
-          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center text-3xl"><span class="icon-gold">🎮</span></div>
-          <h3 class="text-white font-bold text-xl">Practica</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">Simulador de decisiones financieras con bots IA y modo multijugador. Toma riesgos, comete errores y aprende — sin perder dinero real.</p>
-          <span class="gold-text text-xs font-semibold">Simulador · Bots IA</span>
-        </div>
-        <div class="reveal d3 bg-slate-800 rounded-2xl p-7 border gold-border flex flex-col gap-4" #revealEl style="background:rgba(229,193,88,0.04)">
-          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center text-3xl"><span class="icon-gold">💳</span></div>
-          <h3 class="text-white font-bold text-xl">Gestiona</h3>
-          <p class="text-slate-400 text-sm leading-relaxed">Registra ingresos y gastos, crea presupuestos, define metas de ahorro y exporta reportes en PDF. Control total de tus finanzas reales.</p>
-          <span class="gold-text text-xs font-semibold">Finanzas · Reportes PDF</span>
-        </div>
+      <!-- Tabs navegación carrusel -->
+      <div class="flex items-center justify-center gap-1 p-1 bg-slate-800 rounded-xl border gold-border w-fit mx-auto mb-8 reveal" #revealEl>
+        <button *ngFor="let slide of slides; let i = index"
+                (click)="goToSlide(i)"
+                [class]="i === currentSlide
+                  ? 'px-4 py-2 rounded-lg gold-btn text-xs font-bold transition-all duration-200 flex items-center gap-1.5'
+                  : 'px-4 py-2 rounded-lg text-xs text-slate-400 font-medium hover:text-white transition-all duration-200 flex items-center gap-1.5'">
+          <img [src]="slide.img" class="w-4 h-4 object-contain" style="filter:brightness(0) invert(1)" alt="">
+          {{ slide.tab }}
+        </button>
       </div>
 
-      <!-- 4 accesos principales (estilo "Acceso rápido" de la app) -->
+      <!-- Slide area -->
       <div class="reveal" #revealEl>
-        <p class="text-center text-slate-500 text-xs font-semibold uppercase tracking-widest mb-6">Acceso a todas las funcionalidades</p>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="bg-slate-800 rounded-2xl p-6 border gold-border flex flex-col items-center gap-3 hover:scale-[1.03] transition-all duration-200 cursor-default" style="background:rgba(229,193,88,0.05)">
-            <span class="text-4xl icon-gold">🎓</span>
-            <span class="text-white font-semibold text-sm">Academia</span>
-          </div>
-          <div class="bg-slate-800 rounded-2xl p-6 border gold-border flex flex-col items-center gap-3 hover:scale-[1.03] transition-all duration-200 cursor-default" style="background:rgba(229,193,88,0.05)">
-            <span class="text-4xl icon-gold">💰</span>
-            <span class="text-white font-semibold text-sm">Finanzas</span>
-          </div>
-          <div class="bg-slate-800 rounded-2xl p-6 border gold-border flex flex-col items-center gap-3 hover:scale-[1.03] transition-all duration-200 cursor-default" style="background:rgba(229,193,88,0.05)">
-            <span class="text-4xl icon-gold">🕹️</span>
-            <span class="text-white font-semibold text-sm">Simulador</span>
-          </div>
-          <div class="bg-slate-800 rounded-2xl p-6 border gold-border flex flex-col items-center gap-3 hover:scale-[1.03] transition-all duration-200 cursor-default" style="background:rgba(229,193,88,0.05)">
-            <span class="text-4xl icon-gold">🏆</span>
-            <span class="text-white font-semibold text-sm">Logros</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- CTA -->
-      <div class="mt-12 text-center reveal" #revealEl>
-        <a routerLink="/auth/register"
-           class="inline-flex items-center gap-2 px-8 py-4 rounded-xl gold-btn font-bold text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]">
-          <span class="icon-gold">🚀</span> Comenzar gratis ahora
-        </a>
-        <p class="mt-3 text-slate-500 text-xs">Sin tarjeta de crédito · Sin costo · Acceso inmediato</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ FEATURE: ACADEMIA ════════════════════════════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
-    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-center">
-
-      <div class="reveal-l" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">📚</span> Academia Financiera</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          7 módulos para dominar<br>tus finanzas personales
-        </h2>
-        <p class="text-slate-400 leading-relaxed mb-7">Desde presupuesto hasta mercado de valores — aprende a tu ritmo con lecciones cortas y contenido diseñado para jóvenes ecuatorianos.</p>
-        <ul class="flex flex-col gap-3.5">
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Presupuesto personal, ahorro e interés compuesto</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Crédito, deuda, inversiones y mercado de valores</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Seguros, protección financiera y planificación</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">+100 XP por módulo completado, progreso guardado</span>
-          </li>
-        </ul>
-        <div class="mt-8">
-          <a routerLink="/auth/register" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl gold-btn font-bold text-sm transition-all duration-200 hover:scale-[1.02]">
-            Explorar la Academia →
-          </a>
-        </div>
-      </div>
-
-      <!-- Modules mockup -->
-      <div class="reveal-r" #revealEl>
-        <div class="flex flex-col gap-2.5">
-          <div class="bg-slate-800 rounded-xl p-4 border gold-border flex items-center gap-4">
-            <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm flex-shrink-0">1</div>
-            <div class="flex-1 min-w-0">
-              <div class="text-white text-sm font-semibold">Presupuesto Personal</div>
-              <div class="text-slate-400 text-xs mt-0.5">4 lecciones · 0%</div>
-              <div class="h-1 bg-slate-700 rounded-full mt-2">
-                <div class="h-1 bg-[#E5C158]/40 rounded-full" style="width:0%"></div>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-[11px] font-semibold flex-shrink-0">+100 XP</span>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-4 border gold-border flex items-center gap-4">
-            <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm flex-shrink-0">2</div>
-            <div class="flex-1 min-w-0">
-              <div class="text-white text-sm font-semibold">Ahorro e Interés Compuesto</div>
-              <div class="text-slate-400 text-xs mt-0.5">4 lecciones · 50%</div>
-              <div class="h-1 bg-slate-700 rounded-full mt-2">
-                <div class="h-1 rounded-full" style="width:50%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-[11px] font-semibold flex-shrink-0">+120 XP</span>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-4 border gold-border flex items-center gap-4" style="background:rgba(229,193,88,0.06)">
-            <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm flex-shrink-0">3</div>
-            <div class="flex-1 min-w-0">
-              <div class="text-white text-sm font-semibold">Crédito y Deuda</div>
-              <div class="text-slate-400 text-xs mt-0.5">4 lecciones · 100%</div>
-              <div class="h-1 bg-slate-700 rounded-full mt-2">
-                <div class="h-1 rounded-full" style="width:100%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-semibold flex-shrink-0">✓ +130 XP</span>
-          </div>
-          <div class="bg-slate-800 rounded-xl p-4 border gold-border flex items-center gap-4">
-            <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm flex-shrink-0">4</div>
-            <div class="flex-1 min-w-0">
-              <div class="text-white text-sm font-semibold">Inversiones Básicas</div>
-              <div class="text-slate-400 text-xs mt-0.5">4 lecciones · 25%</div>
-              <div class="h-1 bg-slate-700 rounded-full mt-2">
-                <div class="h-1 rounded-full" style="width:25%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-[11px] font-semibold flex-shrink-0">+150 XP</span>
-          </div>
-          <div class="text-center gold-text text-xs pt-1 opacity-60">+ 3 módulos más disponibles</div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ FEATURE: QUIZZES ════════════════════════════════════════════ -->
-  <section class="bg-slate-800 py-24 px-6 border-t border-slate-700">
-    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-center">
-
-      <!-- Quiz mockup -->
-      <div class="reveal-l" #revealEl>
-        <div class="bg-slate-900 rounded-2xl p-6 border border-slate-700 shadow-2xl shadow-black/40">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-400">Módulo 2 · Pregunta 3/5</span>
-              <span class="gold-text text-sm font-semibold"><span class="icon-gold">🔥</span> ×5</span>
-            </div>
-            <span class="px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-xs font-semibold">+50 XP</span>
-          </div>
-          <div class="h-1.5 bg-slate-800 rounded-full mb-5">
-            <div class="h-1.5 rounded-full" style="width:60%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-          </div>
-          <p class="text-white font-semibold mb-4">¿Qué es el interés compuesto?</p>
-          <div class="flex flex-col gap-2 mb-4">
-            <div class="px-4 py-2.5 rounded-xl border border-slate-700 text-sm text-slate-400 cursor-pointer hover:border-slate-600 transition-colors">A) Interés solo sobre el capital inicial</div>
-            <div class="px-4 py-2.5 rounded-xl border gold-border text-sm text-white font-medium flex items-center justify-between" style="background:rgba(229,193,88,0.08)">
-              <span>B) Interés sobre capital e intereses acumulados</span>
-              <span class="gold-text ml-2">✓</span>
-            </div>
-            <div class="px-4 py-2.5 rounded-xl border border-slate-700 text-sm text-slate-400">C) Un tipo de préstamo bancario</div>
-            <div class="px-4 py-2.5 rounded-xl border border-slate-700 text-sm text-slate-400">D) Una estrategia de trading avanzada</div>
-          </div>
-          <div class="px-4 py-2.5 rounded-xl border gold-border text-xs gold-text mb-4" style="background:rgba(229,193,88,0.06)">
-            <span class="icon-gold">✅</span> ¡Correcto! El interés compuesto es el "octavo milagro del mundo".
-          </div>
-          <button class="w-full py-2.5 gold-btn text-sm font-bold rounded-xl transition-all duration-200">
-            Siguiente pregunta →
-          </button>
-        </div>
-      </div>
-
-      <div class="reveal-r" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">🧠</span> Quizzes Interactivos</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          Aprende haciendo,<br>no memorizando
-        </h2>
-        <p class="text-slate-400 leading-relaxed mb-7">Quizzes cortos con retroalimentación inmediata. Cada módulo tiene su propio quiz que te desafía y te enseña al mismo tiempo.</p>
-        <ul class="flex flex-col gap-3.5">
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">7 quizzes disponibles — uno por módulo</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Retroalimentación inmediata y explicaciones claras</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Rachas de racha y XP extra por respuestas correctas</span>
-          </li>
-        </ul>
-        <div class="mt-8">
-          <a routerLink="/auth/register" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl gold-btn font-bold text-sm transition-all duration-200 hover:scale-[1.02]">
-            Hacer mi primer quiz →
-          </a>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ FEATURE: GAMIFICACIÓN ════════════════════════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
-    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-center">
-
-      <div class="reveal-l" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5">🏆 Gamificación</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          Finanzas que te<br>
-          <span class="gold-text">mantienen motivado</span>
-        </h2>
-        <p class="text-slate-400 leading-relaxed mb-7">XP, niveles, rachas, logros y recompensas — nuestro sistema de gamificación convierte aprender en algo que realmente quieres seguir haciendo.</p>
-        <ul class="flex flex-col gap-3.5">
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full gold-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#E5C158]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Sistema de XP: gana puntos en cada lección, quiz y simulador</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full gold-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#E5C158]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">23 logros desbloqueables + 20 recompensas exclusivas</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full gold-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#E5C158]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Racha diaria para mantener la constancia</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full gold-bg flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#E5C158]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Ranking global — compite con otros usuarios</span>
-          </li>
-        </ul>
-        <div class="mt-8">
-          <a routerLink="/auth/register" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl gold-btn font-bold text-sm transition-all duration-200 hover:scale-[1.02]">
-            <span class="icon-gold">🏆</span> Ganar mis primeros logros →
-          </a>
-        </div>
-      </div>
-
-      <!-- Achievements mockup -->
-      <div class="reveal-r" #revealEl>
-        <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-2xl shadow-black/40">
-          <!-- User bar -->
-          <div class="flex items-center gap-3 mb-5">
-            <div class="w-12 h-12 rounded-xl gold-bg border-2 gold-border flex items-center justify-center text-2xl"><span class="icon-gold">👤</span></div>
-            <div class="flex-1">
-              <div class="text-white font-semibold text-sm">Juan Pérez</div>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="gold-text text-xs font-medium">Nivel 3</span>
-                <span class="text-slate-500 text-xs">·</span>
-                <span class="text-slate-400 text-xs">APPRENTICE</span>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-white font-bold">1,250</div>
-              <div class="text-xs text-slate-500">XP total</div>
-            </div>
-          </div>
-          <!-- XP bar -->
-          <div class="mb-5">
-            <div class="flex justify-between text-xs text-slate-500 mb-1.5">
-              <span>Progreso al Nivel 4</span>
-              <span class="text-[#2563EB] font-medium">750 / 1000 XP</span>
-            </div>
-            <div class="h-2.5 bg-slate-700 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" style="width:75%;background:linear-gradient(90deg,#C9A227,#E5C158,#C9A227)"></div>
-            </div>
-          </div>
-          <!-- Achievements -->
-          <div class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-3">Logros desbloqueados · 5/23</div>
-          <div class="grid grid-cols-5 gap-2 mb-5">
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-xl gold-bg border gold-border flex items-center justify-center text-xl"><span class="icon-gold">🏆</span></div>
-              <span class="text-[9px] text-slate-500 text-center leading-tight">1er quiz</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-xl gold-bg border gold-border flex items-center justify-center text-xl"><span class="icon-gold">🎯</span></div>
-              <span class="text-[9px] text-slate-500 text-center leading-tight">100% módulo</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-xl gold-bg border gold-border flex items-center justify-center text-xl"><span class="icon-gold">💰</span></div>
-              <span class="text-[9px] text-slate-500 text-center leading-tight">Ahorrador</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-xl gold-bg border gold-border flex items-center justify-center text-xl"><span class="icon-gold">🔥</span></div>
-              <span class="text-[9px] text-slate-500 text-center leading-tight">Racha 7d</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-11 h-11 rounded-xl bg-slate-700 border border-slate-600 flex items-center justify-center text-xl opacity-30"><span>🔒</span></div>
-              <span class="text-[9px] text-slate-600 text-center leading-tight">Próximo</span>
-            </div>
-          </div>
-          <!-- Notification -->
-          <div class="flex items-center gap-3 px-4 py-3 rounded-xl gold-bg border gold-border">
-            <span class="text-xl flex-shrink-0 icon-gold">🎉</span>
-            <div>
-              <div class="text-[#E5C158] text-xs font-semibold">¡Módulo 2 completado!</div>
-              <div class="text-slate-400 text-xs">+200 XP · Logro "Estudiante" desbloqueado</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ FEATURE: SIMULADOR ══════════════════════════════════════════ -->
-  <section class="bg-slate-800 py-24 px-6 border-t border-slate-700">
-    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-center">
-
-      <!-- Simulator mockup -->
-      <div class="reveal-l order-last md:order-first" #revealEl>
-        <div class="bg-slate-900 rounded-2xl p-6 border border-slate-700 shadow-2xl shadow-black/40">
-          <div class="text-white font-semibold text-sm mb-4">Modo de juego</div>
-          <div class="grid grid-cols-2 gap-2.5 mb-5">
-            <div class="px-4 py-3.5 rounded-xl border gold-border relative" style="background:rgba(229,193,88,0.08)">
-              <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded gold-btn text-[9px] font-bold">RECOMENDADO</div>
-              <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm mb-2"><span class="icon-gold">🎮</span></div>
-              <div class="gold-text font-semibold text-sm">Solo</div>
-              <div class="text-slate-400 text-xs mt-0.5">Tú vs bots IA</div>
-            </div>
-            <div class="px-4 py-3.5 rounded-xl border gold-border">
-              <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center text-xl mb-2"><span class="icon-gold">👥</span></div>
-              <div class="text-white font-semibold text-sm">Multijugador</div>
-              <div class="text-slate-400 text-xs mt-0.5">Contra amigos</div>
-            </div>
-            <div class="px-4 py-3.5 rounded-xl border gold-border">
-              <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center text-xl mb-2"><span class="icon-gold">🤝</span></div>
-              <div class="text-white font-semibold text-sm">Mixto</div>
-              <div class="text-slate-400 text-xs mt-0.5">Humanos y bots</div>
-            </div>
-            <div class="px-4 py-3.5 rounded-xl border gold-border">
-              <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center text-xl mb-2"><span class="icon-gold">👁️</span></div>
-              <div class="text-white font-semibold text-sm">Observar</div>
-              <div class="text-slate-400 text-xs mt-0.5">Mira las IAs</div>
-            </div>
-          </div>
-          <div class="gold-text font-semibold text-sm mb-3">Duración</div>
-          <div class="grid grid-cols-3 gap-2">
-            <div class="py-2.5 rounded-xl border gold-border text-center" style="background:rgba(229,193,88,0.08)">
-              <div class="gold-text text-xs font-semibold">Rápido</div>
-              <div class="text-slate-400 text-[10px]">3 rondas</div>
-            </div>
-            <div class="py-2.5 rounded-xl border border-slate-700 text-center">
-              <div class="text-slate-300 text-xs font-medium">Estándar</div>
-              <div class="text-slate-500 text-[10px]">5 rondas</div>
-            </div>
-            <div class="py-2.5 rounded-xl border border-slate-700 text-center">
-              <div class="text-slate-300 text-xs font-medium">Intensivo</div>
-              <div class="text-slate-500 text-[10px]">8 rondas</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="reveal-r" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">📈</span> Simulador de Decisiones</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          Practica sin<br>
-          <span class="text-emerald-400">arriesgar dinero real</span>
-        </h2>
-        <p class="text-slate-400 leading-relaxed mb-7">Toma decisiones financieras en escenarios reales. Compite contra bots IA con distintas personalidades financieras o reta a tus amigos.</p>
-        <ul class="flex flex-col gap-3.5">
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">4 modos: Solo, Multijugador, Mixto y Observar</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Bots IA con personalidades financieras distintas</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Gana XP y victorias que mejoran tu ranking</span>
-          </li>
-        </ul>
-        <div class="mt-8">
-          <a routerLink="/auth/register" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl gold-btn font-bold text-sm transition-all duration-200 hover:scale-[1.02]">
-            <span class="icon-gold">🎮</span> Jugar mi primera partida →
-          </a>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ FEATURE: FINANZAS ════════════════════════════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
-    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-center">
-
-      <div class="reveal-l" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">💳</span> Finanzas Personales</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-5">
-          Controla tu dinero<br>en tiempo real
-        </h2>
-        <p class="text-slate-400 leading-relaxed mb-7">Registra gastos, ingresos y transferencias. Crea presupuestos por categoría, define metas financieras y exporta todo a PDF con un clic.</p>
-        <ul class="flex flex-col gap-3.5">
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Múltiples cuentas: efectivo, billetera digital, banco</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Presupuestos inteligentes con alertas automáticas</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Metas de ahorro con progreso visual en tiempo real</span>
-          </li>
-          <li class="flex items-start gap-3">
-            <div class="w-5 h-5 rounded-full bg-[#2563EB]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg class="w-3 h-3 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <span class="text-slate-300 text-sm">Exporta reportes en PDF con un solo clic</span>
-          </li>
-        </ul>
-        <div class="mt-8">
-          <a routerLink="/auth/register" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl gold-btn font-bold text-sm transition-all duration-200 hover:scale-[1.02]">
-            <span class="icon-gold">💳</span> Gestionar mis finanzas →
-          </a>
-        </div>
-      </div>
-
-      <!-- Finanzas mockup -->
-      <div class="reveal-r" #revealEl>
-        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-2xl shadow-black/40">
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <div class="text-white font-bold text-sm">Mis Finanzas</div>
-              <div class="text-slate-400 text-xs">Control completo de tu dinero</div>
-            </div>
-            <div class="px-3 py-1.5 rounded-xl bg-slate-700 text-center">
-              <div class="text-white font-bold text-sm">$54.00</div>
-              <div class="text-slate-400 text-[10px]">Balance</div>
-            </div>
-          </div>
-          <!-- Summary cards -->
-          <div class="grid grid-cols-3 gap-2 mb-4">
-            <div class="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700 text-center">
-              <div class="text-emerald-400 font-bold text-sm">$2.00</div>
-              <div class="text-slate-500 text-[10px]">Ingresos</div>
-            </div>
-            <div class="bg-slate-900/60 rounded-lg p-2.5 border border-slate-700 text-center">
-              <div class="text-red-400 font-bold text-sm">$0.00</div>
-              <div class="text-slate-500 text-[10px]">Gastos</div>
-            </div>
-            <div class="bg-slate-900/60 rounded-lg p-2.5 border border-emerald-500/30 text-center">
-              <div class="text-emerald-400 font-bold text-sm">HEALTHY</div>
-              <div class="text-slate-500 text-[10px]">Salud</div>
-            </div>
-          </div>
-          <!-- Transactions -->
-          <div class="text-xs text-slate-400 font-semibold mb-2.5">Últimas transacciones</div>
-          <div class="flex flex-col gap-2 mb-4">
-            <div class="flex items-center gap-3 py-2 border-b border-slate-700">
-              <div class="w-7 h-7 rounded-full gold-bg border gold-border flex items-center justify-center text-sm flex-shrink-0 gold-text font-bold">+</div>
-              <div class="flex-1">
-                <div class="text-white text-xs font-medium">Balance inicial de JEP</div>
-                <div class="text-slate-500 text-[10px]">Sin categoría · 23 Jun</div>
-              </div>
-              <span class="text-emerald-400 text-xs font-semibold">+$2.00</span>
-            </div>
-            <div class="flex items-center gap-3 py-2">
-              <div class="w-7 h-7 rounded-full gold-bg border gold-border flex items-center justify-center text-sm flex-shrink-0 gold-text font-bold">B</div>
-              <div class="flex-1">
-                <div class="text-white text-xs font-medium">Balance inicial de billetera</div>
-                <div class="text-slate-500 text-[10px]">Balance inicial · 23 Jun</div>
-              </div>
-              <span class="text-purple-400 text-xs font-semibold">$52.00</span>
-            </div>
-          </div>
-          <!-- Meta -->
-          <div class="px-3 py-2.5 rounded-xl bg-[#2563EB]/8 border border-[#2563EB]/20 flex items-center justify-between">
-            <div>
-              <div class="text-white text-xs font-medium">Meta: Fondo de emergencia</div>
-              <div class="text-slate-400 text-[10px]">Ahorrado: $0.00 / $1,000.00</div>
-            </div>
-            <button class="px-2.5 py-1 gold-btn text-[10px] font-bold rounded-lg">Ahorrar</button>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ═══ DEMO PREVIEW — VISTA PREVIA DE LA APP ═══════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
-    <div class="max-w-5xl mx-auto">
-
-      <div class="text-center mb-12 reveal" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-5"><span class="icon-gold">🖥️</span> Vista Previa</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
-          Mira FinanzaViva en acción
-        </h2>
-        <p class="text-slate-400 max-w-lg mx-auto text-sm">Todo lo que ves aquí es parte de la app real. Crea tu cuenta y accede en segundos.</p>
-      </div>
-
-      <!-- Tabs de navegación del preview -->
-      <div class="reveal" #revealEl>
-        <div class="flex items-center gap-1 p-1 bg-slate-800 rounded-xl border gold-border w-fit mx-auto mb-8">
-          <div class="px-4 py-2 rounded-lg gold-btn text-xs font-bold">Dashboard</div>
-          <div class="px-4 py-2 rounded-lg text-xs text-slate-400 font-medium">Academia</div>
-          <div class="px-4 py-2 rounded-lg text-xs text-slate-400 font-medium">Simulador</div>
-          <div class="px-4 py-2 rounded-lg text-xs text-slate-400 font-medium">Finanzas</div>
-        </div>
-
-        <!-- Preview principal — Dashboard completo -->
         <div class="bg-slate-800 rounded-2xl border gold-border overflow-hidden shadow-2xl shadow-black/60">
-          <!-- Header de la app -->
-          <div class="bg-slate-900/80 px-6 py-4 border-b gold-border flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm">S</div>
-              <div>
-                <div class="text-white font-bold text-sm">Hola, Sofía <span class="icon-gold">👋</span></div>
-                <div class="text-slate-400 text-xs">Nivel 3 · APPRENTICE</div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="px-3 py-1.5 rounded-full gold-bg gold-text border gold-border text-xs font-semibold"><span class="icon-gold">🔥</span> Racha: 5</span>
-              <span class="px-3 py-1.5 rounded-full gold-bg gold-text border gold-border text-xs font-bold">1,250 XP</span>
-            </div>
-          </div>
 
-          <div class="p-6 grid md:grid-cols-3 gap-5">
-            <!-- Columna izq: Stats + accesos -->
-            <div class="md:col-span-1 flex flex-col gap-4">
-              <!-- XP progress -->
-              <div class="bg-slate-900/70 rounded-xl p-4 border gold-border">
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-white text-xs font-semibold">Nivel 3 → 4</span>
-                  <span class="gold-text text-xs font-bold">75%</span>
+          <!-- Slide: Dashboard -->
+          <div *ngIf="currentSlide === 0" class="carousel-slide">
+            <div class="bg-slate-900/80 px-6 py-4 border-b gold-border flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm">S</div>
+                <div>
+                  <div class="text-white font-bold text-sm">Dashboard</div>
+                  <div class="text-slate-400 text-xs">Tu centro de control financiero</div>
                 </div>
-                <div class="h-2 bg-slate-700 rounded-full overflow-hidden mb-3">
-                  <div class="h-full rounded-full" style="width:75%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-                </div>
-                <div class="text-slate-500 text-[10px]">750 / 1000 XP para siguiente nivel</div>
               </div>
-              <!-- Acceso rápido -->
-              <div class="grid grid-cols-2 gap-2">
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-2">
-                  <span class="text-2xl icon-gold">🎓</span>
-                  <span class="text-white text-[10px] font-semibold">Academia</span>
-                </div>
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-2">
-                  <span class="text-2xl icon-gold">💰</span>
-                  <span class="text-white text-[10px] font-semibold">Finanzas</span>
-                </div>
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-2">
-                  <span class="text-2xl icon-gold">🕹️</span>
-                  <span class="text-white text-[10px] font-semibold">Simulador</span>
-                </div>
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-2">
-                  <span class="text-2xl icon-gold">🏆</span>
-                  <span class="text-white text-[10px] font-semibold">Logros</span>
-                </div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full gold-bg gold-text border gold-border text-xs font-semibold"><span class="icon-gold">🔥</span> Racha: 5</span>
+                <span class="px-2.5 py-1 rounded-full gold-bg gold-text border gold-border text-xs font-bold">1,250 XP</span>
               </div>
             </div>
-
-            <!-- Columna centro: actividad reciente -->
-            <div class="md:col-span-1 flex flex-col gap-3">
-              <div class="text-xs text-slate-500 font-semibold uppercase tracking-widest">Actividad Reciente</div>
-              <div class="flex flex-col gap-2">
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0"><span class="text-sm icon-gold">🎓</span></div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-white text-xs font-semibold">Módulo 3 completado</div>
-                    <div class="text-slate-500 text-[10px]">Crédito y Deuda · hace 2h</div>
+            <div class="p-5 grid sm:grid-cols-3 gap-4">
+              <div class="sm:col-span-1 flex flex-col gap-3">
+                <div class="bg-slate-900/70 rounded-xl p-4 border gold-border">
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-white text-xs font-semibold">Nivel 3 → 4</span>
+                    <span class="gold-text text-xs font-bold">75%</span>
                   </div>
-                  <span class="gold-text text-xs font-bold">+130 XP</span>
+                  <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full" style="width:75%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
+                  </div>
+                  <div class="text-slate-500 text-[10px] mt-1.5">750 / 1000 XP para siguiente nivel</div>
                 </div>
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0"><span class="text-sm icon-gold">🎮</span></div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-white text-xs font-semibold">Victoria en Simulador</div>
-                    <div class="text-slate-500 text-[10px]">Modo Solo · hace 5h</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-1.5">
+                    <img src="academia.png" class="w-6 h-6 object-contain" alt="Academia">
+                    <span class="text-white text-[10px] font-semibold">Academia</span>
                   </div>
-                  <span class="gold-text text-xs font-bold">+80 XP</span>
-                </div>
-                <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0"><span class="text-sm icon-gold">🏆</span></div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-white text-xs font-semibold">Logro desbloqueado</div>
-                    <div class="text-slate-500 text-[10px]">"Estudiante" · ayer</div>
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-1.5">
+                    <img src="billetera-premium.png" class="w-6 h-6 object-contain" alt="Finanzas">
+                    <span class="text-white text-[10px] font-semibold">Finanzas</span>
                   </div>
-                  <span class="gold-text text-xs font-bold">+50 XP</span>
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-1.5">
+                    <img src="simulador.png" class="w-6 h-6 object-contain" alt="Simulador">
+                    <span class="text-white text-[10px] font-semibold">Simulador</span>
+                  </div>
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex flex-col items-center gap-1.5">
+                    <img src="logro.png" class="w-6 h-6 object-contain" alt="Logros">
+                    <span class="text-white text-[10px] font-semibold">Logros</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <!-- Columna der: Logros + finanzas mini -->
-            <div class="md:col-span-1 flex flex-col gap-3">
-              <div class="text-xs text-slate-500 font-semibold uppercase tracking-widest">Resumen Financiero</div>
-              <div class="bg-slate-900/70 rounded-xl p-4 border gold-border">
-                <div class="flex justify-between mb-3">
+              <div class="sm:col-span-2 flex flex-col gap-3">
+                <div class="text-xs text-slate-500 font-semibold uppercase tracking-widest">Actividad Reciente</div>
+                <div class="flex flex-col gap-2">
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0 p-1"><img src="academia.png" class="w-full h-full object-contain" alt="Academia"></div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-white text-xs font-semibold">Módulo 3 completado</div>
+                      <div class="text-slate-500 text-[10px]">Crédito y Deuda · hace 2h</div>
+                    </div>
+                    <span class="gold-text text-xs font-bold">+130 XP</span>
+                  </div>
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0 p-1"><img src="simulador.png" class="w-full h-full object-contain" alt="Simulador"></div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-white text-xs font-semibold">Victoria en Simulador</div>
+                      <div class="text-slate-500 text-[10px]">Modo Solo · hace 5h</div>
+                    </div>
+                    <span class="gold-text text-xs font-bold">+80 XP</span>
+                  </div>
+                  <div class="bg-slate-900/70 rounded-xl p-3 border gold-border flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg gold-bg border gold-border flex items-center justify-center flex-shrink-0 p-1"><img src="logro.png" class="w-full h-full object-contain" alt="Logros"></div>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-white text-xs font-semibold">Logro desbloqueado</div>
+                      <div class="text-slate-500 text-[10px]">"Estudiante" · ayer</div>
+                    </div>
+                    <span class="gold-text text-xs font-bold">+50 XP</span>
+                  </div>
+                </div>
+                <div class="bg-slate-900/70 rounded-xl p-3.5 border gold-border flex items-center justify-between">
                   <div class="text-center">
-                    <div class="text-emerald-400 font-bold text-sm">$2,450</div>
+                    <div class="text-[#4ade80] font-bold text-sm">$2,450</div>
                     <div class="text-slate-500 text-[10px]">Ingresos</div>
                   </div>
                   <div class="text-center">
@@ -893,121 +347,246 @@ import { RouterLink } from '@angular/router';
                     <div class="gold-text font-bold text-sm">$1,130</div>
                     <div class="text-slate-500 text-[10px]">Ahorro</div>
                   </div>
-                </div>
-                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                  <div class="h-full rounded-full" style="width:46%;background:linear-gradient(90deg,#C9A227,#E5C158)"></div>
-                </div>
-                <div class="text-slate-500 text-[10px] mt-1.5">Meta de ahorro: 46% completado</div>
-              </div>
-              <div class="bg-slate-900/70 rounded-xl p-3 border gold-border">
-                <div class="text-[10px] text-slate-500 font-semibold mb-2">Logros · 5 / 23</div>
-                <div class="flex gap-2">
-                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center"><span class="icon-gold">🏆</span></div>
-                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center"><span class="icon-gold">🎯</span></div>
-                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center"><span class="icon-gold">💰</span></div>
-                  <div class="w-9 h-9 rounded-lg bg-slate-700 border border-slate-600 flex items-center justify-center opacity-30">🔒</div>
+                  <div class="text-center">
+                    <div class="text-white font-bold text-sm">5/23</div>
+                    <div class="text-slate-500 text-[10px]">Logros</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Slide: Academia -->
+          <div *ngIf="currentSlide === 1" class="carousel-slide">
+            <div class="bg-slate-900/80 px-6 py-4 border-b gold-border">
+              <div class="text-white font-bold text-sm">Academia Financiera</div>
+              <div class="text-slate-400 text-xs">7 módulos · 28 lecciones · Aprende a tu ritmo</div>
+            </div>
+            <div class="p-5 flex flex-col gap-3">
+              <div *ngFor="let mod of academyModules; let i = index"
+                   class="bg-slate-900/60 rounded-xl p-4 border gold-border flex items-center gap-4">
+                <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center gold-text font-bold text-sm flex-shrink-0">{{i+1}}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-white text-sm font-semibold">{{mod.name}}</div>
+                  <div class="text-slate-400 text-xs mt-0.5">4 lecciones · {{mod.pct}}%</div>
+                  <div class="h-1 bg-slate-700 rounded-full mt-2">
+                    <div class="h-1 rounded-full" [style]="'width:'+mod.pct+'%;background:linear-gradient(90deg,#C9A227,#E5C158)'"></div>
+                  </div>
+                </div>
+                <span [class]="mod.done
+                  ? 'px-2 py-0.5 rounded-full bg-[#4ade80]/15 text-[#4ade80] text-[11px] font-semibold flex-shrink-0'
+                  : 'px-2 py-0.5 rounded-full gold-bg gold-text border gold-border text-[11px] font-semibold flex-shrink-0'">
+                  {{mod.done ? '✓ +'+mod.xp+' XP' : '+'+mod.xp+' XP'}}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide: Simulador -->
+          <div *ngIf="currentSlide === 2" class="carousel-slide">
+            <div class="bg-slate-900/80 px-6 py-4 border-b gold-border">
+              <div class="text-white font-bold text-sm">Simulador de Decisiones Financieras</div>
+              <div class="text-slate-400 text-xs">Practica sin arriesgar dinero real · Bots IA · Multijugador</div>
+            </div>
+            <div class="p-5">
+              <div class="text-xs text-slate-500 font-semibold uppercase tracking-widest mb-4">Elige tu modo de juego</div>
+              <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="px-4 py-4 rounded-xl border gold-border relative" style="background:rgba(229,193,88,0.08)">
+                  <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded gold-btn text-[9px] font-bold">RECOMENDADO</div>
+                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5 svg-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                  </div>
+                  <div class="gold-text font-semibold text-sm">Solo</div>
+                  <div class="text-slate-400 text-xs mt-0.5">Tú vs bots IA</div>
+                </div>
+                <div class="px-4 py-4 rounded-xl border gold-border">
+                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5 svg-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </div>
+                  <div class="text-white font-semibold text-sm">Multijugador</div>
+                  <div class="text-slate-400 text-xs mt-0.5">Contra amigos</div>
+                </div>
+                <div class="px-4 py-4 rounded-xl border gold-border">
+                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5 svg-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
+                  </div>
+                  <div class="text-white font-semibold text-sm">Mixto</div>
+                  <div class="text-slate-400 text-xs mt-0.5">Humanos y bots</div>
+                </div>
+                <div class="px-4 py-4 rounded-xl border gold-border">
+                  <div class="w-9 h-9 rounded-lg gold-bg border gold-border flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5 svg-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  </div>
+                  <div class="text-white font-semibold text-sm">Observar</div>
+                  <div class="text-slate-400 text-xs mt-0.5">Mira las IAs jugar</div>
+                </div>
+              </div>
+              <div class="gold-text text-xs font-semibold mb-3">Duración de la partida</div>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="py-2.5 rounded-xl border gold-border text-center" style="background:rgba(229,193,88,0.08)">
+                  <div class="gold-text text-xs font-semibold">Rápido</div>
+                  <div class="text-slate-400 text-[10px]">3 rondas</div>
+                </div>
+                <div class="py-2.5 rounded-xl border border-slate-700 text-center">
+                  <div class="text-slate-300 text-xs font-medium">Estándar</div>
+                  <div class="text-slate-500 text-[10px]">5 rondas</div>
+                </div>
+                <div class="py-2.5 rounded-xl border border-slate-700 text-center">
+                  <div class="text-slate-300 text-xs font-medium">Intensivo</div>
+                  <div class="text-slate-500 text-[10px]">8 rondas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide: Finanzas -->
+          <div *ngIf="currentSlide === 3" class="carousel-slide">
+            <div class="bg-slate-900/80 px-6 py-4 border-b gold-border">
+              <div class="text-white font-bold text-sm">Mis Finanzas</div>
+              <div class="text-slate-400 text-xs">Ingresos · Gastos · Presupuestos · Metas de ahorro · PDF</div>
+            </div>
+            <div class="p-5">
+              <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border text-center">
+                  <div class="text-[#4ade80] font-bold text-base">$2,450</div>
+                  <div class="text-slate-500 text-xs mt-0.5">Ingresos</div>
+                </div>
+                <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border text-center">
+                  <div class="text-red-400 font-bold text-base">$1,320</div>
+                  <div class="text-slate-500 text-xs mt-0.5">Gastos</div>
+                </div>
+                <div class="bg-slate-900/60 rounded-xl p-3.5 border gold-border text-center">
+                  <div class="gold-text font-bold text-base">$1,130</div>
+                  <div class="text-slate-500 text-xs mt-0.5">Ahorro</div>
+                </div>
+              </div>
+              <div class="text-xs text-slate-500 font-semibold uppercase tracking-widest mb-3">Últimas transacciones</div>
+              <div class="flex flex-col gap-2 mb-4">
+                <div class="flex items-center gap-3 py-2.5 px-3 bg-slate-900/60 border gold-border rounded-xl">
+                  <div class="w-7 h-7 rounded-full bg-[#4ade80]/10 border border-[#4ade80]/30 flex items-center justify-center text-[#4ade80] text-xs font-bold flex-shrink-0">+</div>
+                  <div class="flex-1"><div class="text-white text-xs font-medium">Balance JEP</div><div class="text-slate-500 text-[10px]">23 Jun</div></div>
+                  <span class="text-[#4ade80] text-xs font-semibold">+$2.00</span>
+                </div>
+                <div class="flex items-center gap-3 py-2.5 px-3 bg-slate-900/60 border gold-border rounded-xl">
+                  <div class="w-7 h-7 rounded-full gold-bg border gold-border flex items-center justify-center gold-text text-xs font-bold flex-shrink-0">B</div>
+                  <div class="flex-1"><div class="text-white text-xs font-medium">Balance billetera digital</div><div class="text-slate-500 text-[10px]">23 Jun</div></div>
+                  <span class="text-slate-300 text-xs font-semibold">$52.00</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between px-4 py-3 rounded-xl gold-bg border gold-border">
+                <div>
+                  <div class="text-white text-xs font-medium">Meta: Fondo de emergencia</div>
+                  <div class="text-slate-400 text-[10px] mt-0.5">$0 / $1,000 · 0% completado</div>
+                </div>
+                <button class="px-3 py-1.5 gold-btn text-[10px] font-bold rounded-lg">Ahorrar →</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Dots y controles -->
+        <div class="flex items-center justify-center gap-3 mt-6">
+          <button (click)="prevSlide()" class="w-8 h-8 rounded-full bg-slate-800 border gold-border flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="flex items-center gap-2">
+            <div *ngFor="let s of slides; let i = index"
+                 (click)="goToSlide(i)"
+                 [class]="'carousel-dot' + (i === currentSlide ? ' active' : '')"></div>
+          </div>
+          <button (click)="nextSlide()" class="w-8 h-8 rounded-full bg-slate-800 border gold-border flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
         </div>
       </div>
 
-      <!-- CTA debajo del preview -->
+      <!-- CTA debajo del carrusel -->
       <div class="mt-10 text-center reveal" #revealEl>
-        <p class="text-slate-400 text-sm mb-5">¿Listo para ver esto con tu propia cuenta?</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a routerLink="/auth/register"
-             class="px-8 py-4 rounded-xl gold-btn font-bold text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]">
-            Crear cuenta gratis →
-          </a>
-          <a routerLink="/auth/login"
-             class="px-8 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium text-base hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all duration-200">
-            Ya tengo una cuenta
-          </a>
-        </div>
+        <a routerLink="/auth/register"
+           class="inline-flex items-center gap-2 px-8 py-4 rounded-xl gold-btn font-bold text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]">
+          <span class="icon-gold">🚀</span> Comenzar gratis ahora
+        </a>
+        <p class="mt-3 text-slate-500 text-xs">Sin tarjeta de crédito · Sin costo · Acceso inmediato</p>
       </div>
-
     </div>
   </section>
 
-  <!-- ═══ RANKING ══════════════════════════════════════════════════════ -->
-  <section class="bg-slate-800 py-24 px-6 border-t border-slate-700">
+  <!-- ═══ ICONOS / ACCESOS ══════════════════════════════════════════════ -->
+  <section class="bg-slate-800 py-16 px-6 border-t border-slate-700">
     <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-12 reveal" #revealEl>
-        <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-4"><span class="icon-gold">🏅</span> Ranking Global</span>
-        <h2 class="text-3xl sm:text-4xl font-bold text-white">Compite con toda la comunidad</h2>
-        <p class="mt-3 text-slate-400 max-w-sm mx-auto text-sm">Clasificación basada en actividad y progreso. ¿Hasta dónde puedes llegar?</p>
+      <div class="text-center mb-10 reveal" #revealEl>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Accede a todo desde un solo lugar</h2>
+        <p class="text-slate-400 text-sm">Cuatro módulos que trabajan juntos para tu libertad financiera.</p>
       </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 reveal" #revealEl>
 
-      <div class="reveal" #revealEl>
-        <div class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl shadow-black/40">
-          <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
-            <span class="text-white font-semibold text-sm">Ranking Global</span>
-            <span class="text-slate-400 text-xs">Clasificación basada en actividad y progreso</span>
+        <!-- Dashboard -->
+        <div class="nav-card rounded-2xl p-6 flex flex-col items-center gap-4 cursor-default">
+          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center">
+            <img src="dashboard.png" class="w-9 h-9 object-contain" alt="Dashboard">
           </div>
-          <div class="flex flex-col divide-y divide-slate-800">
-            <div class="flex items-center gap-4 px-5 py-3.5 bg-amber-500/5 border-l-2 border-amber-400">
-              <span class="w-7 text-center font-bold text-amber-400 text-sm">1</span>
-              <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-white text-xs font-bold">P</div>
-              <div class="flex-1">
-                <div class="text-white text-sm font-semibold">prueba6</div>
-                <div class="text-slate-400 text-xs">Nivel 4 · APPRENTICE</div>
-              </div>
-              <span class="text-amber-400 font-bold text-sm">7.1 pts</span>
-            </div>
-            <div class="flex items-center gap-4 px-5 py-3.5 bg-slate-500/5 border-l-2 border-slate-500">
-              <span class="w-7 text-center font-bold text-slate-400 text-sm">2</span>
-              <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-xs font-bold">F</div>
-              <div class="flex-1">
-                <div class="text-white text-sm font-semibold">fasf</div>
-                <div class="text-slate-400 text-xs">Nivel 4 · APPRENTICE</div>
-              </div>
-              <span class="text-slate-300 font-bold text-sm">5.9 pts</span>
-            </div>
-            <div class="flex items-center gap-4 px-5 py-3.5">
-              <span class="w-7 text-center font-semibold text-slate-500 text-sm">3</span>
-              <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-xs font-bold">P</div>
-              <div class="flex-1">
-                <div class="text-slate-300 text-sm">prueba</div>
-                <div class="text-slate-500 text-xs">Nivel 2 · ROOKIE</div>
-              </div>
-              <span class="text-slate-400 font-semibold text-sm">4.2 pts</span>
-            </div>
-            <div class="flex items-center gap-4 px-5 py-3.5 bg-[#2563EB]/5 border-l-2 border-[#2563EB]">
-              <span class="w-7 text-center font-semibold text-[#2563EB] text-sm">?</span>
-              <div class="w-8 h-8 rounded-full bg-[#2563EB]/20 border border-[#2563EB]/40 flex items-center justify-center text-[#2563EB] text-xs font-bold">Tú</div>
-              <div class="flex-1">
-                <div class="text-white text-sm font-semibold">Tu posición</div>
-                <div class="text-slate-400 text-xs">Empieza hoy para entrar al ranking</div>
-              </div>
-              <span class="px-2.5 py-1 rounded-full gold-btn text-[10px] font-bold">Únete →</span>
-            </div>
+          <div class="text-center">
+            <div class="text-white font-bold text-sm">Dashboard</div>
+            <div class="text-slate-400 text-xs mt-1">Tu progreso general</div>
           </div>
         </div>
+
+        <!-- Finanzas -->
+        <div class="nav-card rounded-2xl p-6 flex flex-col items-center gap-4 cursor-default">
+          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center">
+            <img src="billetera-premium.png" class="w-9 h-9 object-contain" alt="Finanzas">
+          </div>
+          <div class="text-center">
+            <div class="text-white font-bold text-sm">Finanzas</div>
+            <div class="text-slate-400 text-xs mt-1">Gastos e ingresos</div>
+          </div>
+        </div>
+
+        <!-- Academia -->
+        <div class="nav-card rounded-2xl p-6 flex flex-col items-center gap-4 cursor-default">
+          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center">
+            <img src="academia.png" class="w-9 h-9 object-contain" alt="Academia">
+          </div>
+          <div class="text-center">
+            <div class="text-white font-bold text-sm">Academia</div>
+            <div class="text-slate-400 text-xs mt-1">7 módulos y quizzes</div>
+          </div>
+        </div>
+
+        <!-- Simulador -->
+        <div class="nav-card rounded-2xl p-6 flex flex-col items-center gap-4 cursor-default">
+          <div class="w-14 h-14 rounded-2xl gold-bg border gold-border flex items-center justify-center">
+            <img src="simulador.png" class="w-9 h-9 object-contain" alt="Simulador">
+          </div>
+          <div class="text-center">
+            <div class="text-white font-bold text-sm">Simulador</div>
+            <div class="text-slate-400 text-xs mt-1">Decisiones financieras</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
 
   <!-- ═══ NIVELES ══════════════════════════════════════════════════════ -->
-  <section class="bg-slate-900 py-24 px-6 border-t border-slate-800">
+  <section class="bg-slate-900 py-16 px-6 border-t border-slate-800">
     <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-12 reveal" #revealEl>
+      <div class="text-center mb-10 reveal" #revealEl>
         <span class="inline-block px-3 py-1 rounded-full gold-bg border gold-border text-[#E5C158] text-xs font-medium mb-4">⭐ Tu Progresión</span>
-        <h2 class="text-3xl font-bold text-white">Tu camino hacia la libertad financiera</h2>
-        <p class="mt-3 text-slate-400 max-w-sm mx-auto text-sm">Cada nivel desbloquea contenido y simuladores más avanzados.</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white">Tu camino hacia la libertad financiera</h2>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 reveal" #revealEl>
         <div class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-800 border gold-border relative" style="background:rgba(229,193,88,0.06)">
           <div class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-slate-900 text-[9px] font-bold whitespace-nowrap gold-btn">TÚ AQUÍ</div>
           <span class="text-4xl mt-2 gold-glow">🌱</span>
           <div class="gold-text text-xs font-semibold text-center">Novato</div>
-          <div class="text-[9px] text-slate-400 text-center">ROOKIE · 0 – 100 XP</div>
+          <div class="text-[9px] text-slate-400 text-center">ROOKIE · 0–100 XP</div>
         </div>
         <div class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-800 border gold-border">
           <span class="text-4xl mt-2 icon-gold">📘</span>
           <div class="gold-text text-xs font-semibold text-center">Principiante</div>
-          <div class="text-[9px] text-slate-400 text-center">100 – 300 XP</div>
+          <div class="text-[9px] text-slate-400 text-center">100–300 XP</div>
         </div>
         <div class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-800 border gold-border">
           <span class="text-4xl mt-2 icon-gold">⭐</span>
@@ -1029,15 +608,14 @@ import { RouterLink } from '@angular/router';
   </section>
 
   <!-- ═══ CTA FINAL ════════════════════════════════════════════════════ -->
-  <section class="bg-slate-800 py-28 px-6 border-t border-slate-700 relative overflow-hidden">
+  <section class="bg-slate-800 py-24 px-6 border-t border-slate-700 relative overflow-hidden">
     <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[250px] bg-blue-600/8 rounded-full blur-[90px]"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[250px] bg-[#E5C158]/5 rounded-full blur-[100px]"></div>
     </div>
     <div class="max-w-2xl mx-auto text-center relative reveal" #revealEl>
       <div class="text-5xl mb-6 gold-glow">🚀</div>
       <h2 class="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
-        ¿Listo para subir<br>
-        <span class="gold-text">de nivel?</span>
+        ¿Listo para subir<br><span class="gold-text">de nivel?</span>
       </h2>
       <p class="mt-5 text-slate-400 text-lg max-w-md mx-auto">
         Crea tu cuenta, empieza tu primer módulo y gana tus primeros XP en menos de 5 minutos.
@@ -1048,11 +626,15 @@ import { RouterLink } from '@angular/router';
           Crear cuenta gratis →
         </a>
         <a routerLink="/auth/login"
-           class="px-8 py-4 rounded-xl border border-slate-600 text-slate-300 font-medium text-lg hover:bg-slate-700 hover:text-white transition-all duration-200">
+           class="px-8 py-4 rounded-xl border border-slate-700 text-slate-300 font-medium text-lg hover:bg-slate-700 hover:text-white transition-all duration-200">
           Ya tengo una cuenta
         </a>
       </div>
-      <p class="mt-6 text-slate-500 text-sm">✓ Sin tarjeta de crédito &nbsp;·&nbsp; ✓ Sin costo &nbsp;·&nbsp; ✓ Acceso inmediato</p>
+      <p class="mt-6 text-slate-500 text-sm">
+        <span class="gold-text">✓</span> Sin tarjeta de crédito &nbsp;·&nbsp;
+        <span class="gold-text">✓</span> Sin costo &nbsp;·&nbsp;
+        <span class="gold-text">✓</span> Acceso inmediato
+      </p>
     </div>
   </section>
 
@@ -1079,19 +661,46 @@ import { RouterLink } from '@angular/router';
 export class Landing implements AfterViewInit, OnDestroy {
   @ViewChildren('revealEl') private revealEls!: QueryList<ElementRef>;
   private observer?: IntersectionObserver;
+  private autoInterval?: ReturnType<typeof setInterval>;
+
+  currentSlide = 0;
+
+  slides = [
+    { tab: 'Dashboard', img: 'dashboard.png'         },
+    { tab: 'Academia',  img: 'academia.png'           },
+    { tab: 'Simulador', img: 'simulador.png'          },
+    { tab: 'Finanzas',  img: 'billetera-premium.png'  },
+  ];
+
+  academyModules = [
+    { name: 'Presupuesto Personal',       pct: 0,   xp: 100, done: false },
+    { name: 'Ahorro e Interés Compuesto', pct: 50,  xp: 120, done: false },
+    { name: 'Crédito y Deuda',            pct: 100, xp: 130, done: true  },
+    { name: 'Inversiones Básicas',        pct: 25,  xp: 150, done: false },
+  ];
+
+  goToSlide(i: number) { this.currentSlide = i; this.resetAuto(); }
+  nextSlide()          { this.currentSlide = (this.currentSlide + 1) % this.slides.length; }
+  prevSlide()          { this.currentSlide = (this.currentSlide - 1 + this.slides.length) % this.slides.length; }
+
+  private resetAuto() {
+    clearInterval(this.autoInterval);
+    this.autoInterval = setInterval(() => this.nextSlide(), 5000);
+  }
 
   ngAfterViewInit(): void {
     this.observer = new IntersectionObserver(
       entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.classList.add('show');
-          this.observer!.unobserve(e.target);
-        }
+        if (e.isIntersecting) { e.target.classList.add('show'); this.observer!.unobserve(e.target); }
       }),
       { threshold: 0.12 }
     );
     this.revealEls.forEach(el => this.observer!.observe(el.nativeElement));
+    this.resetAuto();
   }
 
-  ngOnDestroy(): void { this.observer?.disconnect(); }
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+    clearInterval(this.autoInterval);
+  }
 }
