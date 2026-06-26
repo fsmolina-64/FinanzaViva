@@ -1,7 +1,8 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { Quiz, QuizQuestion, QuizSubmitResponse, QuizHistoryEntry } from '../../../core/models/quiz.model';
 
 @Component({
@@ -13,11 +14,13 @@ export class QuizDetail implements OnInit {
   quiz = signal<Quiz | null>(null);
   loading = signal(true);
   submitting = signal(false);
+  notFound = signal(false);
   result = signal<QuizSubmitResponse | null>(null);
   history = signal<QuizHistoryEntry[]>([]);
   answers = signal<Record<string, string>>({});
   currentIndex = signal(0);
   expandedAttemptId = signal<string | null>(null);
+  backLink = '/academy';
   protected Object = Object;
 
   currentQuestion = computed<QuizQuestion | null>(() => {
@@ -32,18 +35,35 @@ export class QuizDetail implements OnInit {
     return q.questions.every(qq => !!this.answers()[qq.id]);
   });
 
-  constructor(private route: ActivatedRoute, private quizService: QuizService) { }
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private quizService: QuizService,
+    private toast: ToastService
+  ) { }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    this.quizService.getQuiz(id).subscribe({
-      next: d => { this.quiz.set(d); this.loading.set(false); this.loadHistory(id); },
-      error: () => this.loading.set(false)
+    const moduleId = this.route.snapshot.paramMap.get('moduleId')!;
+    this.backLink = `/academy/${moduleId}`;
+
+    this.quizService.getQuizByModule(moduleId).subscribe({
+      next: quizzes => {
+        if (!quizzes.length) {
+          this.notFound.set(true);
+          this.loading.set(false);
+          return;
+        }
+        const q = quizzes[0];
+        this.quiz.set(q);
+        this.loading.set(false);
+        this.loadHistory(q.id);
+      },
+      error: () => { this.loading.set(false); this.toast.error('Error al cargar el quiz'); }
     });
   }
 
-  private loadHistory(id: string): void {
-    this.quizService.getHistory(id).subscribe({
+  private loadHistory(quizId: string): void {
+    this.quizService.getHistory(quizId).subscribe({
       next: h => this.history.set(h),
       error: () => { }
     });
@@ -55,6 +75,11 @@ export class QuizDetail implements OnInit {
   }
 
   next(): void {
+    const q = this.currentQuestion();
+    if (q && !this.answers()[q.id]) {
+      this.toast.warning('Responde esta pregunta antes de continuar');
+      return;
+    }
     if (this.currentIndex() < (this.quiz()?.questions.length ?? 1) - 1)
       this.currentIndex.update(i => i + 1);
   }
@@ -72,7 +97,7 @@ export class QuizDetail implements OnInit {
     };
     this.quizService.submitQuiz(this.quiz()!.id, payload).subscribe({
       next: res => { this.result.set(res); this.submitting.set(false); },
-      error: () => this.submitting.set(false)
+      error: () => { this.submitting.set(false); this.toast.error('Error al enviar el quiz'); }
     });
   }
 
@@ -81,14 +106,14 @@ export class QuizDetail implements OnInit {
     const selected = this.answers()[questionId];
     if (!res) {
       return selected === optionId
-        ? 'border-blue-500 bg-blue-500/20 text-white'
-        : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500';
+        ? 'border-primary bg-primary/20 text-app'
+        : 'border-strong bg-card text-muted hover:border-strong';
     }
     const qResult = res.results.find(r => r.questionId === questionId);
-    if (!qResult) return 'border-slate-600 bg-slate-800 text-slate-300';
+    if (!qResult) return 'border-strong bg-card text-muted';
     if (optionId === qResult.correctAnswerId) return 'border-emerald-500 bg-emerald-500/20 text-emerald-300';
-    if (optionId === selected && !qResult.correct) return 'border-red-500 bg-red-500/20 text-red-300';
-    return 'border-slate-600 bg-slate-800 text-slate-500';
+    if (optionId === selected && !qResult.correct) return 'border-danger bg-danger/20 text-danger';
+    return 'border-strong bg-card text-subtle';
   }
 
   isQuestionCorrect(questionId: string): boolean {
@@ -108,5 +133,9 @@ export class QuizDetail implements OnInit {
     this.result.set(null);
     this.currentIndex.set(0);
     this.loadHistory(this.quiz()!.id);
+  }
+
+  goBack(): void {
+    this.router.navigateByUrl(this.backLink);
   }
 }

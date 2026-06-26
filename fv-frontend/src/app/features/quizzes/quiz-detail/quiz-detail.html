@@ -1,40 +1,50 @@
-<div class="space-y-6 animate-slide-up">
+<div class="space-y-6 animate-slide-up animate-fade-in-up">
 
-    <a routerLink="/quizzes" class="text-slate-400 hover:text-white transition-colors text-sm no-underline">
-        &larr; Quizzes
-    </a>
+    <button (click)="goBack()"
+        class="text-muted hover:text-primary transition-colors text-sm cursor-pointer bg-transparent border-none p-0 btn-press">
+        &larr; Volver al módulo
+    </button>
 
     @if (loading()) {
     <div class="space-y-4">
-        <div class="bg-slate-800 rounded-2xl h-20 animate-pulse border border-slate-700"></div>
-        <div class="bg-slate-800 rounded-2xl h-48 animate-pulse border border-slate-700"></div>
+        <div class="bg-card rounded-2xl h-20 animate-pulse border border-default"></div>
+        <div class="bg-card rounded-2xl h-48 animate-pulse border border-default"></div>
+    </div>
+    }
+
+    @if (!loading() && notFound()) {
+    <div class="text-center py-20">
+        <p class="text-muted">Este módulo no tiene quiz disponible.</p>
+        <button (click)="goBack()"
+            class="mt-4 text-blue-400 hover:text-blue-300 text-sm transition-colors cursor-pointer bg-transparent border-none p-0 btn-press">
+            Volver al módulo
+        </button>
     </div>
     }
 
     @if (!loading() && quiz()) {
     <div class="space-y-5 animate-fade-in">
 
-        <!-- Header -->
-        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60" style="animation-delay: 80ms">
             <div class="flex items-start justify-between">
                 <div>
-                    <h1 class="text-white font-bold text-lg">{{ quiz()!.title }}</h1>
+                    <h1 class="text-primary font-bold text-lg">{{ quiz()!.title }}</h1>
                     @if (quiz()!.description) {
-                    <p class="text-slate-400 text-xs mt-1">{{ quiz()!.description }}</p>
+                    <p class="text-muted text-xs mt-1">{{ quiz()!.description }}</p>
                     }
                 </div>
                 <div class="text-right flex-shrink-0 ml-4">
-                    <div class="text-slate-400 text-xs">Aprobacion</div>
-                    <div class="text-white font-bold">{{ quiz()!.passingScore }}%</div>
+                    <div class="text-muted text-xs">Aprobación</div>
+                    <div class="text-primary font-bold">{{ quiz()!.passingScore }}%</div>
                 </div>
             </div>
             @if (!result()) {
             <div class="mt-4 space-y-1.5">
-                <div class="flex justify-between text-xs text-slate-400">
+                <div class="flex justify-between text-xs text-muted">
                     <span>Pregunta {{ currentIndex() + 1 }} de {{ quiz()!.questions.length }}</span>
                     <span>{{ Object.keys(answers()).length }} respondidas</span>
                 </div>
-                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-1.5 bg-elevated rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500"
                         [style.width.%]="(Object.keys(answers()).length / quiz()!.questions.length) * 100"></div>
                 </div>
@@ -43,35 +53,41 @@
         </div>
 
         @if (result()) {
-        <div class="rounded-2xl p-6 border text-center space-y-3"
-            [ngClass]="result()!.passed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'">
-            <div class="text-4xl font-bold" [ngClass]="result()!.passed ? 'text-emerald-400' : 'text-red-400'">
+        <div class="rounded-2xl p-6 border text-center space-y-4 card-hover shadow-sm" style="animation-delay: 160ms"
+            [ngClass]="result()!.passed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-danger/10 border-danger/30'">
+            <div class="text-4xl font-bold" [ngClass]="result()!.passed ? 'text-emerald-400' : 'text-danger'">
                 {{ result()!.score }}%
             </div>
-            <p class="text-white font-semibold">
+            <p class="text-primary font-semibold">
                 {{ result()!.passed ? 'Aprobado' : 'No aprobado' }} &mdash;
                 {{ result()!.correct }}/{{ result()!.total }} correctas
             </p>
             @if (result()!.xpEarned > 0) {
             <p class="text-blue-400 text-sm">+{{ result()!.xpEarned }} XP ganados</p>
             }
-            <button (click)="restart()"
-                class="mt-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200">
-                Intentar de nuevo
-            </button>
+            <div class="flex items-center justify-center gap-3 mt-2">
+                <button (click)="restart()"
+                    class="bg-elevated hover:bg-elevated text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 btn-press">
+                    Intentar de nuevo
+                </button>
+                <button (click)="goBack()"
+                    class="bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
+                    Volver al módulo
+                </button>
+            </div>
         </div>
 
         <div class="space-y-4">
-            <h3 class="text-white font-semibold text-sm">Revision de respuestas</h3>
+            <h3 class="text-primary font-semibold text-sm">Revisión de respuestas</h3>
             @for (q of quiz()!.questions; track q.id) {
-            <div class="bg-[#1E293B] rounded-2xl p-5 border space-y-3"
-                [ngClass]="isQuestionCorrect(q.id) ? 'border-emerald-500/30' : 'border-red-500/30'">
+            <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border space-y-4"
+                [ngClass]="isQuestionCorrect(q.id) ? 'border-emerald-500/30' : 'border-danger/30'">
                 <div class="flex items-start gap-2">
                     <span class="text-xs font-bold mt-0.5 flex-shrink-0"
-                        [ngClass]="isQuestionCorrect(q.id) ? 'text-emerald-400' : 'text-red-400'">
+                        [ngClass]="isQuestionCorrect(q.id) ? 'text-emerald-400' : 'text-danger'">
                         {{ isQuestionCorrect(q.id) ? 'Correcto' : 'Incorrecto' }}
                     </span>
-                    <p class="text-white font-semibold text-sm">{{ q.text }}</p>
+                    <p class="text-primary font-semibold text-sm">{{ q.text }}</p>
                 </div>
                 <div class="space-y-1.5">
                     @for (opt of q.answers; track opt.id) {
@@ -83,7 +99,7 @@
                 @if (getExplanation(q.id)) {
                 <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
                     <p class="text-blue-300 text-xs leading-relaxed">
-                        <span class="font-semibold">Por que: </span>{{ getExplanation(q.id) }}
+                        <span class="font-semibold">Por qué: </span>{{ getExplanation(q.id) }}
                     </p>
                 </div>
                 }
@@ -93,12 +109,12 @@
         }
 
         @if (!result() && currentQuestion()) {
-        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 space-y-4">
-            <p class="text-white font-semibold">{{ currentQuestion()!.text }}</p>
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60 space-y-4" style="animation-delay: 120ms">
+            <p class="text-primary font-semibold">{{ currentQuestion()!.text }}</p>
             <div class="space-y-2">
                 @for (opt of currentQuestion()!.answers; track opt.id) {
                 <button (click)="selectOption(currentQuestion()!.id, opt.id)"
-                    class="w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200"
+                    class="w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200 btn-press"
                     [ngClass]="getOptionState(currentQuestion()!.id, opt.id)">
                     {{ opt.text }}
                 </button>
@@ -108,16 +124,16 @@
 
         <div class="flex items-center justify-between gap-3">
             <button (click)="prev()" [disabled]="currentIndex() === 0"
-                class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-300 text-sm font-medium disabled:opacity-40 hover:border-slate-500 transition-all duration-200">
+                class="px-4 py-2.5 rounded-xl border border-strong text-muted text-sm font-medium disabled:opacity-40 hover:border-strong transition-all duration-200 btn-press">
                 &larr; Anterior
             </button>
             @if (currentIndex() < quiz()!.questions.length - 1) { <button (click)="next()"
-                class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-all duration-200">
+                class="px-4 py-2.5 rounded-xl bg-elevated hover:bg-elevated text-primary text-sm font-medium transition-all duration-200 btn-press">
                 Siguiente &rarr;
                 </button>
                 } @else {
                 <button (click)="submit()" [disabled]="!allAnswered() || submitting()"
-                    class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
                     {{ submitting() ? 'Enviando...' : 'Enviar respuestas' }}
                 </button>
                 }
@@ -125,35 +141,35 @@
         }
 
         @if (history().length > 0) {
-        <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-            <h3 class="text-white font-semibold mb-3 text-sm">Historial de intentos</h3>
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 border border-default/60" style="animation-delay: 200ms">
+            <h3 class="text-primary font-semibold mb-3 text-sm">Historial de intentos</h3>
             <div class="space-y-2">
                 @for (h of history(); track h.id) {
-                <div class="bg-slate-800 rounded-xl border border-slate-600 overflow-hidden">
+                <div class="bg-card rounded-xl border border-strong overflow-hidden">
                     <div class="flex items-center justify-between px-4 py-2.5">
-                        <span class="text-slate-400 text-xs">{{ h.completedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                        <span class="text-muted text-xs">{{ h.completedAt | date:'dd/MM/yyyy HH:mm' }}</span>
                         <div class="flex items-center gap-3">
-                            <span class="font-bold text-sm" [ngClass]="h.passed ? 'text-emerald-400' : 'text-red-400'">
+                            <span class="font-bold text-sm" [ngClass]="h.passed ? 'text-emerald-400' : 'text-danger'">
                                 {{ h.score }}%
                             </span>
                             <span class="text-xs px-2 py-0.5 rounded-full border"
-                                [ngClass]="h.passed ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'">
+                                [ngClass]="h.passed ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-danger border-danger/30'">
                                 {{ h.passed ? 'Aprobado' : 'Reprobado' }}
                             </span>
                             @if (h.answers && h.answers.length > 0) {
-                            <button (click)="toggleAttempt(h.id)"
-                                class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+<button (click)="toggleAttempt(h.id)"
+                            class="text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-transparent border-none p-0 btn-press">
                                 {{ expandedAttemptId() === h.id ? 'Ocultar' : 'Ver respuestas' }}
                             </button>
                             }
                         </div>
                     </div>
                     @if (expandedAttemptId() === h.id && h.answers) {
-                    <div class="border-t border-slate-700 px-4 py-3 space-y-3">
+                    <div class="border-t border-default px-4 py-3 space-y-3">
                         @for (a of h.answers; track a.questionId) {
                         <div class="space-y-1">
-                            <p class="text-slate-300 text-xs font-medium">{{ a.questionText }}</p>
-                            <p class="text-xs" [ngClass]="a.isCorrect ? 'text-emerald-400' : 'text-red-400'">
+                            <p class="text-muted text-xs font-medium">{{ a.questionText }}</p>
+                            <p class="text-xs" [ngClass]="a.isCorrect ? 'text-emerald-400' : 'text-danger'">
                                 Tu respuesta: {{ a.selectedAnswerText }}
                             </p>
                             @if (!a.isCorrect) {

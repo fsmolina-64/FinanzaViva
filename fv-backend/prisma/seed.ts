@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, UserRank, QuizDifficulty, QuestionType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { seedLessons } from './seed-lessons';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -449,85 +450,7 @@ async function main() {
   }
   console.log('✅ Módulos y quizzes creados');
 
-  const events = [
-    {
-      name: 'Daño del celular',
-      description: 'Tu celular se dañó y necesitas repararlo o reemplazarlo.',
-      category: 'RISK',
-      probability: 0.30,
-      isGlobal: false,
-      options: [
-        { text: 'Reparar el celular ($150)', effectMoney: -150, effectIncome: 0, effectDebt: 0, effectScore: 5, explanation: 'Buena decisión. Reparar es más barato que comprar nuevo.' },
-        { text: 'Comprar celular nuevo a crédito', effectMoney: 0, effectIncome: 0, effectDebt: 400, effectScore: -20, explanation: 'Cuidado. Endeudarte por un celular afecta tu salud financiera.' },
-        { text: 'Usar celular viejo por ahora', effectMoney: 0, effectIncome: 0, effectDebt: 0, effectScore: 15, explanation: 'Excelente. Evitar gastos innecesarios es una decisión inteligente.' },
-      ],
-    },
-    {
-      name: 'Oportunidad de negocio',
-      description: 'Un amigo te invita a invertir en un pequeño negocio.',
-      category: 'OPPORTUNITY',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        { text: 'Invertir $300 de tus ahorros', effectMoney: -300, effectIncome: 100, effectDebt: 0, effectScore: 20, explanation: 'Invertir con dinero propio es lo más seguro.' },
-        { text: 'Pedir préstamo para invertir', effectMoney: 200, effectIncome: 100, effectDebt: 500, effectScore: -10, explanation: 'Invertir con deuda es riesgoso. El negocio puede fallar.' },
-        { text: 'Rechazar la oferta', effectMoney: 0, effectIncome: 0, effectDebt: 0, effectScore: 0, explanation: 'Válido. No toda inversión es buena si no tienes capital.' },
-      ],
-    },
-    {
-      name: 'Aumento de salario',
-      description: 'Tu empleador te ofrece un aumento del 20%.',
-      category: 'OPPORTUNITY',
-      probability: 0.15,
-      isGlobal: false,
-      options: [
-        { text: 'Aceptar y ahorrar el extra', effectMoney: 0, effectIncome: 100, effectDebt: 0, effectScore: 30, explanation: 'Perfecto. Ahorrar el aumento acelera tu libertad financiera.' },
-        { text: 'Aceptar y gastar el extra', effectMoney: 0, effectIncome: 100, effectDebt: 0, effectScore: 5, explanation: 'Aceptaste pero no aprovechaste para mejorar tu situación.' },
-        { text: 'Negociar un aumento mayor', effectMoney: 0, effectIncome: 150, effectDebt: 0, effectScore: 25, explanation: 'Negociar tu salario es una habilidad financiera valiosa.' },
-      ],
-    },
-    {
-      name: 'Inflación',
-      description: 'Los precios subieron un 10% este mes.',
-      category: 'CRISIS',
-      probability: 0.25,
-      isGlobal: true,
-      options: [
-        { text: 'Ajustar tu presupuesto', effectMoney: -50, effectIncome: 0, effectDebt: 0, effectScore: 20, explanation: 'Adaptar tu presupuesto ante la inflación es lo correcto.' },
-        { text: 'Ignorar el impacto', effectMoney: -100, effectIncome: 0, effectDebt: 0, effectScore: -15, explanation: 'Ignorar la inflación genera déficit sin darte cuenta.' },
-        { text: 'Buscar ingresos extra', effectMoney: 50, effectIncome: 50, effectDebt: 0, effectScore: 25, explanation: 'Buscar ingresos adicionales es una respuesta inteligente.' },
-      ],
-    },
-    {
-      name: 'Emergencia médica',
-      description: 'Tuviste un accidente menor y necesitas atención médica.',
-      category: 'RISK',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        { text: 'Pagar con fondo de emergencia', effectMoney: -200, effectIncome: 0, effectDebt: 0, effectScore: 30, explanation: 'Para eso existe el fondo de emergencia. Excelente planificación.' },
-        { text: 'Pagar con tarjeta de crédito', effectMoney: 0, effectIncome: 0, effectDebt: 200, effectScore: -10, explanation: 'Usa el crédito solo si no tienes otra opción.' },
-        { text: 'Pedir dinero prestado a familia', effectMoney: -200, effectIncome: 0, effectDebt: 0, effectScore: -5, explanation: 'Mezclar dinero y familia puede generar conflictos.' },
-      ],
-    },
-  ];
 
-  for (const event of events) {
-    const exists = await prisma.simulatorEvent.findFirst({ where: { name: event.name } });
-    if (!exists) {
-      await prisma.simulatorEvent.create({
-        data: {
-          name: event.name,
-          description: event.description,
-          category: event.category as any,
-          probability: event.probability,
-          isGlobal: event.isGlobal,
-          options: { create: event.options },
-        },
-      });
-    }
-  }
-  console.log('✅ Eventos del simulador creados');
 
   const achievements = [
     { key: 'first_lesson', name: 'Primer Paso', description: 'Completa tu primera lección.', icon: '📘', category: 'LEARNING', xpReward: 30, condition: { metric: 'lessons_completed', threshold: 1 } },
@@ -552,17 +475,31 @@ async function main() {
     { key: 'unstoppable', name: 'Imparable', description: 'Alcanza una racha máxima de 30 días.', icon: '⚡', category: 'STREAK', xpReward: 300, condition: { metric: 'longest_streak', threshold: 30 } },
     { key: 'accumulator', name: 'Acumulador', description: 'Gana 500 XP en total.', icon: '⭐', category: 'GENERAL', xpReward: 50, condition: { metric: 'total_xp', threshold: 500 } },
     { key: 'knowledge_investor', name: 'Inversor de Conocimiento', description: 'Gana 2000 XP en total.', icon: '👑', category: 'GENERAL', xpReward: 200, condition: { metric: 'total_xp', threshold: 2000 } },
+    { key: 'quiz_master', name: 'Quiz Master', description: 'Aprueba los 7 quizzes.', icon: '🏅', category: 'LEARNING', xpReward: 150, condition: { metric: 'quizzes_passed', threshold: 7 } },
   ];
 
+  const knownKeys = new Set(achievements.map(a => a.key));
+  await prisma.achievement.updateMany({
+    where: { key: { notIn: Array.from(knownKeys) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const achievement of achievements) {
-    const exists = await prisma.achievement.findUnique({ where: { key: achievement.key } });
-    if (!exists) {
-      await prisma.achievement.create({
-        data: { ...achievement, category: achievement.category as any },
-      });
-    }
+    await prisma.achievement.upsert({
+      where: { key: achievement.key },
+      update: {
+        name: achievement.name,
+        description: achievement.description,
+        icon: achievement.icon,
+        category: achievement.category as any,
+        xpReward: achievement.xpReward,
+        condition: achievement.condition,
+        isActive: true,
+      },
+      create: { ...achievement, category: achievement.category as any, isActive: true },
+    });
   }
-  console.log('✅ Logros creados');
+  console.log('✅ Logros sincronizados');
 
   const rewards = [
     { name: 'Novato Financiero', description: 'Título inicial de bienvenida.', icon: '🌱', type: 'TITLE', unlockType: 'LEVEL', unlockValue: '2' },
@@ -587,15 +524,123 @@ async function main() {
     { name: 'Insignia Campeón', description: 'Insignia por ganar 5 partidas.', icon: '⚔️', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'champion' },
   ];
 
+  const knownRewardNames = new Set(rewards.map(r => r.name));
+  await prisma.reward.updateMany({
+    where: { name: { notIn: Array.from(knownRewardNames) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const reward of rewards) {
-    const exists = await prisma.reward.findFirst({ where: { name: reward.name } });
-    if (!exists) {
+    const achievement = reward.unlockType === 'ACHIEVEMENT'
+      ? await prisma.achievement.findUnique({ where: { key: reward.unlockValue } })
+      : null;
+    const existing = await prisma.reward.findFirst({ where: { name: reward.name } });
+    if (existing) {
+      await prisma.reward.update({
+        where: { id: existing.id },
+        data: {
+          description: reward.description,
+          icon: reward.icon,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          unlockValue: reward.unlockValue,
+          achievementId: achievement?.id ?? null,
+          isActive: true,
+        },
+      });
+    } else {
       await prisma.reward.create({
-        data: { ...reward, type: reward.type as any, unlockType: reward.unlockType as any },
+        data: {
+          ...reward,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          achievementId: achievement?.id ?? null,
+        },
       });
     }
   }
-  console.log('✅ Recompensas creadas');
+  console.log('✅ Recompensas sincronizadas');
+
+  await seedLessons(prisma);
+
+  // ── Board cells ──────────────────────────────────────────────
+  const cells: { position: number; name: string; type: string; group: string | null; price: number | null; rent: number | null; amount: number | null; description: string }[] = [
+    { position: 0,  name: 'Inicio',                     type: 'INICIO',            group: null,     price: null, rent: null, amount: null,   description: 'Punto de salida' },
+    { position: 1,  name: 'Cuenta de Ahorros',          type: 'PROPERTY',          group: 'purple', price: 60,   rent: 10,  amount: null,  description: 'Propiedad grupo purple' },
+    { position: 2,  name: 'Dividendos',                 type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 100,   description: 'Recibes dividendos de tus inversiones' },
+    { position: 3,  name: 'Fondo Mutuo',                type: 'PROPERTY',          group: 'purple', price: 60,   rent: 10,  amount: null,  description: 'Propiedad grupo purple' },
+    { position: 4,  name: 'Impuesto IVA',               type: 'TAX',               group: null,     price: null, rent: null, amount: -100,  description: 'Pagas IVA' },
+    { position: 5,  name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
+    { position: 6,  name: 'Startup Digital',            type: 'PROPERTY',          group: 'blue',   price: 100,  rent: 20,  amount: null,  description: 'Propiedad grupo blue' },
+    { position: 7,  name: 'App Fintech',                type: 'PROPERTY',          group: 'blue',   price: 100,  rent: 20,  amount: null,  description: 'Propiedad grupo blue' },
+    { position: 8,  name: 'Ingreso Freelance',          type: 'PENSION',           group: null,     price: null, rent: null, amount: 150,  description: 'Recibes ingreso freelance' },
+    { position: 9,  name: 'Negocio Online',             type: 'PROPERTY',          group: 'blue',   price: 120,  rent: 25,  amount: null,  description: 'Propiedad grupo blue' },
+    { position: 10, name: 'Cárcel / Visita',            type: 'JAIL',              group: null,     price: null, rent: null, amount: null,  description: 'Solo de visita' },
+    { position: 11, name: 'Food Truck',                 type: 'PROPERTY',          group: 'pink',   price: 140,  rent: 30,  amount: null,  description: 'Propiedad grupo pink' },
+    { position: 12, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
+    { position: 13, name: 'Café Boutique',              type: 'PROPERTY',          group: 'pink',   price: 140,  rent: 30,  amount: null,  description: 'Propiedad grupo pink' },
+    { position: 14, name: 'Tasa Municipal',             type: 'TAX',               group: null,     price: null, rent: null, amount: -150,  description: 'Pagas tasa municipal' },
+    { position: 15, name: 'Restaurante',                type: 'PROPERTY',          group: 'pink',   price: 160,  rent: 35,  amount: null,  description: 'Propiedad grupo pink' },
+    { position: 16, name: 'Herencia Familiar',          type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 200,  description: 'Recibes una herencia familiar' },
+    { position: 17, name: 'Plaza Comercial',            type: 'PROPERTY',          group: 'orange', price: 180,  rent: 40,  amount: null,  description: 'Propiedad grupo orange' },
+    { position: 18, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
+    { position: 19, name: 'Tienda Ancla',               type: 'PROPERTY',          group: 'orange', price: 180,  rent: 40,  amount: null,  description: 'Propiedad grupo orange' },
+    { position: 20, name: 'Salario y Renta',            type: 'PENSION_ESPECIAL',  group: null,     price: null, rent: null, amount: 300,  description: 'Recibes salario y renta' },
+    { position: 21, name: 'Centro Comercial',           type: 'PROPERTY',          group: 'orange', price: 200,  rent: 45,  amount: null,  description: 'Propiedad grupo orange' },
+    { position: 22, name: 'Esquema Ponzi',              type: 'SCAM',              group: null,     price: null, rent: null, amount: -200,  description: 'Caíste en un esquema Ponzi' },
+    { position: 23, name: 'Oficinas Clase A',           type: 'PROPERTY',          group: 'red',    price: 220,  rent: 50,  amount: null,  description: 'Propiedad grupo red' },
+    { position: 24, name: 'Impuesto Predial',           type: 'TAX',               group: null,     price: null, rent: null, amount: -200,  description: 'Pagas impuesto predial' },
+    { position: 25, name: 'Residencial Premium',        type: 'PROPERTY',          group: 'red',    price: 220,  rent: 50,  amount: null,  description: 'Propiedad grupo red' },
+    { position: 26, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
+    { position: 27, name: 'Torre Empresarial',          type: 'PROPERTY',          group: 'red',    price: 240,  rent: 55,  amount: null,  description: 'Propiedad grupo red' },
+    { position: 28, name: 'IPO Exitosa',                type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 250,  description: 'Tu IPO fue exitosa' },
+    { position: 29, name: 'ETF Dividendos',             type: 'PROPERTY',          group: 'yellow', price: 260,  rent: 60,  amount: null,  description: 'Propiedad grupo yellow' },
+    { position: 30, name: 'Ir a Cárcel',                type: 'GO_TO_JAIL',        group: null,     price: null, rent: null, amount: null,  description: 'Ve a la cárcel' },
+    { position: 31, name: 'Fondo Indexado',             type: 'PROPERTY',          group: 'yellow', price: 260,  rent: 60,  amount: null,  description: 'Propiedad grupo yellow' },
+    { position: 32, name: 'Fraude Financiero',          type: 'SCAM',              group: null,     price: null, rent: null, amount: -300,  description: 'Fuiste víctima de fraude financiero' },
+    { position: 33, name: 'Portafolio Bonos',           type: 'PROPERTY',          group: 'yellow', price: 280,  rent: 65,  amount: null,  description: 'Propiedad grupo yellow' },
+    { position: 34, name: 'Retención Fiscal',           type: 'TAX',               group: null,     price: null, rent: null, amount: -250,  description: 'Pagas retención fiscal' },
+    { position: 35, name: 'Fondo Diversificado',        type: 'PROPERTY',          group: 'green',  price: 300,  rent: 70,  amount: null,  description: 'Propiedad grupo green' },
+    { position: 36, name: 'Bono Extraordinario',        type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 300,  description: 'Recibes un bono extraordinario' },
+    { position: 37, name: 'Venture Capital',            type: 'PROPERTY',          group: 'green',  price: 320,  rent: 75,  amount: null,  description: 'Propiedad grupo green' },
+    { position: 38, name: 'Renta Pasiva',               type: 'PENSION',           group: null,     price: null, rent: null, amount: 200,  description: 'Recibes renta pasiva' },
+    { position: 39, name: 'Fondo Soberano',             type: 'PROPERTY',          group: 'green',  price: 350,  rent: 90,  amount: null,  description: 'Propiedad grupo green' },
+  ];
+
+  for (const c of cells) {
+    await prisma.boardCell.upsert({
+      where: { position: c.position },
+      update: { name: c.name, type: c.type as any, group: c.group, price: c.price, rent: c.rent, amount: c.amount, description: c.description },
+      create: { position: c.position, name: c.name, type: c.type as any, group: c.group, price: c.price, rent: c.rent, amount: c.amount, description: c.description },
+    });
+  }
+
+  // ── Board wildcards ──────────────────────────────────────────
+  const wildcards: { text: string; type: string; effectAmount: number; explanation: string }[] = [
+    { text: 'Ganaste un concurso de ahorro', type: 'POSITIVE', effectAmount: 100, explanation: 'Recibes $100 por tu buen hábito de ahorro' },
+    { text: 'Te multaron por mal estacionamiento', type: 'NEGATIVE', effectAmount: -50, explanation: 'Pagas una multa de $50' },
+    { text: 'Vendes tu auto usado', type: 'POSITIVE', effectAmount: 200, explanation: 'Recibes $200 por la venta' },
+    { text: 'Se daña tu refrigerador', type: 'NEGATIVE', effectAmount: -150, explanation: 'Pagas $150 por reparación' },
+    { text: 'Ganas un sorteo de la empresa', type: 'POSITIVE', effectAmount: 150, explanation: 'Recibes un bono de $150' },
+    { text: 'Te roban el celular', type: 'NEGATIVE', effectAmount: -100, explanation: 'Pierdes $100 por el robo' },
+    { text: 'Cobras una deuda olvidada', type: 'POSITIVE', effectAmount: 120, explanation: 'Recibes $120 de una deuda antigua' },
+    { text: 'Tienes una emergencia dental', type: 'NEGATIVE', effectAmount: -200, explanation: 'Pagas $200 por la emergencia' },
+    { text: 'Recibes cashback de tus tarjetas', type: 'POSITIVE', effectAmount: 80, explanation: 'Recibes $80 de cashback' },
+    { text: 'Aumenta la prima de tu seguro', type: 'NEGATIVE', effectAmount: -120, explanation: 'Pagas $120 más de seguro' },
+    { text: 'Ganas un premio por fidelidad', type: 'POSITIVE', effectAmount: 90, explanation: 'Recibes $90 por tu fidelidad' },
+    { text: 'Te hackean una cuenta', type: 'NEGATIVE', effectAmount: -180, explanation: 'Pierdes $180 por el hackeo' },
+    { text: 'Cada jugador te paga $50', type: 'COLLECT_FROM_ALL', effectAmount: 50, explanation: 'Cada jugador te paga $50' },
+    { text: 'pagas $75 a cada jugador', type: 'PAY_TO_ALL', effectAmount: 75, explanation: 'pagas $75 a cada jugador' },
+    { text: 'Ve a la cárcel. No cobras salario', type: 'GO_TO_JAIL', effectAmount: 0, explanation: 'Ve directamente a la cárcel' },
+  ];
+
+  for (const w of wildcards) {
+    await prisma.boardWildcard.create({
+      data: { text: w.text, type: w.type as any, effectAmount: w.effectAmount, explanation: w.explanation },
+    });
+  }
+
+  console.log('✓ Board cells and wildcards seeded');
 }
 
 main()

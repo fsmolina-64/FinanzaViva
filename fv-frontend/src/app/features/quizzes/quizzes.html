@@ -1,14 +1,14 @@
-<div class="space-y-6 animate-slide-up">
+<div class="space-y-6 animate-slide-up animate-fade-in-up">
 
     <div>
-        <h1 class="text-2xl font-bold text-white">Quizzes</h1>
-        <p class="text-slate-400 text-sm mt-0.5">Pon a prueba tu conocimiento financiero</p>
+        <h1 class="text-2xl font-bold text-primary">Quizzes</h1>
+        <p class="text-muted text-sm mt-0.5">Pon a prueba tu conocimiento financiero</p>
     </div>
 
     @if (loading()) {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @for (i of [1,2,3,4]; track i) {
-        <div class="bg-slate-800 rounded-2xl h-36 animate-pulse border border-slate-700"></div>
+        <div class="bg-card rounded-2xl h-36 animate-pulse border border-default"></div>
         }
     </div>
     }
@@ -17,21 +17,22 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @for (m of modules(); track m.id) {
         <div
-            class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10 space-y-3">
+            class="bg-card card-hover group rounded-2xl p-5 border border-default/60 shadow-sm hover:border-strong transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 space-y-3"
+            [style.animation-delay.ms]="$index * 80">
             <div class="flex items-start justify-between">
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-white font-semibold text-sm">{{ m.title }}</h3>
-                    <p class="text-slate-400 text-xs mt-1 line-clamp-2">{{ m.description }}</p>
+                    <h3 class="text-primary font-semibold text-sm">{{ m.title }}</h3>
+                    <p class="text-muted text-xs mt-1 line-clamp-2">{{ m.description }}</p>
                 </div>
                 <div
-                    class="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0 ml-3">
+                    class="w-9 h-9 bg-primary/10 group-hover:bg-primary/20 rounded-xl flex items-center justify-center text-primary-light font-bold text-sm flex-shrink-0 ml-3 transition-colors duration-300">
                     {{ m.order }}
                 </div>
             </div>
-            <div class="flex items-center justify-between pt-2 border-t border-slate-700">
-                <span class="text-slate-500 text-xs">+{{ m.xpReward }} XP</span>
+            <div class="flex items-center justify-between pt-2 border-t border-default">
+                <span class="text-subtle text-xs">+{{ m.xpReward }} XP</span>
                 <button (click)="startQuiz(m.id)" [disabled]="loadingId() === m.id"
-                    class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    class="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-primary text-xs font-semibold px-4 py-2 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
                     {{ loadingId() === m.id ? 'Cargando...' : 'Iniciar quiz' }}
                 </button>
             </div>

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { XpSource } from '@prisma/client';
@@ -9,7 +9,6 @@ export class AcademyService {
     private prisma: PrismaService,
     private gamification: GamificationService,
   ) { }
-
 
   async getModules(userId: string) {
     const modules = await this.prisma.module.findMany({
@@ -54,7 +53,6 @@ export class AcademyService {
       where: { userId, lessonId: { in: lessonIds }, status: 'COMPLETED' },
     });
     const completedSet = new Set(completedProgress.map(p => p.lessonId));
-
     const completedLessons = completedSet.size;
 
     const lessons = module.lessons.map((l, i) => {
@@ -78,87 +76,214 @@ export class AcademyService {
     };
   }
 
-
   async getLesson(userId: string, lessonId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
         lessonProgress: { where: { userId } },
+        module: { include: { lessons: { orderBy: { order: 'asc' } } } },
       },
     });
 
     if (!lesson) throw new NotFoundException('Lección no encontrada');
 
+    const progress = lesson.lessonProgress[0] ?? null;
+
+    let status: 'COMPLETED' | 'AVAILABLE' | 'LOCKED';
+
+    if (progress?.status === 'COMPLETED') {
+      status = 'COMPLETED';
+    } else {
+      const idx = lesson.module.lessons.findIndex(l => l.id === lessonId);
+      if (idx === 0) {
+        status = 'AVAILABLE';
+      } else {
+        const prevLesson = lesson.module.lessons[idx - 1];
+        const prevProgress = await this.prisma.userLessonProgress.findUnique({
+          where: { userId_lessonId: { userId, lessonId: prevLesson.id } },
+        });
+        status = prevProgress?.status === 'COMPLETED' ? 'AVAILABLE' : 'LOCKED';
+      }
+    }
+
     return {
-      ...lesson,
-      progress: lesson.lessonProgress[0] ?? null,
+      id: lesson.id,
+      moduleId: lesson.moduleId,
+      title: lesson.title,
+      content: lesson.content,
+      duration: lesson.duration,
+      xpReward: lesson.xpReward,
+      order: lesson.order,
+      type: lesson.type,
+      status,
     };
   }
 
   async completeLesson(userId: string, lessonId: string) {
-    const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
-    if (!lesson) throw new NotFoundException('Lección no encontrada');
+    return this.prisma.$transaction(async (tx) => {
 
-    await this.prisma.userLessonProgress.upsert({
-      where: { userId_lessonId: { userId, lessonId } },
-      update: { status: 'COMPLETED', completedAt: new Date() },
-      create: { userId, lessonId, status: 'COMPLETED', completedAt: new Date() },
-    });
+      const lessonXpRecord = await tx.xpTransaction.findFirst({
+        where: { userId, source: XpSource.LESSON_COMPLETED, referenceId: lessonId },
+      });
+      const isFirstEverCompletion = !lessonXpRecord;
 
-    await this.prisma.userStatistics.update({
-      where: { userId },
-      data: { lessonsCompleted: { increment: 1 } },
-    });
+      const existingProgress = await tx.userLessonProgress.findUnique({
+        where: { userId_lessonId: { userId, lessonId } },
+      });
+      const wasAlreadyCompleted = existingProgress?.status === 'COMPLETED';
 
-    await this.gamification.addXp(userId, {
-      amount: lesson.xpReward,
-      source: XpSource.LESSON_COMPLETED,
-      referenceId: lessonId,
-      description: `Lección completada: ${lesson.title}`,
-    });
-
-    const moduleCompleted = await this.checkModuleCompletion(userId, lesson.moduleId);
-
-    const nextLesson = await this.prisma.lesson.findFirst({
-      where: { moduleId: lesson.moduleId, order: { gt: lesson.order } },
-      orderBy: { order: 'asc' },
-    });
-
-    return {
-      xpEarned: lesson.xpReward,
-      moduleCompleted,
-      nextLesson: nextLesson ? { ...nextLesson, status: 'AVAILABLE' as const } : null,
-    };
-  }
-
-
-  private async checkModuleCompletion(userId: string, moduleId: string): Promise<boolean> {
-    const totalLessons = await this.prisma.lesson.count({ where: { moduleId } });
-    const completedLessons = await this.prisma.userLessonProgress.count({
-      where: { userId, status: 'COMPLETED', lesson: { moduleId } },
-    });
-
-    if (totalLessons > 0 && totalLessons === completedLessons) {
-      const module = await this.prisma.module.findUnique({ where: { id: moduleId } });
-      await this.prisma.userModuleProgress.upsert({
-        where: { userId_moduleId: { userId, moduleId } },
+      await tx.userLessonProgress.upsert({
+        where: { userId_lessonId: { userId, lessonId } },
         update: { status: 'COMPLETED', completedAt: new Date() },
-        create: { userId, moduleId, status: 'COMPLETED', completedAt: new Date() },
+        create: { userId, lessonId, status: 'COMPLETED', completedAt: new Date() },
       });
-      await this.prisma.userStatistics.update({
-        where: { userId },
-        data: { modulesCompleted: { increment: 1 } },
-      });
-      if (module) {
-        await this.gamification.addXp(userId, {
-          amount: module.xpReward,
-          source: XpSource.LESSON_COMPLETED,
-          referenceId: moduleId,
-          description: `Módulo completado: ${module.title}`,
+
+      if (!wasAlreadyCompleted) {
+        await tx.userStatistics.update({
+          where: { userId },
+          data: { lessonsCompleted: { increment: 1 } },
         });
       }
-      return true;
+
+      const lesson = await tx.lesson.findUnique({
+        where: { id: lessonId },
+        include: {
+          module: { include: { lessons: { orderBy: { order: 'asc' } } } },
+        },
+      });
+      if (!lesson) throw new NotFoundException('Lección no encontrada');
+
+      const module = lesson.module;
+      let lessonXpEarned = 0;
+      let moduleXpEarned = 0;
+      let leveledUp = false;
+
+      if (isFirstEverCompletion) {
+        await tx.xpTransaction.create({
+          data: {
+            userId,
+            amount: lesson.xpReward,
+            source: XpSource.LESSON_COMPLETED,
+            referenceId: lessonId,
+            description: `Lección completada: ${lesson.title}`,
+          },
+        });
+        await tx.userGameStats.update({
+          where: { userId },
+          data: { xp: { increment: lesson.xpReward } },
+        });
+        await tx.userStatistics.update({
+          where: { userId },
+          data: { totalXpEarned: { increment: lesson.xpReward } },
+        });
+        lessonXpEarned = lesson.xpReward;
+      }
+
+      const completedCount = await tx.userLessonProgress.count({
+        where: { userId, status: 'COMPLETED', lesson: { moduleId: module.id } },
+      });
+      const totalLessons = module.lessons.length;
+      const readingProgress = Math.round((completedCount / totalLessons) * 100);
+      const moduleCompleted = completedCount === totalLessons;
+
+      await tx.userModuleProgress.upsert({
+        where: { userId_moduleId: { userId, moduleId: module.id } },
+        update: { readingProgress },
+        create: { userId, moduleId: module.id, readingProgress },
+      });
+
+      if (moduleCompleted) {
+        await tx.userModuleProgress.upsert({
+          where: { userId_moduleId: { userId, moduleId: module.id } },
+          update: { status: 'COMPLETED', completedAt: new Date() },
+          create: { userId, moduleId: module.id, status: 'COMPLETED', completedAt: new Date() },
+        });
+
+        const moduleXpRecord = await tx.xpTransaction.findFirst({
+          where: { userId, source: XpSource.LESSON_COMPLETED, referenceId: module.id },
+        });
+
+        if (!moduleXpRecord) {
+          await tx.xpTransaction.create({
+            data: {
+              userId,
+              amount: module.xpReward,
+              source: XpSource.LESSON_COMPLETED,
+              referenceId: module.id,
+              description: `Módulo completado: ${module.title}`,
+            },
+          });
+          await tx.userGameStats.update({
+            where: { userId },
+            data: { xp: { increment: module.xpReward } },
+          });
+          await tx.userStatistics.update({
+            where: { userId },
+            data: {
+              totalXpEarned: { increment: module.xpReward },
+              modulesCompleted: { increment: 1 },
+            },
+          });
+          moduleXpEarned = module.xpReward;
+        }
+      }
+
+      if (lessonXpEarned > 0 || moduleXpEarned > 0) {
+        const stats = await tx.userGameStats.findUnique({ where: { userId } });
+        if (stats) {
+          const nextLevel = await tx.level.findFirst({
+            where: { xpRequired: { lte: stats.xp } },
+            orderBy: { number: 'desc' },
+          });
+          if (nextLevel && stats.level < nextLevel.number) {
+            await tx.userGameStats.update({
+              where: { userId },
+              data: { level: nextLevel.number, rank: nextLevel.rank },
+            });
+            leveledUp = true;
+          }
+        }
+      }
+
+      const nextLesson = !moduleCompleted
+        ? await tx.lesson.findFirst({
+          where: { moduleId: module.id, order: { gt: lesson.order } },
+          orderBy: { order: 'asc' },
+        })
+        : null;
+
+      return {
+        lessonXpEarned,
+        moduleXpEarned,
+        totalXpEarned: lessonXpEarned + moduleXpEarned,
+        moduleCompleted,
+        leveledUp,
+        nextLesson: nextLesson ? { ...nextLesson, status: 'AVAILABLE' as const } : null,
+      };
+    });
+  }
+
+  async getReadingProgress(userId: string, moduleId: string) {
+    const progress = await this.prisma.userModuleProgress.findUnique({
+      where: { userId_moduleId: { userId, moduleId } },
+    });
+    return { readingProgress: progress?.readingProgress ?? 0 };
+  }
+
+  async resetLesson(userId: string, lessonId: string) {
+    const progress = await this.prisma.userLessonProgress.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
+    });
+
+    if (!progress || progress.status !== 'COMPLETED') {
+      throw new BadRequestException('La lección no está completada');
     }
-    return false;
+
+    await this.prisma.userLessonProgress.update({
+      where: { userId_lessonId: { userId, lessonId } },
+      data: { status: 'NOT_STARTED', completedAt: null },
+    });
+
+    return { success: true };
   }
 }

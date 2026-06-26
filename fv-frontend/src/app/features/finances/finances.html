@@ -1,446 +1,1362 @@
-<div class="space-y-6 animate-slide-up">
+<div class="min-h-screen bg-app pb-24 animate-fade-in-up">
 
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold text-white">Mis Finanzas</h1>
-      <p class="text-slate-400 text-sm mt-0.5">Control completo de tu dinero</p>
+  @if (confirmNavAction()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-card rounded-2xl border border-default p-6 max-w-sm w-full space-y-4">
+      <h4 class="text-primary font-semibold">{{ confirmNavAction()!.title }}</h4>
+      <p class="text-muted text-sm">{{ confirmNavAction()!.message }}</p>
+      <div class="flex gap-3">
+        <button (click)="confirmNavAction()!.onConfirm()"
+          class="flex-1 bg-orange-600 hover:bg-orange-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">Descartar
+          cambios</button>
+        <button (click)="confirmNavAction.set(null)"
+          class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Permanecer</button>
+      </div>
     </div>
-    @if (summary()) {
-    <div class="hidden md:flex items-center gap-2 bg-blue-600/10 border border-blue-500/30 px-4 py-2 rounded-xl">
-      <span class="text-slate-400 text-sm">Balance:</span>
-      <span class="text-white font-bold">{{ formatCurrency(summary()!.totalBalance) }}</span>
-    </div>
-    }
   </div>
+  }
 
-  @if (lastAlert()) {
-  <div class="alert-banner rounded-2xl p-4 border flex items-start gap-3"
-    [ngClass]="lastAlert()!.type === 'BUDGET_EXCEEDED' ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'">
-    <div class="flex-1">
-      <p class="font-semibold text-sm"
-        [ngClass]="lastAlert()!.type === 'BUDGET_EXCEEDED' ? 'text-red-400' : 'text-amber-400'">
-        {{ lastAlert()!.type === 'BUDGET_EXCEEDED' ? 'Presupuesto superado' : 'Advertencia de presupuesto' }}
+  @if (showCategoryDeleteWarning()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-card rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
+      <h4 class="text-primary font-semibold">Categoría con datos asociados</h4>
+      <p class="text-muted text-sm">
+        La categoría "{{ categoryDeleteInfo()?.name }}" tiene
+        {{ categoryDeleteInfo()?.txCount }} transacción(es) y
+        {{ categoryDeleteInfo()?.budgetCount }} presupuesto(s) asociados.
       </p>
-      <p class="text-slate-300 text-xs mt-0.5">{{ lastAlert()!.message }}</p>
+      @if (categoryDeleteInfo()?.budgetCount ?? 0 > 0) {
+      <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+        <p class="text-yellow-300 text-xs font-medium">Los presupuestos asociados serán eliminados automáticamente, ya
+          que dependen de esta categoría.</p>
+      </div>
+      }
+      @if ((categoryDeleteInfo()?.txCount ?? 0) > 0) {
+      <p class="text-muted text-sm">Selecciona una categoría para reasignar las transacciones:</p>
+      <select [(ngModel)]="categoryReassignId"
+        class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+        <option value="">Seleccionar...</option>
+        @for (cat of categories().filter(c => c.id !== categoryDeleteInfo()?.id); track cat.id) {
+        <option [value]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+      }
+      <div class="flex gap-3">
+        <button (click)="confirmDeleteCategoryWithReassign()"
+          class="flex-1 bg-orange-600 hover:bg-orange-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">
+          {{ (categoryDeleteInfo()?.txCount ?? 0) > 0 ? 'Reasignar y eliminar' : 'Eliminar de todas formas' }}
+        </button>
+        <button (click)="cancelDeleteCategoryWithReassign()"
+          class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+      </div>
     </div>
-    <button (click)="dismissAlert()"
-      class="text-slate-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
   </div>
   }
 
-  <div class="flex gap-1 bg-slate-800/60 p-1 rounded-2xl border border-slate-700">
-    @for (tab of tabs; track tab.key) {
-    <button (click)="setTab(tab.key)"
-      class="tab-btn flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-300"
-      [class.tab-active]="activeTab() === tab.key" [class.text-white]="activeTab() === tab.key"
-      [class.text-slate-400]="activeTab() !== tab.key">
-      {{ tab.label }}
-    </button>
-    }
-  </div>
-
-  @if (loading()) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-    <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-  </div>
-  }
-
-  @if (!loading() && activeTab() === 'resumen') {
-  <div class="space-y-5 animate-fade-in">
-
-    @if (summary()) {
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div
-        class="kpi-card bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Balance total</span>
-          <div class="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center font-bold text-blue-400">$
-          </div>
-        </div>
-        <div class="text-white text-2xl font-bold">{{ formatCurrency(summary()!.totalBalance) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Todas tus cuentas</div>
+  <div class="bg-app border-b border-default">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-primary text-xl font-bold">Mis Finanzas</h1>
+        <p class="text-muted text-xs">Control completo de tu dinero</p>
       </div>
-      <div
-        class="kpi-card bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-emerald-500/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/10">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Ingresos del mes</span>
-          <div class="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center font-bold text-emerald-400">
-            +</div>
+      @if (summary()) {
+      <div class="flex items-center gap-2">
+        <div class="bg-card border border-default rounded-xl px-4 py-2 text-right">
+          <p class="text-muted text-xs">Balance:</p>
+          <p class="text-primary font-bold text-lg">${{ formatCurrency(summary()!.totalBalance) }}</p>
         </div>
-        <div class="text-emerald-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyIncome) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Este mes</div>
-      </div>
-      <div
-        class="kpi-card bg-[#1E293B] rounded-2xl p-5 border border-slate-700 hover:border-red-500/50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/10">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-slate-400 text-sm">Gastos del mes</span>
-          <div class="w-9 h-9 bg-red-500/10 rounded-xl flex items-center justify-center font-bold text-red-400">-</div>
-        </div>
-        <div class="text-red-400 text-2xl font-bold">{{ formatCurrency(summary()!.monthlyExpenses) }}</div>
-        <div class="text-slate-500 text-xs mt-1">Este mes</div>
-      </div>
-    </div>
-    }
-
-    @if (health()) {
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-white font-semibold">Salud financiera</h3>
-          <p class="text-slate-400 text-xs mt-0.5">{{ health()!.message }}</p>
-        </div>
-        <span class="font-bold text-lg" [ngClass]="getHealthColor(health()!.status)">{{ health()!.status }}</span>
-      </div>
-      <div class="space-y-2">
-        <div class="flex justify-between text-xs text-slate-400">
-          <span>{{ formatCurrency(health()!.expenses) }} gastado</span>
-          <span>{{ formatCurrency(health()!.income) }} ingreso</span>
-        </div>
-        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
-          <div class="h-full rounded-full transition-all duration-1000 bg-gradient-to-r"
-            [ngClass]="getHealthBarColor(health()!.status)" [style.width.%]="health()!.percentage"></div>
-        </div>
-        <div class="text-right text-xs" [ngClass]="getHealthColor(health()!.status)">
-          {{ health()!.percentage }}% del presupuesto usado
-        </div>
-      </div>
-      @if ((health()!.breakdown | keyvalue).length > 0) {
-      <div class="mt-4 pt-4 border-t border-slate-700">
-        <p class="text-slate-400 text-xs mb-3">Desglose por categoria</p>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-          @for (item of health()!.breakdown | keyvalue; track item.key) {
-          <div class="bg-slate-800 rounded-xl p-3 border border-slate-600">
-            <p class="text-slate-400 text-xs truncate">{{ item.key }}</p>
-            <p class="text-white text-sm font-semibold mt-0.5">{{ formatCurrency(+item.value) }}</p>
-          </div>
-          }
-        </div>
-      </div>
-      }
-    </div>
-    }
-
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-white font-semibold">Mis cuentas</h3>
-        <button (click)="showAccountForm.set(!showAccountForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showAccountForm() ? 'Cancelar' : '+ Nueva cuenta' }}
-        </button>
-      </div>
-      @if (showAccountForm()) {
-      <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Nombre</label>
-            <input [(ngModel)]="newAccount.name" type="text" placeholder="Ej: Banco Pichincha"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
-            <select [(ngModel)]="newAccount.type"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
-              <option value="CHECKING">Corriente</option>
-              <option value="SAVINGS">Ahorros</option>
-              <option value="CREDIT">Credito</option>
-              <option value="CASH">Efectivo</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Balance inicial</label>
-          <input [(ngModel)]="newAccount.balance" type="number" placeholder="0.00"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-        </div>
-        <button (click)="submitAccount()"
-          class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-          Crear cuenta
+        <button (click)="showExportModal.set(true)"
+          class="flex items-center gap-1.5 px-3 py-2 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 text-xs font-semibold rounded-xl transition-all btn-press">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          PDF
         </button>
       </div>
       }
-      @if (accounts().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-6">Sin cuentas registradas</p>
-      }
-      <div class="space-y-2">
-        @for (acc of accounts(); track acc.id) {
-        <div
-          class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
-              [ngClass]="getAccountTypeColor(acc.type)">
-              {{ getAccountTypeLabel(acc.type) }}
-            </span>
-            <span class="text-white text-sm font-medium">{{ acc.name }}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-white font-bold">{{ formatCurrency(acc.balance) }}</span>
-            <button (click)="deleteAccount(acc.id)"
-              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 font-bold transition-all duration-200">&times;</button>
-          </div>
-        </div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex">
+        @for (t of tabs; track t.key) {
+        <button (click)="setTab(t.key)" class="flex-1 py-3 text-sm font-medium transition-all border-b-2 btn-press"
+          [class]="activeTab() === t.key ? 'text-primary border-blue-500 bg-blue-500/5' : 'text-muted border-transparent hover:text-muted'">
+          {{ t.label }}
+        </button>
         }
       </div>
     </div>
   </div>
-  }
 
-  @if (!loading() && activeTab() === 'transacciones') {
-  <div class="space-y-5 animate-fade-in">
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-white font-semibold">Transacciones</h3>
-        <button (click)="showTransactionForm.set(!showTransactionForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showTransactionForm() ? 'Cancelar' : '+ Nueva transaccion' }}
+  @if (loading()) {
+  <div class="flex items-center justify-center py-32">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+  } @else {
+  <div class="max-w-6xl mx-auto px-4 py-4 space-y-4">
+
+    @if (lastAlert()) {
+    <div class="rounded-xl px-4 py-3 flex items-center justify-between text-sm font-medium" [ngClass]="lastAlert()!.type === 'BUDGET_EXCEEDED'
+        ? 'bg-red-500/15 border border-danger/30 text-red-300'
+        : 'bg-yellow-500/15 border border-yellow-500/30 text-yellow-300'">
+      <span>{{ lastAlert()!.message }}</span>
+      <button (click)="dismissAlert()" class="ml-3 opacity-60 hover:opacity-100 text-xl leading-none">&times;</button>
+    </div>
+    }
+
+    @if (activeTab() === 'resumen') {
+    <div @tabSlide class="space-y-4">
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+          <p class="text-muted text-xs mb-1">Ingresos del mes</p>
+          <p class="text-emerald-400 font-bold text-xl">${{ formatCurrency(summary()?.monthlyIncome ?? 0) }}</p>
+        </div>
+        <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+          <p class="text-muted text-xs mb-1">Gastos del mes</p>
+          <p class="text-danger font-bold text-xl">${{ formatCurrency(summary()?.monthlyExpenses ?? 0) }}</p>
+        </div>
+        <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+          <p class="text-muted text-xs mb-1">Ahorro neto</p>
+          <p class="font-bold text-xl"
+            [ngClass]="(summary()?.monthlyIncome ?? 0) - (summary()?.monthlyExpenses ?? 0) >= 0 ? 'text-blue-400' : 'text-orange-400'">
+            ${{ formatCurrency((summary()?.monthlyIncome ?? 0) - (summary()?.monthlyExpenses ?? 0)) }}
+          </p>
+        </div>
+      </div>
+
+      @if (health()) {
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-primary font-semibold text-sm">Salud financiera del mes</h3>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full" [ngClass]="{
+              'bg-emerald-500/20 text-emerald-400': health()!.status === 'HEALTHY',
+              'bg-yellow-500/20 text-yellow-400': health()!.status === 'WARNING',
+              'bg-orange-500/20 text-orange-400': health()!.status === 'DANGER',
+              'bg-red-500/20 text-danger': health()!.status === 'CRITICAL'
+            }">{{ health()!.status }}</span>
+        </div>
+        <div class="w-full bg-elevated rounded-full h-2 mb-2">
+          <div class="h-2 rounded-full transition-all" [style.width]="health()!.percentage + '%'" [ngClass]="{
+              'bg-emerald-500': health()!.status === 'HEALTHY',
+              'bg-yellow-500': health()!.status === 'WARNING',
+              'bg-orange-500': health()!.status === 'DANGER',
+              'bg-red-500': health()!.status === 'CRITICAL'
+            }"></div>
+        </div>
+        <p class="text-muted text-xs">{{ health()!.message }}</p>
+      </div>
+      }
+
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-primary font-semibold">Últimas transacciones</h3>
+          <button (click)="setTab('transacciónes')"
+            class="text-blue-400 text-xs hover:text-blue-300 transition-colors btn-press">Ver todas</button>
+        </div>
+        @if (recentTransactions().length === 0) {
+        <p class="text-subtle text-sm text-center py-4">Sin transacciones recientes</p>
+        } @else {
+        <div class="space-y-1">
+          @for (tx of recentTransactions(); track $any(tx).id ?? $any(tx).groupId) {
+          @if (confirmDeleteTransferGroupId() === $any(tx).groupId && $any(tx).type === 'TRANSFER') {
+          <div
+            class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span class="text-red-300 text-sm truncate">Eliminar transferencia?</span>
+            <div class="flex gap-2 flex-shrink-0 ml-2">
+              <button (click)="deleteTransaction(confirmDeleteTransferGroupId()!, true)"
+                class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>
+              <button (click)="cancelDeleteTransfer()"
+                class="bg-elevated hover:bg-elevated text-muted text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
+            </div>
+          </div>
+          }
+          @else if (confirmDeleteTxId() === $any(tx).id) {
+          <div
+            class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span class="text-red-300 text-sm truncate">Eliminar "{{ $any(tx).description || getCategoryName($any(tx).categoryId)
+              }}"?</span>
+            <div class="flex gap-2 flex-shrink-0 ml-2">
+              <button (click)="deleteTransaction($any(tx).id)"
+                class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>
+              <button (click)="cancelDeleteTx()"
+                class="bg-elevated hover:bg-elevated text-muted text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
+            </div>
+          </div>
+          }
+          @else {
+          <div
+            class="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-card/60 transition-colors group">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                [ngClass]="getTransactionBg(tx)">
+                {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-primary text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
+                <p class="text-subtle text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                  (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date |
+                  date:'dd MMM' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
+              </span>
+              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <button (click)="startEditTx(tx)"
+                  class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                @if (tx.type === 'TRANSFER') {
+                <button (click)="confirmDeleteTransfer($any(tx).groupId)"
+                  class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                } @else {
+                <button (click)="confirmDeleteTx(tx.id)"
+                  class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                }
+              </div>
+            </div>
+          </div>
+          }
+          }
+        </div>
+        }
+      </div>
+
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-primary font-semibold">Mis cuentas</h3>
+          @if (!showAccountForm()) {
+          <button (click)="showAccountForm.set(true)"
+            class="text-blue-400 text-xs hover:text-blue-300 transition-colors btn-press">+ Nueva cuenta</button>
+          } @else {
+          <button (click)="showAccountForm.set(false)"
+            class="text-muted text-xs hover:text-primary transition-colors">Cancelar</button>
+          }
+        </div>
+        @if (showAccountForm()) {
+        <div class="form-slide mb-4 bg-card rounded-xl p-4 border border-strong space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Nombre</label>
+              <input [(ngModel)]="newAccount.name" type="text" placeholder="Ej: Banco Pichincha"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+            <div>
+              <label class="text-muted text-xs mb-1 block">Tipo</label>
+              <select [(ngModel)]="newAccount.type"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+                <option value="CASH">Efectivo</option>
+                <option value="BANK">Banco</option>
+                <option value="DIGITAL_WALLET">Billetera Digital</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-muted text-xs mb-1 block">Balance inicial</label>
+            <input [ngModel]="newAccount.initialBalance" (keydown)="filterAmountKey($event)" (ngModelChange)="newAccount.initialBalance = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="0.00"
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+          </div>
+          @if (newAccount.initialBalance > 0) {
+          <div class="flex items-center gap-2">
+            <input [(ngModel)]="newAccount.countAsIncome" type="checkbox" id="countAsIncome"
+              class="rounded bg-elevated border-strong text-blue-500 focus:ring-blue-500" />
+            <label for="countAsIncome" class="text-muted text-xs cursor-pointer">Contabilizar como ingreso real en
+              reportes</label>
+          </div>
+          }
+          <button (click)="submitAccount()" [disabled]="submittingAccount()"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingAccount() ? 'Creando...' : 'Crear cuenta' }}
+          </button>
+        </div>
+        }
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          @for (acc of accounts(); track acc.id) {
+          @if (editingAccountId() === acc.id) {
+          <div class="form-slide bg-card rounded-2xl p-4 border border-blue-500/40 space-y-3 col-span-2 md:col-span-1">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Nombre</label>
+              <input [(ngModel)]="editAccountForm.name" type="text"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+            <div>
+              <label class="text-muted text-xs mb-1 block">Balance</label>
+              <input [ngModel]="editAccountForm.newBalance"
+                (ngModelChange)="editAccountForm.newBalance = sanitizeNumber($event)"
+                (keydown)="filterAmountKey($event)"
+                type="text" inputmode="decimal"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+            <div class="flex gap-2">
+              <button (click)="saveEditAccount(acc)"
+                class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">
+                Guardar
+              </button>
+              <button (click)="cancelEditAccount()"
+                class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">
+                Cancelar
+              </button>
+            </div>
+          </div>
+          } @else {
+          <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover hover:border-strong transition-all group">
+            <div class="flex justify-between items-start mb-3">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full border"
+                [ngClass]="getAccountTypeColor(acc.type)">
+                {{ getAccountTypeLabel(acc.type) }}
+              </span>
+              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                <button (click)="startEditAccount(acc)"
+                  class="text-muted hover:text-blue-400 text-xs px-1.5 py-0.5 rounded transition-all">editar</button>
+                <button (click)="deleteAccount(acc.id)"
+                  class="text-danger hover:text-red-300 text-lg leading-none transition-all">&times;</button>
+              </div>
+            </div>
+            <div class="text-primary font-bold text-lg">${{ formatCurrency(acc.balance) }}</div>
+            <div class="text-muted text-xs mt-0.5 truncate">{{ acc.name }}</div>
+          </div>
+          }
+          }
+          <button (click)="showAccountForm.set(true)"
+            class="bg-card/50 border-2 border-dashed border-default rounded-2xl p-4 text-subtle hover:text-muted hover:border-strong transition-all text-sm text-center btn-press">
+            + Nueva
+          </button>
+        </div>
+      </div>
+
+    </div>
+    }
+
+    @if (showAccountBalanceModal()) {
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-card rounded-2xl border border-default p-6 max-w-sm w-full space-y-4">
+        <h4 class="text-primary font-semibold text-sm">Como registrar el cambio de balance?</h4>
+        <p class="text-muted text-xs">Elige como tratar la diferencia en el historial.</p>
+        <div class="space-y-2">
+          <button (click)="confirmAccountEdit('income')"
+            class="w-full bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+            Registrar como ingreso/gasto
+            <span class="block text-xs font-normal text-subtle mt-0.5">Aparecera en el historial de transacciones</span>
+          </button>
+          <button (click)="confirmAccountEdit('adjustment')"
+            class="w-full bg-elevated/50 hover:bg-elevated border border-strong text-muted text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+            Ajuste directo de balance
+            <span class="block text-xs font-normal text-subtle mt-0.5">Actualiza el saldo y crea un registro de auditoria en el historial</span>
+          </button>
+        </div>
+        <button (click)="cancelAccountEdit()"
+          class="w-full bg-card text-muted text-sm py-2 rounded-lg hover:text-primary transition-colors">
+          Cancelar
         </button>
       </div>
+    </div>
+    }
+
+    @if (activeTab() === 'transacciónes') {
+    <div @tabSlide class="space-y-4">
+
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover space-y-3">
+
+        <div class="flex items-center justify-between gap-3">
+
+          @if (txViewMode() === 'list') {
+          <div class="flex gap-1 bg-card rounded-lg p-1">
+            @for (opt of [{k:'ALL',l:'Todos'},{k:'INCOME',l:'Ingresos'},{k:'EXPENSE',l:'Gastos'}]; track opt.k) {
+            <button (click)="txFilter.set($any(opt.k))"
+              class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+              [class]="txFilter() === opt.k ? 'bg-blue-600 text-primary' : 'text-muted hover:text-primary'">
+              {{ opt.l }}
+            </button>
+            }
+          </div>
+          } @else {
+          <div class="flex gap-1 bg-card rounded-lg p-1">
+            @for (opt of [{k:'ALL',l:'Todos'},{k:'INCOME',l:'Ingresos'},{k:'EXPENSE',l:'Gastos'}]; track opt.k) {
+            <button (click)="calTypeFilter.set($any(opt.k))"
+              class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+              [class]="calTypeFilter() === opt.k ? 'bg-blue-600 text-primary' : 'text-muted hover:text-primary'">
+              {{ opt.l }}
+            </button>
+            }
+          </div>
+          }
+
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <div class="flex gap-1 bg-card rounded-lg p-1">
+              <button (click)="setViewMode('list')" class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+                [class]="txViewMode() === 'list' ? 'bg-blue-600 text-primary' : 'text-muted hover:text-primary'">
+                Lista
+              </button>
+              <button (click)="setViewMode('calendar')"
+                class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+                [class]="txViewMode() === 'calendar' ? 'bg-blue-600 text-primary' : 'text-muted hover:text-primary'">
+                Calendario
+              </button>
+            </div>
+            <button (click)="showTransactionForm.set(!showTransactionForm())"
+              class="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors whitespace-nowrap btn-press">
+              + Nueva
+            </button>
+          </div>
+        </div>
+
+        @if (txViewMode() === 'list') {
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex gap-1 bg-card rounded-lg p-1">
+            @for (opt of [{k:'ALL',l:'Todo'},{k:'TODAY',l:'Hoy'},{k:'WEEK',l:'7
+            dias'},{k:'MONTH',l:'Mes'},{k:'YEAR',l:'Año'}]; track opt.k) {
+            <button (click)="txDateMode.set($any(opt.k))"
+              class="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
+              [class]="txDateMode() === opt.k ? 'bg-blue-600 text-primary' : 'text-muted hover:text-primary'">
+              {{ opt.l }}
+            </button>
+            }
+          </div>
+          @if (txDateMode() === 'MONTH') {
+          <div class="flex items-center bg-card border border-default rounded-lg px-2 py-1 gap-1">
+            <button (click)="prevMonth()"
+              class="text-muted hover:text-primary px-1 transition-colors">&#8249;</button>
+            <span class="text-primary text-xs font-medium px-1">{{ monthNames[txMonth()] }} {{ txYear() }}</span>
+            <button (click)="nextMonth()"
+              class="text-muted hover:text-primary px-1 transition-colors">&#8250;</button>
+          </div>
+          }
+          @if (txDateMode() === 'YEAR') {
+          <div class="flex items-center bg-card border border-default rounded-lg px-2 py-1 gap-1">
+            <button (click)="txYear.update(y => y - 1)"
+              class="text-muted hover:text-primary px-1 transition-colors">&#8249;</button>
+            <span class="text-primary text-xs font-medium px-1">{{ txYear() }}</span>
+            <button (click)="txYear.update(y => y + 1)"
+              class="text-muted hover:text-primary px-1 transition-colors">&#8250;</button>
+          </div>
+          }
+        </div>
+        }
+
+      </div>
+
       @if (showTransactionForm()) {
-      <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
+      <div class="form-slide bg-card rounded-2xl p-4 border border-strong space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Tipo</label>
+            <label class="text-muted text-xs mb-1 block">Tipo</label>
             <select [(ngModel)]="newTransaction.type"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
               <option value="INCOME">Ingreso</option>
               <option value="EXPENSE">Gasto</option>
               <option value="TRANSFER">Transferencia</option>
             </select>
           </div>
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Monto</label>
-            <input [(ngModel)]="newTransaction.amount" type="number" placeholder="0.00"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            <label class="text-muted text-xs mb-1 block">Monto</label>
+            <input [ngModel]="newTransaction.amount" (keydown)="filterAmountKey($event)" (ngModelChange)="newTransaction.amount = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="0.00"
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Cuenta</label>
+            <label class="text-muted text-xs mb-1 block">Cuenta</label>
             <select [(ngModel)]="newTransaction.accountId"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
               <option value="">Seleccionar...</option>
-              @for (acc of accounts(); track acc.id) {
-              <option [value]="acc.id">{{ acc.name }}</option>
-              }
+              @for (acc of accounts(); track acc.id) { <option [value]="acc.id">{{ acc.name }}</option> }
             </select>
           </div>
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Categoria</label>
+            <label class="text-muted text-xs mb-1 block">Categoría</label>
             <select [(ngModel)]="newTransaction.categoryId"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
               <option value="">Seleccionar...</option>
-              @for (cat of filteredCategories(); track cat.id) {
-              <option [value]="cat.id">{{ cat.name }}</option>
-              }
+              @for (cat of filteredCategories(); track cat.id) { <option [value]="cat.id">{{ cat.name }}</option> }
             </select>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Fecha</label>
+            <label class="text-muted text-xs mb-1 block">Fecha</label>
             <input [(ngModel)]="newTransaction.date" type="date"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
           </div>
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Descripcion</label>
+            <label class="text-muted text-xs mb-1 block">Descripcion</label>
             <input [(ngModel)]="newTransaction.description" type="text" placeholder="Opcional"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
           </div>
         </div>
-        <button (click)="submitTransaction()"
-          class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-          Registrar transaccion
+        <button (click)="submitTransaction()" [disabled]="submittingTx()"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ submittingTx() ? 'Guardando...' : 'Registrar transacción' }}
         </button>
       </div>
       }
-      @if (transactions().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-8">Sin transacciones registradas</p>
-      }
-      <div class="space-y-2">
-        @for (tx of transactions(); track tx.id) {
-        <div
-          class="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 border border-slate-600 hover:border-slate-500 transition-all duration-200 group">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-              [ngClass]="tx.type === 'INCOME' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'">
-              {{ tx.type === 'INCOME' ? '+' : '-' }}
+
+      @if (txViewMode() === 'list') {
+      @if (groupedTransactions().length === 0) {
+      <div class="bg-card rounded-2xl border border-default/60 shadow-sm card-hover text-center py-12 px-4">
+        <p class="text-subtle text-sm">Sin transacciones</p>
+        @if (txFilter() !== 'ALL' || txDateMode() !== 'ALL') {
+        <button (click)="txFilter.set('ALL'); txDateMode.set('ALL')"
+          class="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors btn-press">Quitar filtros</button>
+        }
+      </div>
+      } @else {
+      <div class="space-y-4">
+        @for (group of groupedTransactions(); track group.date) {
+        <div>
+          <p class="text-xs font-semibold text-subtle uppercase tracking-widest mb-2 px-1">{{ group.label }}</p>
+          <div class="bg-card rounded-2xl border border-default/60 shadow-sm card-hover divide-y divide-default overflow-hidden">
+            @for (tx of group.items; track $index) {
+            @if (confirmDeleteTransferGroupId() === $any(tx).groupId && $any(tx).type === 'TRANSFER') {
+            <div class="form-slide bg-danger/10 px-4 py-3 flex items-center justify-between">
+              <span class="text-red-300 text-sm truncate">Eliminar transferencia?</span>
+              <div class="flex gap-2 flex-shrink-0 ml-2">
+                <button (click)="deleteTransaction(confirmDeleteTransferGroupId()!, true)"
+                  class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>
+                <button (click)="cancelDeleteTransfer()"
+                  class="bg-elevated hover:bg-elevated text-muted text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
+              </div>
             </div>
-            <div class="min-w-0">
-              <p class="text-white text-sm font-medium truncate">{{ tx.description || getCategoryName(tx.categoryId) }}
-              </p>
-              <p class="text-slate-500 text-xs">{{ getCategoryName(tx.categoryId) }} &middot; {{
-                getAccountName(tx.accountId) }} &middot; {{ tx.date | date:'dd/MM/yyyy' }}</p>
+            }
+            @else if (confirmDeleteTxId() === $any(tx).id) {
+            <div class="form-slide bg-danger/10 px-4 py-3 flex items-center justify-between">
+              <span class="text-red-300 text-sm truncate">Eliminar "{{ tx.description ||
+                getCategoryName($any(tx).categoryId)
+                }}"?</span>
+              <div class="flex gap-2 flex-shrink-0 ml-2">
+                <button (click)="deleteTransaction($any(tx).id)"
+                  class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Eliminar</button>
+                <button (click)="cancelDeleteTx()"
+                  class="bg-elevated hover:bg-elevated text-muted text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
+              </div>
             </div>
-          </div>
-          <div class="flex items-center gap-3 flex-shrink-0">
-            <span class="font-bold text-sm" [ngClass]="getTransactionColor(tx.type)">
-              {{ getTransactionSign(tx.type) }}{{ formatCurrency(tx.amount) }}
-            </span>
-            <button (click)="deleteTransaction(tx.id)"
-              class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 font-bold transition-all duration-200">&times;</button>
+            }
+            @else {
+            <div class="flex items-center justify-between px-4 py-3 hover:bg-card/60 transition-all duration-200 group">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                  [ngClass]="getTransactionBg(tx)">
+                  {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-primary text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
+                  <p class="text-subtle text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                    (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }} &middot; {{ tx.date |
+                    date:'dd MMM' }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                  {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
+                </span>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                  <button (click)="startEditTx(tx)"
+                    class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                  @if (tx.type === 'TRANSFER') {
+                  <button (click)="confirmDeleteTransfer($any(tx).groupId)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                  } @else {
+                  <button (click)="confirmDeleteTx(tx.id)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+            }
           </div>
         </div>
         }
       </div>
-    </div>
-  </div>
-  }
+      }
+      }
 
-  @if (!loading() && activeTab() === 'presupuestos') {
-  <div class="space-y-5 animate-fade-in">
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-white font-semibold">Presupuestos del mes</h3>
-          <p class="text-slate-400 text-xs mt-0.5">Controla cuanto gastas por categoria</p>
+      @if (txViewMode() === 'calendar') {
+      <div class="bg-card rounded-2xl border border-default/60 shadow-sm card-hover overflow-hidden">
+
+        <div class="flex items-center justify-between px-5 py-3 border-b border-default">
+          <button (click)="prevMonth()"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-primary hover:bg-card transition-all">&#8249;</button>
+          <span class="text-primary text-sm font-semibold">{{ monthNames[calMonth()] }} {{ calYear() }}</span>
+          <button (click)="nextMonth()"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-primary hover:bg-card transition-all">&#8250;</button>
         </div>
-        <button (click)="showBudgetForm.set(!showBudgetForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showBudgetForm() ? 'Cancelar' : '+ Nuevo presupuesto' }}
-        </button>
-      </div>
-      @if (showBudgetForm()) {
-      <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Categoria de gasto</label>
-          <select [(ngModel)]="newBudget.categoryId"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors">
-            <option value="">Seleccionar...</option>
-            @for (cat of expenseCategories(); track cat.id) {
-            <option [value]="cat.id">{{ cat.name }}</option>
+
+        <div class="grid grid-cols-7 border-b border-default">
+          @for (d of weekDays; track d) {
+          <div class="py-2 text-center text-xs font-semibold text-subtle">{{ d }}</div>
+          }
+        </div>
+
+        <div class="grid grid-cols-7 divide-x divide-y divide-default/60">
+          @for (cell of calendarCells(); track $index) {
+          @if (cell.date === null) {
+          <div class="min-h-16 bg-app/20"></div>
+          } @else {
+          <div (click)="openCalendarDay(cell.date)"
+            class="min-h-16 p-1.5 cursor-pointer transition-all duration-200 hover:bg-card/60 hover:shadow-sm"
+            [class]="isToday(cell.date) ? 'bg-blue-600/15 ring-1 ring-blue-500/30' : ''">
+            <span class="text-xs font-semibold block mb-1"
+              [class]="isToday(cell.date) ? 'text-blue-400' : 'text-subtle'">
+              {{ getDay(cell.date) }}
+            </span>
+            @if (cell.income > 0) {
+            <div class="text-emerald-400 text-xs leading-tight truncate">+${{ formatCurrency(cell.income) }}</div>
             }
-          </select>
+            @if (cell.expense > 0) {
+            <div class="text-danger text-xs leading-tight truncate">-${{ formatCurrency(cell.expense) }}</div>
+            }
+          </div>
+          }
+          }
         </div>
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Monto limite</label>
-          <input [(ngModel)]="newBudget.amount" type="number" placeholder="0.00"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-        </div>
-        <button (click)="submitBudget()"
-          class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-          Crear presupuesto
-        </button>
+
       </div>
-      }
-      @if (budgets().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-8">Sin presupuestos creados</p>
-      }
-      <div class="space-y-3">
-        @for (b of budgets(); track b.id) {
+
+      @if (calendarDayKey()) {
+      <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-4"
+        (click)="closeCalendarDay()">
         <div
-          class="bg-slate-800 rounded-xl p-4 border border-slate-600 hover:border-slate-500 transition-all duration-200">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-white text-sm font-medium">{{ getBudgetCategory(b) }}</span>
+          class="bg-card rounded-2xl border border-default w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden"
+          (click)="$event.stopPropagation()">
+
+          <div class="flex items-center justify-between px-5 py-4 border-b border-default flex-shrink-0">
             <div>
-              <span class="text-white text-sm font-bold">{{ formatCurrency(b.spent) }}</span>
-              <span class="text-slate-500 text-xs"> / {{ formatCurrency(b.amount) }}</span>
+              <h4 class="text-primary font-semibold">{{ formatDateLabel(calendarDayKey()!) }}</h4>
+              <p class="text-muted text-xs">{{ calendarDayTxs().length }} transacción{{ calendarDayTxs().length !==
+                1 ? 'es' : '' }}</p>
             </div>
+            <button (click)="closeCalendarDay()"
+              class="text-muted hover:text-primary text-xl leading-none transition-colors">&times;</button>
           </div>
-          <div class="h-2.5 bg-slate-700 rounded-full overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-1000 bg-gradient-to-r"
-              [ngClass]="getBudgetStatusColor(b)" [style.width.%]="getBudgetPercent(b)"></div>
-          </div>
-          <div class="flex justify-between mt-1.5">
-            <span class="text-slate-500 text-xs">{{ formatCurrency(b.amount - b.spent) }} disponible</span>
-            <span class="text-xs font-semibold"
-              [ngClass]="getBudgetPercent(b) >= 100 ? 'text-red-400' : getBudgetPercent(b) >= 80 ? 'text-amber-400' : 'text-emerald-400'">
-              {{ getBudgetPercent(b) }}%
-            </span>
-          </div>
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-  }
 
-  @if (!loading() && activeTab() === 'metas') {
-  <div class="space-y-5 animate-fade-in">
-    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-white font-semibold">Metas de ahorro</h3>
-          <p class="text-slate-400 text-xs mt-0.5">Define y alcanza tus objetivos financieros</p>
-        </div>
-        <button (click)="showGoalForm.set(!showGoalForm())"
-          class="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
-          {{ showGoalForm() ? 'Cancelar' : '+ Nueva meta' }}
-        </button>
-      </div>
-      @if (showGoalForm()) {
-      <div class="form-slide mb-4 bg-slate-800 rounded-xl p-4 border border-slate-600 space-y-3">
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Nombre de la meta</label>
-          <input [(ngModel)]="newGoal.name" type="text" placeholder="Ej: Fondo de emergencia"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Meta (USD)</label>
-            <input [(ngModel)]="newGoal.targetAmount" type="number" placeholder="0.00"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-          </div>
-          <div>
-            <label class="text-slate-400 text-xs mb-1 block">Ya tengo (USD)</label>
-            <input [(ngModel)]="newGoal.currentAmount" type="number" placeholder="0.00"
-              class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-          </div>
-        </div>
-        <div>
-          <label class="text-slate-400 text-xs mb-1 block">Fecha limite (opcional)</label>
-          <input [(ngModel)]="newGoal.deadline" type="date"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
-        </div>
-        <button (click)="submitGoal()"
-          class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
-          Crear meta
-        </button>
-      </div>
-      }
-      @if (goals().length === 0) {
-      <p class="text-slate-500 text-sm text-center py-8">Sin metas creadas</p>
-      }
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        @for (g of goals(); track g.id) {
-        <div
-          class="bg-slate-800 rounded-xl p-5 border border-slate-600 hover:border-blue-500/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/10">
-          <div class="flex items-start justify-between mb-3">
-            <h4 class="text-white font-semibold text-sm">{{ g.name }}</h4>
-            @if (getGoalPercent(g) === 100) {
-            <span
-              class="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">Completada</span>
+          <div class="overflow-y-auto flex-1 p-4 space-y-2">
+            @if (calendarDayTxs().length === 0) {
+            <p class="text-subtle text-sm text-center py-8">Sin transacciones este día</p>
+            } @else {
+            @for (tx of calendarDayTxs(); track tx.id) {
+            @if (confirmDeleteTransferGroupId() === $any(tx).groupId && $any(tx).type === 'TRANSFER') {
+            <div
+              class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-red-300 text-sm">Eliminar transferencia?</span>
+              <div class="flex gap-2">
+                <button (click)="deleteTransaction(confirmDeleteTransferGroupId()!, true)"
+                  class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                <button (click)="cancelDeleteTransfer()"
+                  class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+              </div>
+            </div>
+            }
+            @else if (confirmDeleteTxId() === tx.id) {
+            <div
+              class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-red-300 text-sm">Eliminar?</span>
+              <div class="flex gap-2">
+                <button (click)="deleteTransaction(tx.id)"
+                  class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                <button (click)="cancelDeleteTx()"
+                  class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+              </div>
+            </div>
+            }
+            @else {
+            <div class="flex items-center justify-between bg-card rounded-xl px-3 py-2.5 group">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                  [ngClass]="getTransactionBg(tx)">
+                  {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-primary text-sm font-medium truncate">{{ tx.description || getTransactionLabel(tx) }}</p>
+                  <p class="text-subtle text-xs">{{ tx.type === 'TRANSFER' ? getTransactionLabel(tx) :
+                    (isInitBalanceTx(tx) ? 'Balance inicial' : getCategoryName(tx.categoryId)) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                  {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
+                </span>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                  <button (click)="startEditTx(tx)"
+                    class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                  @if (tx.type === 'TRANSFER') {
+                  <button (click)="confirmDeleteTransfer($any(tx).groupId)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                  } @else {
+                  <button (click)="confirmDeleteTx(tx.id)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+            }
             }
           </div>
-          <div class="flex items-center gap-4 mb-3">
-            <div class="relative w-16 h-16 flex-shrink-0">
-              <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                <circle cx="32" cy="32" r="26" fill="none" stroke="#334155" stroke-width="6" />
-                <circle cx="32" cy="32" r="26" fill="none"
-                  [attr.stroke]="getGoalPercent(g) === 100 ? '#10B981' : '#2563EB'" stroke-width="6"
-                  stroke-linecap="round" [attr.stroke-dasharray]="163.36"
-                  [attr.stroke-dashoffset]="163.36 * (1 - getGoalPercent(g) / 100)"
-                  style="transition: stroke-dashoffset 1s ease" />
-              </svg>
-              <span class="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
-                {{ getGoalPercent(g) }}%
-              </span>
+
+          <div class="px-5 py-3 border-t border-default flex-shrink-0">
+            <button (click)="closeCalendarDay()"
+              class="w-full bg-card hover:bg-elevated text-muted text-sm font-medium py-2 rounded-lg transition-colors btn-press">Cerrar</button>
+          </div>
+        </div>
+      </div>
+      }
+      }
+
+    </div>
+    }
+
+    @if (activeTab() === 'presupuestos') {
+    <div @tabSlide class="space-y-4">
+
+    @if (showDebtConfirm()) {
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+      <div class="bg-card rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
+        <h4 class="text-primary font-semibold">Saldo insuficiente</h4>
+        <p class="text-muted text-sm">Registrar de todas formas dejará tu cuenta en negativo (deuda).</p>
+        <div class="flex gap-3">
+          <button (click)="confirmDebt()"
+            class="flex-1 bg-orange-600 hover:bg-orange-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">Registrar
+            como deuda</button>
+          <button (click)="cancelDebt()"
+            class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    }
+
+    <div class="space-y-4">
+
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-primary font-semibold">Presupuesto general</h3>
+            <p class="text-subtle text-xs">Limite mensual de gastos</p>
+          </div>
+        </div>
+        @if (generalBudgets().length > 0) {
+          @for (b of generalBudgets(); track b.id) {
+            @if (confirmDeleteBudgetId() === b.id) {
+              <div class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
+                <span class="text-red-300 text-sm">Eliminar presupuesto general?</span>
+                <div class="flex gap-2">
+                  <button (click)="deleteBudget(b.id)" class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                  <button (click)="cancelDeleteBudget()" class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+                </div>
+              </div>
+            } @else if (editingBudgetId() === b.id) {
+              <div class="form-slide bg-card border border-blue-500/40 rounded-xl p-4 space-y-3 mb-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-muted text-xs mb-1 block">Monto</label>
+                    <input [ngModel]="editBudget.amount" (keydown)="filterAmountKey($event)" (ngModelChange)="editBudget.amount = sanitizeNumber($event)" type="text" inputmode="decimal" class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+                  </div>
+                  <div>
+                    <label class="text-muted text-xs mb-1 block">Inicio</label>
+                    <input [(ngModel)]="editBudget.startDate" type="date" class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-muted text-xs mb-1 block">Duración (meses)</label>
+                    <input [(ngModel)]="editBudget.months" type="number" min="1" [disabled]="editBudget.indefinido" class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50" />
+                  </div>
+                  <div class="flex items-end pb-2">
+                    <label class="flex items-center gap-2 text-muted text-sm cursor-pointer">
+                      <input [(ngModel)]="editBudget.indefinido" type="checkbox" class="rounded bg-elevated border-strong text-blue-500 focus:ring-blue-500" />
+                      Indefinido
+                    </label>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <button (click)="saveEditBudget(b.id)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
+                  <button (click)="cancelEditBudget()" class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
+                </div>
+              </div>
+            } @else {
+              <div class="bg-card rounded-xl p-4 border border-default mb-3">
+                <div class="flex items-center justify-between mb-2">
+                  <div>
+                    <p class="text-primary text-sm font-medium">Presupuesto general</p>
+                    <p class="text-subtle text-xs">Mensual</p>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <p class="text-primary text-sm font-bold">
+                      ${{ formatCurrency(computeSpent(b.categoryId)) }}
+                      <span class="text-subtle font-normal">/ ${{ formatCurrency(b.amount) }}</span>
+                    </p>
+                    <div class="flex gap-1">
+                      <button (click)="startEditBudget(b)" class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                      <button (click)="confirmDeleteBudget(b.id)" class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="w-full bg-elevated rounded-full h-1.5">
+                  <div class="h-1.5 rounded-full transition-all" [style.width]="getBudgetPct(b) + '%'"
+                    [ngClass]="getBudgetPct(b) >= 100 ? 'bg-red-500' : getBudgetPct(b) >= 80 ? 'bg-yellow-500' : 'bg-emerald-500'">
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        } @else {
+          <p class="text-subtle text-sm mb-3">Sin presupuesto general configurado</p>
+        }
+        <button (click)="showGlobalForm.set(!showGlobalForm())" class="text-blue-400 text-xs hover:text-blue-300 transition-colors btn-press">
+          {{ showGlobalForm() ? 'Cancelar' : '+ Configurar presupuesto general' }}
+        </button>
+        @if (showGlobalForm()) {
+          <div class="mt-3 flex gap-2">
+            <input [ngModel]="newGlobalLimit" (keydown)="filterAmountKey($event)" (ngModelChange)="newGlobalLimit = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="Ej: 1500"
+              class="flex-1 bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            <button (click)="saveGlobalBudget()"
+              class="bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold px-4 rounded-lg transition-all">Guardar</button>
+          </div>
+        }
+        @if (globalBudgetLimit() > 0) {
+          <div class="mt-3 space-y-2 p-3 rounded-xl" style="background-color:#1C1C1E">
+            <div class="flex justify-between text-xs">
+              <span class="text-muted">Gastado: ${{ formatCurrency(health()?.expenses ?? 0) }}</span>
+              <span class="text-muted">Limite adicional: ${{ formatCurrency(globalBudgetLimit()) }}</span>
             </div>
-            <div class="flex-1">
-              <div class="text-white text-lg font-bold">{{ formatCurrency(g.currentAmount) }}</div>
-              <div class="text-slate-400 text-xs">de {{ formatCurrency(g.targetAmount) }}</div>
-              <div class="text-slate-500 text-xs mt-1">Faltan {{ formatCurrency(g.targetAmount - g.currentAmount) }}
+            <div class="w-full bg-elevated rounded-full h-2">
+              <div class="h-2 rounded-full transition-all" [style.width]="globalBudgetPct() + '%'"
+                [ngClass]="globalBudgetPct() >= 100 ? 'bg-red-500' : globalBudgetPct() >= 80 ? 'bg-yellow-500' : 'bg-emerald-500'">
+              </div>
+            </div>
+            <p class="text-muted text-xs text-right">{{ globalBudgetPct() }}% utilizado</p>
+            <button (click)="clearGlobalBudget()" class="text-danger text-xs hover:text-red-300 transition-colors btn-press">Eliminar limite</button>
+          </div>
+        }
+      </div>
+
+      <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-primary font-semibold">Por categoría</h3>
+          <button (click)="showBudgetForm.set(!showBudgetForm())"
+            class="text-blue-400 text-xs hover:text-blue-300 transition-colors btn-press">
+            {{ showBudgetForm() ? 'Cancelar' : '+ Nuevo' }}
+          </button>
+        </div>
+        @if (showBudgetForm()) {
+        <div class="form-slide mb-4 bg-card rounded-xl p-4 border border-strong space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Categoría</label>
+              <select [(ngModel)]="newBudget.categoryId"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+                <option value="">Seleccionar...</option>
+                @for (cat of expenseCategories(); track cat.id) { <option [value]="cat.id">{{ cat.name }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="text-muted text-xs mb-1 block">Monto</label>
+              <input [ngModel]="newBudget.amount" (keydown)="filterAmountKey($event)" (ngModelChange)="newBudget.amount = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="0.00"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Duración (meses)</label>
+              <input [ngModel]="newBudget.months" (ngModelChange)="newBudget.months = sanitizeNumber($event)" type="number" min="1"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+          </div>
+          <button (click)="submitBudget()" [disabled]="submittingBudget()"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingBudget() ? 'Creando...' : 'Crear presupuesto' }}
+          </button>
+        </div>
+        }
+        @if (categoryBudgets().length === 0) {
+        <p class="text-subtle text-sm text-center py-4">Sin presupuestos por categoría</p>
+        } @else {
+        <div class="space-y-3">
+          @for (b of categoryBudgets(); track b.id) {
+          @if (confirmDeleteBudgetId() === b.id) {
+          <div
+            class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span class="text-red-300 text-sm">Eliminar presupuesto de {{ b.category?.name ?? 'categoría eliminada'
+              }}?</span>
+            <div class="flex gap-2">
+              <button (click)="deleteBudget(b.id)"
+                class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+              <button (click)="cancelDeleteBudget()"
+                class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+            </div>
+          </div>
+          }
+          @else if (editingBudgetId() === b.id) {
+          <div class="form-slide bg-card border border-blue-500/40 rounded-xl p-4 space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-muted text-xs mb-1 block">Categoría</label>
+                @if (editBudgetCategoryDeleted()) {
+                <p class="text-yellow-400 text-xs mb-1">La categoría original fue eliminada. Selecciona una nueva.</p>
+                }
+                <select [(ngModel)]="editBudget.categoryId"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+                  <option value="">Seleccionar...</option>
+                  @for (cat of expenseCategories(); track cat.id) { <option [value]="cat.id">{{ cat.name }}</option> }
+                </select>
+              </div>
+              <div>
+                <label class="text-muted text-xs mb-1 block">Monto</label>
+                <input [ngModel]="editBudget.amount" (keydown)="filterAmountKey($event)" (ngModelChange)="editBudget.amount = sanitizeNumber($event)" type="text" inputmode="decimal"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-muted text-xs mb-1 block">Inicio</label>
+                <input [(ngModel)]="editBudget.startDate" type="date"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+              </div>
+              <div>
+                <label class="text-muted text-xs mb-1 block">Duración (meses)</label>
+                <input [(ngModel)]="editBudget.months" type="number" min="1" [disabled]="editBudget.indefinido"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50" />
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="flex items-center gap-2 text-muted text-sm cursor-pointer">
+                <input [(ngModel)]="editBudget.indefinido" type="checkbox"
+                  class="rounded bg-elevated border-strong text-blue-500 focus:ring-blue-500" />
+                Indefinido
+              </label>
+            </div>
+            <div class="flex gap-2">
+              <input [ngModel]="editBudgetAmount" (keydown)="filterAmountKey($event)" (ngModelChange)="editBudgetAmount = sanitizeNumber($event)" type="text" inputmode="decimal"
+                class="flex-1 bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+              <button (click)="saveEditBudget(b.id)"
+                class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
+              <button (click)="cancelEditBudget()"
+                class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm font-medium py-2 rounded-lg transition-colors">Cancelar</button>
+            </div>
+          </div>
+          }
+          @else {
+          <div class="bg-card rounded-xl p-4 border border-default">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <p class="text-primary text-sm font-medium">{{ b.category?.name ?? 'Categoría eliminada' }}</p>
+                <p class="text-subtle text-xs">Mensual</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <p class="text-primary text-sm font-bold">
+                  ${{ formatCurrency(computeSpent(b.categoryId)) }}
+                  <span class="text-subtle font-normal">/ ${{ formatCurrency(b.amount) }}</span>
+                </p>
+                <div class="flex gap-1">
+                  <button (click)="startEditBudget(b)"
+                    class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                  <button (click)="confirmDeleteBudget(b.id)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                </div>
+              </div>
+            </div>
+            <div class="w-full bg-elevated rounded-full h-1.5">
+              <div class="h-1.5 rounded-full transition-all" [style.width]="getBudgetPct(b) + '%'"
+                [ngClass]="getBudgetPct(b) >= 100 ? 'bg-red-500' : getBudgetPct(b) >= 80 ? 'bg-yellow-500' : 'bg-emerald-500'">
               </div>
             </div>
           </div>
-          @if (g.deadline) {
-          <div class="text-slate-500 text-xs border-t border-slate-700 pt-2">
-            Limite: {{ g.deadline | date:'dd/MM/yyyy' }}
-          </div>
+          }
           }
         </div>
         }
       </div>
+
+      <div class="bg-card rounded-2xl border border-default/60 shadow-sm card-hover overflow-hidden">
+        <button (click)="showCategorySection.set(!showCategorySection())"
+          class="w-full flex items-center justify-between px-5 py-4 hover:bg-card/60 transition-all duration-200">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-8 h-8 rounded-lg bg-accent-purple/10 border border-accent-purple/20 flex items-center justify-center text-accent-purple text-xs font-bold">
+              #</div>
+            <div class="text-left">
+              <h3 class="text-primary font-semibold text-sm">Categorías</h3>
+              <p class="text-subtle text-xs">{{ categories().length }} total · {{ userCategories().length }}
+                personalizadas</p>
+            </div>
+          </div>
+          <span class="text-subtle text-xs transition-transform inline-block"
+            [class]="showCategorySection() ? '-rotate-180' : ''">&#8964;</span>
+        </button>
+
+        @if (showCategorySection()) {
+        <div class="border-t border-default p-5 space-y-4">
+
+          <div class="flex items-center justify-between">
+            <p class="text-subtle text-xs">Todas las categorías</p>
+            <button (click)="showCategoryForm.set(!showCategoryForm())"
+              class="text-blue-400 text-xs hover:text-blue-300 transition-colors font-medium btn-press">
+              {{ showCategoryForm() ? 'Cancelar' : '+ Nueva' }}
+            </button>
+          </div>
+
+          @if (showCategoryForm()) {
+          <div class="form-slide bg-card rounded-xl p-4 border border-strong space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-muted text-xs mb-1 block">Nombre</label>
+                <input [(ngModel)]="newCategory.name" type="text" placeholder="Ej: Mascota"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+              </div>
+              <div>
+                <label class="text-muted text-xs mb-1 block">Tipo</label>
+                <select [(ngModel)]="newCategory.type"
+                  class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+                  <option value="EXPENSE">Gasto</option>
+                  <option value="INCOME">Ingreso</option>
+                </select>
+              </div>
+            </div>
+            <button (click)="submitCategory()"
+              class="w-full bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">
+              Crear categoría
+            </button>
+          </div>
+          }
+
+          @if (categories().length === 0) {
+          <p class="text-subtle text-sm text-center py-4">Sin categorías aun</p>
+          } @else {
+
+          @if (categories().filter(c => c.type === 'INCOME').length > 0) {
+          <div>
+            <p class="text-xs font-semibold text-emerald-400 uppercase tracking-widest mb-2">Ingresos</p>
+            <div class="space-y-1">
+              @for (cat of categories().filter(c => c.type === 'INCOME'); track cat.id) {
+              @if (confirmDeleteCategoryId() === cat.id) {
+              <div
+                class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                <span class="text-red-300 text-sm">Eliminar "{{ cat.name }}"?</span>
+                <div class="flex gap-2">
+                  <button (click)="deleteCategory(cat.id)"
+                    class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                  <button (click)="cancelDeleteCategory()"
+                    class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+                </div>
+              </div>
+              }
+              @else if (editingCategoryId() === cat.id) {
+              <div class="form-slide bg-card border border-blue-500/40 rounded-xl p-3 flex gap-2">
+                <input [(ngModel)]="editCategory.name" type="text"
+                  class="flex-1 bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+                <button (click)="saveEditCategory(cat.id)"
+                  class="bg-blue-600 hover:bg-blue-500 text-primary text-xs font-semibold px-3 py-2 rounded-lg">Guardar</button>
+                <button (click)="cancelEditCategory()"
+                  class="bg-elevated text-muted text-xs px-3 py-2 rounded-lg">Cancelar</button>
+              </div>
+              }
+              @else {
+              <div class="flex items-center justify-between bg-card rounded-xl px-4 py-2.5 group">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                  <span class="text-primary text-sm">{{ cat.name }}</span>
+                  @if (cat.isGlobal) {
+                  <span class="text-[10px] text-subtle bg-elevated/60 px-1.5 py-0.5 rounded">Predeterminado</span>
+                  }
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button (click)="startEditCategory(cat)"
+                    class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                  <button (click)="confirmDeleteCategory(cat.id)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                </div>
+              </div>
+              }
+              }
+            </div>
+          </div>
+          }
+
+          @if (categories().filter(c => c.type === 'EXPENSE').length > 0) {
+          <div>
+            <p class="text-xs font-semibold text-danger uppercase tracking-widest mb-2">Gastos</p>
+            <div class="space-y-1">
+              @for (cat of categories().filter(c => c.type === 'EXPENSE'); track cat.id) {
+              @if (confirmDeleteCategoryId() === cat.id) {
+              <div
+                class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                <span class="text-red-300 text-sm">Eliminar "{{ cat.name }}"?</span>
+                <div class="flex gap-2">
+                  <button (click)="deleteCategory(cat.id)"
+                    class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                  <button (click)="cancelDeleteCategory()"
+                    class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+                </div>
+              </div>
+              }
+              @else if (editingCategoryId() === cat.id) {
+              <div class="form-slide bg-card border border-blue-500/40 rounded-xl p-3 flex gap-2">
+                <input [(ngModel)]="editCategory.name" type="text"
+                  class="flex-1 bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+                <button (click)="saveEditCategory(cat.id)"
+                  class="bg-blue-600 hover:bg-blue-500 text-primary text-xs font-semibold px-3 py-2 rounded-lg">Guardar</button>
+                <button (click)="cancelEditCategory()"
+                  class="bg-elevated text-muted text-xs px-3 py-2 rounded-lg">Cancelar</button>
+              </div>
+              }
+              @else {
+              <div class="flex items-center justify-between bg-card rounded-xl px-4 py-2.5 group">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                  <span class="text-primary text-sm">{{ cat.name }}</span>
+                  @if (cat.isGlobal) {
+                  <span class="text-[10px] text-subtle bg-elevated/60 px-1.5 py-0.5 rounded">Predeterminado</span>
+                  }
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button (click)="startEditCategory(cat)"
+                    class="text-muted hover:text-blue-400 text-xs px-2 py-1 rounded-md hover:bg-blue-500/10 transition-all">editar</button>
+                  <button (click)="confirmDeleteCategory(cat.id)"
+                    class="text-muted hover:text-danger font-bold text-sm px-2 py-1 rounded-md hover:bg-danger/10 transition-all">&times;</button>
+                </div>
+              </div>
+              }
+              }
+            </div>
+          </div>
+          }
+
+          }
+        </div>
+        }
+      </div>
+
+    </div>
+    </div>
+    }
+
+    @if (activeTab() === 'metas') {
+    <div @tabSlide class="space-y-4">
+
+      <div class="flex items-center justify-between">
+        <h3 class="text-primary font-semibold">Mis metas</h3>
+        <button (click)="showGoalForm.set(!showGoalForm())"
+          class="text-blue-400 text-xs hover:text-blue-300 transition-colors font-medium btn-press">
+          {{ showGoalForm() ? 'Cancelar' : '+ Nueva meta' }}
+        </button>
+      </div>
+
+      @if (showGoalForm()) {
+      <div class="form-slide bg-card rounded-2xl p-4 border border-strong space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-muted text-xs mb-1 block">Nombre</label>
+            <input [(ngModel)]="newGoal.name" type="text" placeholder="Ej: Viaje a Colombia"
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+          </div>
+          <div>
+            <label class="text-muted text-xs mb-1 block">Monto objetivo</label>
+            <input [ngModel]="newGoal.targetAmount" (keydown)="filterAmountKey($event)" (ngModelChange)="newGoal.targetAmount = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="0.00"
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+          </div>
+        </div>
+        <div>
+          <label class="text-muted text-xs mb-1 block">Fecha limite (opcional)</label>
+          <input [(ngModel)]="newGoal.deadline" type="date"
+            class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+        </div>
+        <button (click)="submitGoal()" [disabled]="submittingGoal()"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ submittingGoal() ? 'Creando...' : 'Crear meta' }}
+        </button>
+      </div>
+      }
+
+      @if (goals().length === 0 && !showGoalForm()) {
+      <div class="bg-card rounded-2xl p-10 border border-default/60 shadow-sm card-hover text-center">
+        <p class="text-subtle text-sm">Sin metas configuradas</p>
+        <button (click)="showGoalForm.set(true)"
+          class="mt-2 text-blue-400 text-xs hover:text-blue-300 transition-colors btn-press">Crear tu primera meta</button>
+      </div>
+      } @else {
+      <div class="space-y-3">
+        @for (g of goals(); track g.id) {
+        @if (confirmDeleteGoalId() === g.id) {
+        <div
+          class="form-slide bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-red-300 text-sm">Eliminar "{{ g.name }}"?</span>
+          <div class="flex gap-2">
+            <button (click)="deleteGoal(g.id)"
+              class="bg-danger hover:bg-danger/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+            <button (click)="cancelDeleteGoal()"
+              class="bg-elevated text-muted text-xs px-3 py-1.5 rounded-lg">Cancelar</button>
+          </div>
+        </div>
+        }
+        @else if (editingGoalId() === g.id) {
+        <div class="form-slide bg-card border border-blue-500/40 rounded-2xl p-4 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Nombre</label>
+              <input [(ngModel)]="editGoal.name" type="text"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+            <div>
+              <label class="text-muted text-xs mb-1 block">Monto objetivo</label>
+              <input [ngModel]="editGoal.targetAmount" (keydown)="filterAmountKey($event)" (ngModelChange)="editGoal.targetAmount = sanitizeNumber($event)" type="text" inputmode="decimal"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+          </div>
+          <div>
+            <label class="text-muted text-xs mb-1 block">Fecha limite</label>
+            <input [(ngModel)]="editGoal.deadline" type="date"
+              class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveEditGoal(g.id)"
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">Guardar</button>
+            <button (click)="cancelEditGoal()"
+              class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+          </div>
+        </div>
+        }
+        @else if (addingProgressGoalId() === g.id) {
+        <div class="bg-card border border-blue-500/30 rounded-2xl p-4 space-y-3">
+          <p class="text-primary text-sm font-medium">Ahorrar para "{{ g.name }}"</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-muted text-xs mb-1 block">Cuenta origen</label>
+              <select [(ngModel)]="progressAccountId"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200">
+                <option value="">Seleccionar...</option>
+                @for (acc of accounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} (${{ formatCurrency(acc.balance) }})</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="text-muted text-xs mb-1 block">Cantidad a ahorrar</label>
+              <input [ngModel]="progressAmount" (keydown)="filterAmountKey($event)" (ngModelChange)="progressAmount = sanitizeNumber($event)" type="text" inputmode="decimal" placeholder="0.00"
+                class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="saveProgress(g)"
+              class="flex-1 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 text-sm font-semibold py-2 rounded-lg transition-all">Confirmar
+              ahorro</button>
+            <button (click)="cancelAddProgress()"
+              class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+          </div>
+        </div>
+        }
+        @else {
+        <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="text-primary font-semibold">{{ g.name }}</p>
+              @if (g.deadline) {
+              <p class="text-subtle text-xs">Hasta: {{ g.deadline | date:'dd/MM/yyyy' }}</p>
+              }
+            </div>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full" [ngClass]="{
+                'bg-emerald-500/20 text-emerald-400': g.status === 'COMPLETED',
+                'bg-blue-500/20 text-blue-400': g.status === 'ACTIVE',
+                'bg-muted/20 text-muted': g.status === 'CANCELLED'
+              }">{{ g.status }}</span>
+          </div>
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-xs">
+              <span class="text-muted">Ahorrado: ${{ formatCurrency(g.currentAmount) }}</span>
+              <span class="text-muted">Meta: ${{ formatCurrency(g.targetAmount) }}</span>
+            </div>
+            <div class="w-full bg-elevated rounded-full h-2">
+              <div class="h-2 rounded-full transition-all" [style.width]="getGoalProgress(g) + '%'"
+                [ngClass]="getGoalProgress(g) >= 100 ? 'bg-emerald-500' : 'bg-blue-500'"></div>
+            </div>
+            <p class="text-subtle text-xs text-right">{{ getGoalProgress(g) }}%</p>
+          </div>
+          @if (g.status === 'ACTIVE') {
+          <div class="flex gap-2">
+            <button (click)="startAddProgress(g)"
+              class="flex-1 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 text-xs font-semibold py-2 rounded-lg transition-all">
+              Ahorrar
+            </button>
+            <button (click)="startEditGoal(g)"
+              class="text-muted hover:text-blue-400 text-xs px-3 py-2 rounded-lg hover:bg-blue-500/10 transition-all">
+              editar
+            </button>
+            <button (click)="confirmDeleteGoal(g.id)"
+              class="text-muted hover:text-danger text-sm px-3 py-2 rounded-lg hover:bg-danger/10 transition-all">&times;</button>
+          </div>
+          }
+        </div>
+        }
+        }
+      </div>
+      }
+
+      </div>
+    }
+
+  </div>
+  }
+
+  @if (showExportModal()) {
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    (click)="showExportModal.set(false)">
+    <div class="bg-card rounded-xl border border-default/60 w-full max-w-sm mx-4 form-slide"
+      (click)="$event.stopPropagation()">
+
+      <div class="px-5 pt-4 pb-3 flex items-center justify-between border-b border-default">
+        <div>
+          <h3 class="text-primary font-semibold text-sm">Exportar reporte PDF</h3>
+          <p class="text-subtle text-[11px] mt-0.5">Selecciona el periodo a analizar</p>
+        </div>
+        <button (click)="showExportModal.set(false)"
+          class="text-subtle hover:text-primary text-lg leading-none transition-colors">&times;</button>
+      </div>
+
+      <div class="px-5 py-3 space-y-2.5">
+        <div>
+          <label class="text-subtle text-[11px] mb-1 block font-medium">Fecha inicio</label>
+          <input [ngModel]="exportDateFrom()" (ngModelChange)="exportDateFrom.set($event)" type="date"
+            class="w-full bg-card border border-default text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+        </div>
+        <div>
+          <label class="text-subtle text-[11px] mb-1 block font-medium">Fecha fin</label>
+          <input [ngModel]="exportDateTo()" (ngModelChange)="exportDateTo.set($event)" type="date"
+            class="w-full bg-card border border-default text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-all duration-200" />
+        </div>
+      </div>
+
+      <div class="mx-5 mb-3 bg-card/50 rounded-lg px-3 py-2.5 space-y-1">
+        <p class="text-muted text-[11px] font-semibold mb-1.5">El PDF incluira:</p>
+        @for (item of [
+        'Portada con branding',
+        'Resumen ejecutivo con KPIs',
+        'Graficas de gastos e ingresos',
+        'Estado de cuentas',
+        'Presupuestos y metas'
+        ]; track item) {
+        <div class="flex items-center gap-2">
+          <div class="w-1 h-1 rounded-full bg-blue-500 flex-shrink-0"></div>
+          <span class="text-muted text-[11px]">{{ item }}</span>
+        </div>
+        }
+      </div>
+
+      <div class="px-5 pb-4 pt-1 flex gap-2.5">
+        <button (click)="triggerExport()" [disabled]="exporting()"
+          class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          @if (exporting()) {
+          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          Generando...
+          } @else {
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Descargar PDF
+          }
+        </button>
+        <button (click)="showExportModal.set(false)"
+          class="px-4 bg-elevated hover:bg-elevated text-muted text-sm rounded-lg transition-colors">Cancelar</button>
+      </div>
+
     </div>
   </div>
   }

@@ -1,13 +1,29 @@
-export type AccountType = 'CHECKING' | 'SAVINGS' | 'CREDIT' | 'CASH';
+export type AccountType = 'CASH' | 'BANK' | 'DIGITAL_WALLET';
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
-export type BudgetStatus = 'HEALTHY' | 'WARNING' | 'DANGER' | 'CRITICAL';
+export type BudgetPeriod = 'MONTHLY' | 'WEEKLY';
+export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type BudgetHealthStatus = 'HEALTHY' | 'WARNING' | 'DANGER' | 'CRITICAL';
 
 export interface Account {
   id: string;
+  userId: string;
   name: string;
   type: AccountType;
-  balance: number;
+  balance: string;
   currency: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  type: 'INCOME' | 'EXPENSE';
+  isGlobal: boolean;
+  userId?: string | null;
 }
 
 export interface Transaction {
@@ -15,11 +31,29 @@ export interface Transaction {
   userId: string;
   accountId: string;
   categoryId: string;
-  amount: string; // Prisma devuelve decimal como string
+  amount: string;
   type: TransactionType;
   description: string | null;
   date: string;
+  transferGroupId?: string | null;
+  isInitialBalance?: boolean;
   createdAt: string;
+  category?: Category;
+  account?: Account;
+}
+
+export interface TransferDisplay {
+  groupId: string;
+  type: 'TRANSFER';
+  fromAccountId: string;
+  toAccountId: string;
+  fromAccountName: string;
+  toAccountName: string;
+  amount: number;
+  description: string | null;
+  date: string;
+  fromTxId: string;
+  toTxId: string;
 }
 
 export interface TransactionAlert {
@@ -33,28 +67,28 @@ export interface TransactionResponse {
   alert: TransactionAlert | null;
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  icon?: string;
-  type: TransactionType;
-}
-
 export interface Budget {
   id: string;
+  userId: string;
   categoryId: string;
-  amount: number;
-  spent: number;
-  month: number;
-  year: number;
+  amount: string;
+  period: BudgetPeriod;
+  startDate: string;
+  endDate?: string | null;
+  createdAt: string;
+  category?: Category;
 }
 
 export interface Goal {
   id: string;
+  userId: string;
   name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline?: string;
+  targetAmount: string;
+  currentAmount: string;
+  deadline?: string | null;
+  status: GoalStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BudgetHealth {
@@ -62,13 +96,111 @@ export interface BudgetHealth {
   expenses: number;
   available: number;
   percentage: number;
-  status: BudgetStatus;
+  status: BudgetHealthStatus;
   message: string;
   breakdown: Record<string, number>;
+}
+
+export interface UpdateGoalPayload {
+  name?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+  status?: GoalStatus;
+  fromAccountId?: string;
 }
 
 export interface FinanceSummary {
   totalBalance: number;
   monthlyIncome: number;
   monthlyExpenses: number;
+}
+
+export interface CreateAccountPayload {
+  name: string;
+  type: AccountType;
+  initialBalance?: number;
+  countAsIncome?: boolean;
+}
+
+export interface CreateTransactionPayload {
+  accountId: string;
+  categoryId: string;
+  amount: number;
+  type: TransactionType;
+  description?: string;
+  date: string;
+  allowNegative?: boolean;
+}
+
+export interface CreateBudgetPayload {
+  categoryId?: string;
+  amount: number;
+  period: BudgetPeriod;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface CreateGoalPayload {
+  name: string;
+  targetAmount: number;
+  deadline?: string;
+}
+
+export interface UpdateTransactionPayload {
+  accountId?: string;
+  categoryId?: string;
+  amount?: number;
+  type?: TransactionType;
+  description?: string;
+  date?: string;
+  allowNegative?: boolean;
+}
+
+export interface UpdateBudgetPayload {
+  categoryId?: string;
+  startDate?: string | null;
+  amount?: number;
+  period?: BudgetPeriod;
+  endDate?: string | null;
+}
+
+export interface UpdateGoalPayload {
+  name?: string;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+  status?: GoalStatus;
+  fromAccountId?: string;
+}
+export interface CreateTransferPayload {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  description?: string;
+  date: string;
+}
+
+export interface TransferResponse {
+  fromTransaction: Transaction;
+  toTransaction: Transaction;
+}
+
+export interface CreateCategoryPayload {
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateCategoryPayload {
+  name?: string;
+  icon?: string;
+  color?: string;
+  endDate?: string;
+}
+
+export interface UpdateAccountPayload {
+  name?: string;
+  balance?: number;
 }

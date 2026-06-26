@@ -36,6 +36,8 @@ export interface UserProfile {
     gamesWon: number;
     totalTransactions: number;
     achievementsCount: number;
+    totalQuizzes: number;
+    distinctPassedQuizzes: number;
   };
 }
 
@@ -43,4 +45,10 @@ export interface UpdateProfileRequest {
   displayName?: string;
   avatarUrl?: string;
   bio?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }

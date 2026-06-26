@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../core/services/user.service';
@@ -6,7 +6,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model';
 import { AchievementService } from '../../core/services/achievement.service';
 import { Reward } from '../../core/models/achievement.model';
-import { computed } from '@angular/core';
+import { ToastService } from '../../core/services/toast.service';
+
+type Tab = 'perfil' | 'estadisticas' | 'cuenta';
 
 @Component({
   selector: 'app-profile',
@@ -18,31 +20,57 @@ export class Profile implements OnInit {
   user = signal<UserProfile | null>(null);
   loading = signal(true);
   saving = signal(false);
-  saved = signal(false);
   editing = signal(false);
+  deleting = signal(false);
 
   rewards = signal<Reward[]>([]);
   equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
   equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
   equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
+  equippedTitle = computed(() => this.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
+  equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
+
+  activeTab = signal<Tab>('perfil');
+  showDeleteModal = signal(false);
+  deleteConfirmText = signal('');
+
+  readonly tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: 'perfil', label: 'Perfil', icon: '👤' },
+    { key: 'estadisticas', label: 'Estadísticas', icon: '📊' },
+    { key: 'cuenta', label: 'Cuenta', icon: '⚙️' },
+  ];
 
   form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
 
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private achievementService: AchievementService
+    private achievementService: AchievementService,
+    private toastService: ToastService
   ) { }
 
   ngOnInit(): void {
     this.userService.getProfile().subscribe({
       next: d => { this.user.set(d); this.loading.set(false); this.syncForm(d); },
-      error: () => this.loading.set(false)
+      error: () => { this.loading.set(false); this.toastService.error('Error al cargar el perfil'); }
     });
     this.achievementService.getRewards().subscribe({
       next: d => this.rewards.set(d)
     });
   }
+
+
+  setTab(tab: Tab): void {
+    this.activeTab.set(tab);
+    if (this.editing()) this.cancelEdit();
+  }
+
+  startEdit(): void {
+    if (this.editing()) { this.cancelEdit(); return; }
+    this.activeTab.set('perfil');
+    this.editing.set(true);
+  }
+
 
   private syncForm(u: UserProfile): void {
     this.form = {
@@ -68,11 +96,13 @@ export class Profile implements OnInit {
           }
         });
         this.saving.set(false);
-        this.saved.set(true);
         this.editing.set(false);
-        setTimeout(() => this.saved.set(false), 2500);
+        this.toastService.success('Perfil actualizado correctamente');
       },
-      error: () => this.saving.set(false)
+      error: () => {
+        this.saving.set(false);
+        this.toastService.error('Error al guardar los cambios');
+      }
     });
   }
 
@@ -82,26 +112,63 @@ export class Profile implements OnInit {
     this.editing.set(false);
   }
 
+
+  openDeleteModal(): void {
+    this.deleteConfirmText.set('');
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.deleteConfirmText.set('');
+  }
+  showPasswordSection = signal(false);
+  changingPassword = signal(false);
+  showCurrentPwd = signal(false);
+  showNewPwd = signal(false);
+  showConfirmPwd = signal(false);
+  passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
+  passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  confirmDelete(): void {
+    if (this.deleteConfirmText() !== 'ELIMINAR' || this.deleting()) return;
+    this.deleting.set(true);
+    this.userService.deleteAccount().subscribe({
+      next: () => {
+        this.toastService.success('Cuenta eliminada');
+        this.authService.logout();
+      },
+      error: () => {
+        this.deleting.set(false);
+        this.toastService.error('Error al eliminar la cuenta. Intenta de nuevo.');
+      }
+    });
+  }
+
+
   getXpProgress(): number {
     return (this.user()?.gameStats.xp ?? 0) % 100;
   }
 
   getRankLabel(rank: string): string {
     return ({
-      ROOKIE: 'Novato', APPRENTICE: 'Aprendiz', INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado', EXPERT: 'Experto', MASTER: 'Master'
-    } as any)[rank] ?? rank;
+      ROOKIE: 'Novato',
+      APPRENTICE: 'Aprendiz',
+      INTERMEDIATE: 'Intermedio',
+      ADVANCED: 'Avanzado',
+      EXPERT: 'Experto',
+      MASTER: 'Master'
+    } as Record<string, string>)[rank] ?? rank;
   }
 
   getRankColor(rank: string): string {
     return ({
-      ROOKIE: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-      APPRENTICE: 'bg-green-500/20 text-green-400 border-green-500/30',
-      INTERMEDIATE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      ADVANCED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-      EXPERT: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-      MASTER: 'bg-red-500/20 text-red-400 border-red-500/30'
-    } as any)[rank] ?? 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      ROOKIE: 'bg-subtle/20 text-muted border-subtle/30',
+      APPRENTICE: 'bg-success/20  text-success  border-success/30',
+      INTERMEDIATE: 'bg-primary/20   text-primary   border-primary/30',
+      ADVANCED: 'bg-primary-muted/20 text-primary-light border-primary-muted/30',
+      EXPERT: 'bg-warning/20  text-warning  border-warning/30',
+      MASTER: 'bg-danger/20    text-danger    border-danger/30'
+    } as Record<string, string>)[rank] ?? 'bg-subtle/20 text-muted border-subtle/30';
   }
 
   getInitials(name: string): string {
@@ -110,23 +177,68 @@ export class Profile implements OnInit {
 
   getPassRate(): number {
     const s = this.user()?.statistics;
-    if (!s || !s.quizzesCompleted) return 0;
-    return Math.round((s.quizzesPassed / s.quizzesCompleted) * 100);
+    if (!s?.quizzesCompleted) return 0;
+    return Math.round((s.distinctPassedQuizzes ?? 0) / s.quizzesCompleted * 100);
   }
 
   getWinRate(): number {
     const s = this.user()?.statistics;
-    if (!s || !s.gamesPlayed) return 0;
+    if (!s?.gamesPlayed) return 0;
     return Math.round((s.gamesWon / s.gamesPlayed) * 100);
   }
 
   getFrameClass(): string {
     const f = this.equippedFrame();
-    if (!f) return 'border-slate-600';
-    return f.icon === '🥇' ? 'border-yellow-400 shadow-yellow-400/30 shadow-md' : 'border-slate-400 shadow-slate-400/30 shadow-md';
+    if (!f) return 'border-strong';
+    const map: Record<string, string> = {
+      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
+      '🥈': 'border-muted shadow-muted/40 shadow-md',
+      '🥇': 'border-warning shadow-warning/50 shadow-lg',
+      '💠': 'border-primary shadow-primary/50 shadow-lg',
+    };
+    return map[f.icon] ?? 'border-strong';
+  }
+  getAuraClass(): string {
+    const a = this.equippedAura();
+    if (!a) return '';
+    if (a.icon === '💙') return 'aura-blue';
+    if (a.icon === '✨') return 'aura-gold';
+    if (a.icon === '🔮') return 'aura-legendary';
+    return '';
   }
 
   logout(): void {
     this.authService.logout();
+  }
+  togglePasswordSection(): void {
+    this.showPasswordSection.update(v => !v);
+    if (!this.showPasswordSection()) {
+      this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+      this.passwordErrors.set({});
+    }
+  }
+
+  changePassword(): void {
+    const e: { current?: string; new?: string; confirm?: string } = {};
+    if (!this.passwordForm.currentPassword) e.current = 'Contraseña actual requerida';
+    if (this.passwordForm.newPassword.length < 8) e.new = 'Mínimo 8 caracteres';
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) e.confirm = 'Las contraseñas no coinciden';
+
+    this.passwordErrors.set(e);
+    if (Object.keys(e).length) return;
+
+    this.changingPassword.set(true);
+    this.userService.changePassword(this.passwordForm).subscribe({
+      next: () => {
+        this.changingPassword.set(false);
+        this.showPasswordSection.set(false);
+        this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.toastService.success('Contraseña actualizada correctamente');
+      },
+      error: (err) => {
+        this.changingPassword.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al cambiar la contraseña');
+      }
+    });
   }
 }

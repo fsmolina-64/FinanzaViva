@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { onboardingGuard, onboardingCompletedGuard } from './core/guards/onboarding.guard';
 
 export const routes: Routes = [
   {
@@ -33,10 +34,18 @@ export const routes: Routes = [
   },
 
   {
+    path: 'onboarding',
+    loadComponent: () =>
+      import('./features/onboarding/onboarding.component')
+        .then(m => m.OnboardingComponent),
+    canActivate: [authGuard, onboardingCompletedGuard],
+  },
+
+  {
     path: '',
     loadComponent: () =>
       import('./layouts/main-layout/main-layout').then(m => m.MainLayout),
-    canActivate: [authGuard],
+    canActivate: [authGuard, onboardingGuard],
     children: [
       {
         path: 'dashboard',
@@ -54,24 +63,19 @@ export const routes: Routes = [
           import('./features/academy/academy').then(m => m.Academy)
       },
       {
-        path: 'academy/:moduleId',
-        loadComponent: () =>
-          import('./features/academy/module-detail/module-detail').then(m => m.ModuleDetail)
-      },
-      {
         path: 'academy/lesson/:lessonId',
         loadComponent: () =>
           import('./features/academy/lesson/lesson').then(m => m.LessonComponent)
       },
       {
-        path: 'quizzes',
-        loadComponent: () =>
-          import('./features/quizzes/quizzes').then(m => m.Quizzes)
-      },
-      {
-        path: 'quizzes/:id',
+        path: 'academy/:moduleId/quiz',
         loadComponent: () =>
           import('./features/quizzes/quiz-detail/quiz-detail').then(m => m.QuizDetail)
+      },
+      {
+        path: 'academy/:moduleId',
+        loadComponent: () =>
+          import('./features/academy/module-detail/module-detail').then(m => m.ModuleDetail)
       },
       {
         path: 'simulator',
@@ -84,9 +88,24 @@ export const routes: Routes = [
           import('./features/simulator/game/game').then(m => m.Game)
       },
       {
+        path: 'quizzes',
+        loadComponent: () =>
+          import('./features/quizzes/quizzes').then(m => m.Quizzes)
+      },
+      {
         path: 'achievements',
         loadComponent: () =>
           import('./features/achievements/achievements').then(m => m.Achievements)
+      },
+      {
+        path: 'ranking',
+        loadComponent: () =>
+          import('./features/ranking/ranking.component').then(m => m.RankingComponent)
+      },
+      {
+        path: 'ranking/user/:id',
+        loadComponent: () =>
+          import('./features/ranking/user-profile-readonly/user-profile-readonly.component').then(m => m.UserProfileReadonlyComponent)
       },
       {
         path: 'profile',

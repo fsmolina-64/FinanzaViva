@@ -2,21 +2,19 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import {
-  Account,
-  Transaction,
-  TransactionResponse,
-  Category,
-  Budget,
-  Goal,
-  BudgetHealth,
-  FinanceSummary
+  Account, Transaction, TransactionResponse,
+  Category, Budget, Goal, BudgetHealth, FinanceSummary,
+  CreateAccountPayload, CreateTransactionPayload,
+  CreateBudgetPayload, CreateGoalPayload,
+  UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload,
+   CreateTransferPayload, TransferResponse,
+   CreateCategoryPayload, UpdateCategoryPayload,
+   UpdateAccountPayload
 } from '../models/finance.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class FinanceService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   getSummary(): Observable<FinanceSummary> {
     return this.api.get<FinanceSummary>('/finances/summary');
@@ -30,7 +28,7 @@ export class FinanceService {
     return this.api.get<Account[]>('/finances/accounts');
   }
 
-  createAccount(data: Partial<Account>): Observable<Account> {
+  createAccount(data: CreateAccountPayload): Observable<Account> {
     return this.api.post<Account>('/finances/accounts', data);
   }
 
@@ -38,12 +36,20 @@ export class FinanceService {
     return this.api.delete<void>(`/finances/accounts/${id}`);
   }
 
+  updateAccount(id: string, data: UpdateAccountPayload): Observable<Account> {
+    return this.api.patch<Account>(`/finances/accounts/${id}`, data);
+  }
+
   getTransactions(): Observable<Transaction[]> {
     return this.api.get<Transaction[]>('/finances/transactions');
   }
 
-  createTransaction(data: Partial<Transaction>): Observable<TransactionResponse> {
+  createTransaction(data: CreateTransactionPayload): Observable<TransactionResponse> {
     return this.api.post<TransactionResponse>('/finances/transactions', data);
+  }
+
+  updateTransaction(id: string, data: UpdateTransactionPayload): Observable<Transaction> {
+    return this.api.patch<Transaction>(`/finances/transactions/${id}`, data);
   }
 
   deleteTransaction(id: string): Observable<void> {
@@ -58,15 +64,56 @@ export class FinanceService {
     return this.api.get<Budget[]>('/finances/budgets');
   }
 
-  createBudget(data: Partial<Budget>): Observable<Budget> {
+  createBudget(data: CreateBudgetPayload): Observable<Budget> {
     return this.api.post<Budget>('/finances/budgets', data);
+  }
+
+  updateBudget(id: string, data: UpdateBudgetPayload): Observable<Budget> {
+    return this.api.patch<Budget>(`/finances/budgets/${id}`, data);
+  }
+
+  deleteBudget(id: string): Observable<void> {
+    return this.api.delete<void>(`/finances/budgets/${id}`);
   }
 
   getGoals(): Observable<Goal[]> {
     return this.api.get<Goal[]>('/finances/goals');
   }
 
-  createGoal(data: Partial<Goal>): Observable<Goal> {
+  createGoal(data: CreateGoalPayload): Observable<Goal> {
     return this.api.post<Goal>('/finances/goals', data);
+  }
+
+  updateGoal(id: string, data: UpdateGoalPayload): Observable<Goal> {
+    return this.api.patch<Goal>(`/finances/goals/${id}`, data);
+  }
+
+  deleteGoal(id: string): Observable<void> {
+    return this.api.delete<void>(`/finances/goals/${id}`);
+  }
+
+  createTransfer(data: CreateTransferPayload): Observable<TransferResponse> {
+    return this.api.post<TransferResponse>('/finances/transfers', data);
+  }
+
+  createCategory(data: CreateCategoryPayload): Observable<Category> {
+    return this.api.post<Category>('/finances/categories', data);
+  }
+
+  updateCategory(id: string, data: UpdateCategoryPayload): Observable<Category> {
+    return this.api.patch<Category>(`/finances/categories/${id}`, data);
+  }
+
+  deleteCategory(id: string, reassignToId?: string): Observable<void> {
+    const params = reassignToId ? `?reassignToId=${reassignToId}` : '';
+    return this.api.delete<void>(`/finances/categories/${id}${params}`);
+  }
+
+  updateTransfer(groupId: string, data: any): Observable<any> {
+    return this.api.patch<any>(`/finances/transfers/${groupId}`, data);
+  }
+
+  deleteTransfer(groupId: string): Observable<void> {
+    return this.api.delete<void>(`/finances/transfers/${groupId}`);
   }
 }

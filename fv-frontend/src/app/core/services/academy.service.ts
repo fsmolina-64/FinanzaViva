@@ -4,14 +4,15 @@ import { ApiService } from './api.service';
 import {
   AcademyModule,
   Lesson,
-  LessonCompleteResponse
+  LessonCompleteResponse,
+  LessonResetResponse,
 } from '../models/academy.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AcademyService {
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService) { }
 
   getModules(): Observable<AcademyModule[]> {
     return this.api.get<AcademyModule[]>('/academy/modules');
@@ -26,9 +27,14 @@ export class AcademyService {
   }
 
   completeLesson(id: string): Observable<LessonCompleteResponse> {
-    return this.api.post<LessonCompleteResponse>(
-      `/academy/lessons/${id}/complete`,
-      {}
-    );
+    return this.api.post<LessonCompleteResponse>(`/academy/lessons/${id}/complete`, {});
+  }
+
+  resetLesson(id: string): Observable<LessonResetResponse> {
+    return this.api.post<LessonResetResponse>(`/academy/lessons/${id}/reset`, {});
+  }
+
+  getReadingProgress(moduleId: string): Observable<{ readingProgress: number }> {
+    return this.api.get<{ readingProgress: number }>(`/academy/modules/${moduleId}/reading-progress`);
   }
 }
