@@ -10,7 +10,7 @@ export class GamificationService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async addXp(userId: string, dto: AddXpDto) {
     await this.prisma.xpTransaction.create({
@@ -105,11 +105,21 @@ export class GamificationService {
     const now = new Date();
     const last = stats.lastActivityAt;
 
-    const diffDays = last
-      ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
+    // FIX: Comparar por día calendario, no por milisegundos crudos.
+    // El bug original fallaba cuando el login cruzaba medianoche
+    // (ej: 23:59 → 00:01 daba diffDays=0 y la racha no avanzaba).
+    const todayCalendar = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastCalendar = last
+      ? new Date(last.getFullYear(), last.getMonth(), last.getDate())
       : null;
 
-    // Same day — no update, no notification
+    const diffDays = lastCalendar
+      ? Math.floor(
+        (todayCalendar.getTime() - lastCalendar.getTime()) / (1000 * 60 * 60 * 24),
+      )
+      : null;
+
+    // Mismo día calendario — sin cambios
     if (diffDays === 0) {
       return {
         currentStreak: stats.currentStreak,
@@ -121,19 +131,19 @@ export class GamificationService {
     let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
 
     if (diffDays === null) {
-      // First time ever
+      // Primera vez
       newStreak = 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 1) {
-      // Consecutive day — streak grows
+      // Día consecutivo — racha crece
       newStreak = stats.currentStreak + 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 2) {
-      // Exactly 1 day gap — recover, streak stays same
+      // Saltó un día — racha se congela
       newStreak = stats.currentStreak;
       streakStatus = 'AT_RISK';
     } else {
-      // 2+ days gap — streak lost, reset to 1
+      // 2+ días de diferencia — racha perdida
       newStreak = 1;
       streakStatus = 'LOST';
     }
@@ -149,13 +159,47 @@ export class GamificationService {
       },
     });
 
+    // Insertar registro histórico para el calendario
+    // Guardamos UTC midnight del día actual para queries por mes/año
+    const todayUtcMidnight = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+
+    await this.prisma.streakLog.create({
+      data: {
+        userId,
+        date: todayUtcMidnight,
+        streak: newStreak,
+        status: streakStatus,
+      },
+    });
+
     return { currentStreak: newStreak, streakStatus };
+  }
+
+  async getStreakHistory(userId: string, month: number, year: number) {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    return this.prisma.streakLog.findMany({
+      where: {
+        userId,
+        date: { gte: start, lt: end },
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        id: true,
+        date: true,
+        streak: true,
+        status: true,
+      },
+    });
   }
 
   async checkAndEmitLevelUp(userId: string) {
     const stats = await this.prisma.userGameStats.findUnique({ where: { userId } });
     if (!stats) return null;
-    
+
     const newLevel = await this.checkLevelUp(userId, stats.xp);
     if (newLevel) {
       this.eventEmitter.emit('user.action', new UserActionEvent(userId));

@@ -36,3 +36,10 @@ export interface XpResponse {
   rank: Rank;
   leveledUp: boolean;
 }
+
+export interface StreakLog {
+  id: string;
+  date: string;
+  streak: number;
+  status: StreakStatus;
+}

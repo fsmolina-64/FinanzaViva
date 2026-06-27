@@ -4,6 +4,7 @@ import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
 import {
   GamificationStats,
+  StreakLog,
   StreakResponse,
   StreakStatus,
   XpRequest,
@@ -20,7 +21,7 @@ export class GamificationService {
   constructor(
     private api: ApiService,
     private toast: ToastService
-  ) {}
+  ) { }
 
   loadStats(): Observable<GamificationStats> {
     return this.api.get<GamificationStats>('/gamification/stats').pipe(
@@ -54,16 +55,22 @@ export class GamificationService {
         }
         switch (response.streakStatus) {
           case 'ACTIVE':
-            this.toast.success(`🔥 ¡Bienvenido! Tu racha aumentó a ${response.currentStreak} días`);
+            this.toast.success(`Bienvenido! Tu racha aumentó a ${response.currentStreak} días`);
             break;
           case 'AT_RISK':
-            this.toast.success('⚡ ¡Llegaste a tiempo! Tu racha se restableció');
+            this.toast.success('Llegaste a tiempo! Tu racha se restableció');
             break;
           case 'LOST':
-            this.toast.warning('💪 Racha perdida. ¡Empezamos desde cero!');
+            this.toast.warning('Racha perdida. Empezamos desde cero!');
             break;
         }
       })
+    );
+  }
+
+  getStreakHistory(month: number, year: number): Observable<StreakLog[]> {
+    return this.api.get<StreakLog[]>(
+      `/gamification/streak/history?month=${month}&year=${year}`
     );
   }
 }
