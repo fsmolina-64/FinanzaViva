@@ -6,7 +6,6 @@
               rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-scale-in"
         style="max-height:95vh; overflow-y:auto">
 
-        <!-- Drag handle mobile -->
         <div class="flex justify-center pt-3 pb-1 md:hidden">
             <div class="w-10 h-1 bg-elevated rounded-full"></div>
         </div>
@@ -18,7 +17,6 @@
         </div>
         } @else {
 
-        <!-- Type tabs -->
         <div class="flex border-b border-default/80 mt-1">
             @for (opt of typeOptions; track opt.key) {
             <button (click)="setType(opt.key)"
@@ -33,7 +31,6 @@
             }
         </div>
 
-        <!-- Debt confirm overlay -->
         @if (showDebtConfirm()) {
         <div class="px-6 py-8 text-center space-y-4">
             <div class="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
@@ -62,7 +59,6 @@
         </div>
         } @else {
 
-        <!-- Amount display -->
         <div class="amount-card mx-3 mt-4 mb-2 rounded-2xl bg-gradient-to-b to-transparent border py-5 px-2 text-center select-none"
             [ngClass]="amountCardClass()">
             <p class="text-subtle text-[10px] font-semibold mb-2.5 uppercase tracking-[0.2em]">Monto</p>
@@ -88,7 +84,6 @@
             }
         </div>
 
-        <!-- Numpad -->
         <div class="px-4 pb-3">
             <div class="grid grid-cols-3 gap-2.5">
                 @for (key of numpadKeys; track key) {
@@ -106,7 +101,6 @@
             </div>
         </div>
 
-        <!-- Transfer: account selectors -->
         @if (selectedType() === 'TRANSFER') {
         <div class="px-3 pb-3 space-y-2">
             @if (accounts().length < 2) { <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
@@ -138,10 +132,8 @@
     </div>
     } @else {
 
-    <!-- Category + Account -->
     <div class="px-4 pb-3 space-y-2">
 
-        <!-- Category chips -->
         <div class="bg-elevated/30 rounded-xl border border-default/40 p-3">
             <p class="text-[11px] text-subtle font-semibold uppercase tracking-wider mb-2">Categoria</p>
             @if (topCategories().length === 0) {
@@ -164,7 +156,6 @@
             }
         </div>
 
-        <!-- Account selector -->
         <div class="bg-elevated/30 rounded-xl border border-default/40 p-3">
             @if (accounts().length === 0) {
             <p
@@ -184,7 +175,6 @@
     </div>
     }
 
-    <!-- Date & Note extras -->
     <div class="px-4 pb-3 space-y-2">
         <button (click)="showExtras = !showExtras"
             class="text-xs text-subtle hover:text-muted transition-colors flex items-center gap-1.5 btn-press">
@@ -209,7 +199,6 @@
         }
     </div>
 
-    <!-- Submit button -->
     <div class="px-3 pb-6">
         <button (click)="submit()" [disabled]="submitting()"
             class="w-full py-4 rounded-2xl text-primary font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed btn-press"

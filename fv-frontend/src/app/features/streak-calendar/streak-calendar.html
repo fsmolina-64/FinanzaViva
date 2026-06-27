@@ -1,0 +1,228 @@
+<div [@staggerCards] class="space-y-6 animate-slide-up sc-wrapper">
+
+    <div class="flex items-center gap-4 animate-fade-in">
+        <a routerLink="/dashboard" class="sc-back-btn" title="Volver al dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-primary">Racha de actividad</h1>
+            <p class="text-muted text-sm mt-0.5">Tu constancia día a día</p>
+        </div>
+    </div>
+
+    <div class="bg-card rounded-2xl border border-default p-7 overflow-hidden relative animate-fade-in-up sc-hero-card"
+        [ngClass]="heroCardGradient()" style="animation-delay: 60ms">
+
+        <div class="sc-hero-bg-glow" [ngClass]="heroGlowClass()"></div>
+
+        <div class="flex items-center gap-10 relative z-10">
+
+            <div class="sc-flame-container flex-shrink-0">
+                <div class="sc-flame-glow" [ngClass]="heroGlowClass()"></div>
+                <img [src]="heroFlame()" alt="Racha" class="sc-hero-flame-img" [ngClass]="heroFlameClass()" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+                <div class="flex items-baseline gap-3 mb-1.5">
+                    <span class="sc-hero-number" [ngClass]="heroNumberClass()">
+                        {{ stats()?.currentStreak ?? 0 }}
+                    </span>
+                    <span class="text-muted text-xl font-medium">días de racha</span>
+                </div>
+
+                <p class="text-subtle text-sm mb-5 leading-relaxed">{{ streakMessage() }}</p>
+
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-muted">Progreso hacia tu mejor racha</span>
+                        <span class="text-subtle font-medium">Mejor: {{ stats()?.longestStreak ?? 0 }} días</span>
+                    </div>
+                    <div class="h-2 bg-elevated rounded-full overflow-hidden">
+                        <div class="h-full rounded-full sc-progress-bar transition-all duration-1000 ease-out"
+                            [ngClass]="progressBarClass()" [style.width.%]="xpProgress()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 animate-fade-in-up" style="animation-delay: 120ms">
+
+        <div class="bg-card rounded-2xl border border-default p-5 card-hover hover-lift">
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 sc-icon-amber">
+                    <img src="/llamaprendida.png" class="w-5 h-5 object-contain" alt="" />
+                </div>
+                <span class="text-muted text-xs font-semibold uppercase tracking-wider">Racha actual</span>
+            </div>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold" [ngClass]="heroNumberClass()">
+                    {{ stats()?.currentStreak ?? 0 }}
+                </span>
+                <span class="text-subtle text-sm">días</span>
+            </div>
+        </div>
+
+        <div class="bg-card rounded-2xl border border-default p-5 card-hover hover-lift">
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 sc-icon-emerald">
+                    <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                </div>
+                <span class="text-muted text-xs font-semibold uppercase tracking-wider">Mejor racha</span>
+            </div>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-emerald-400">
+                    {{ stats()?.longestStreak ?? 0 }}
+                </span>
+                <span class="text-subtle text-sm">días</span>
+            </div>
+        </div>
+
+        <div class="bg-card rounded-2xl border border-default p-5 card-hover hover-lift">
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 sc-icon-blue">
+                    <svg class="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </div>
+                <span class="text-muted text-xs font-semibold uppercase tracking-wider">
+                    {{ monthLabel() }}
+                </span>
+            </div>
+            <div class="flex items-baseline gap-1.5">
+                <span class="text-3xl font-extrabold text-blue-400">{{ activeDaysCount() }}</span>
+                <span class="text-subtle text-sm">días activos</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bg-card rounded-2xl border border-default p-6 animate-fade-in-up" style="animation-delay: 200ms">
+
+        <div class="flex items-center justify-between mb-6">
+
+            <button (click)="prevMonth()" class="sc-nav-btn btn-press" [disabled]="animating()" title="Mes anterior">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6" />
+                </svg>
+            </button>
+
+            <div class="text-center select-none">
+                <h2 class="text-primary font-bold text-lg leading-tight">{{ monthLabel() }}</h2>
+                @if (!isCurrentMonth()) {
+                <p class="text-subtle text-xs mt-0.5">Navegando meses anteriores</p>
+                }
+            </div>
+
+            <button (click)="nextMonth()" class="sc-nav-btn btn-press" [disabled]="animating() || isCurrentMonth()"
+                [class.sc-nav-disabled]="isCurrentMonth()" title="Mes siguiente">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
+            </button>
+
+        </div>
+
+        <div class="grid grid-cols-7 mb-1">
+            @for (d of weekDays; track d) {
+            <div class="text-center text-xs font-semibold text-subtle uppercase tracking-widest py-2.5">
+                {{ d }}
+            </div>
+            }
+        </div>
+
+        <div class="h-px bg-default/30 mb-3"></div>
+
+        <div class="sc-cal-grid" [ngClass]="slideClass()">
+
+            @if (loading()) {
+            @for (i of skeletonCells; track i) {
+            <div class="sc-day-skeleton animate-pulse"></div>
+            }
+            } @else {
+            @for (cell of calendarDays(); track $index) {
+            @if (cell.isPadding) {
+            <div></div>
+            } @else {
+            <div class="sc-day-cell" [class.sc-day-active]="cell.status === 'ACTIVE'"
+                [class.sc-day-risk]="cell.status === 'AT_RISK'" [class.sc-day-lost]="cell.status === 'LOST'"
+                [class.sc-day-today]="cell.isToday" [class.sc-day-future]="cell.isFuture"
+                [class.sc-day-empty]="!cell.status && !cell.isFuture && !cell.isToday"
+                [style.animation-delay.ms]="cell.isToday ? 40 : cellDelay($index)" [title]="cellTooltip(cell)">
+
+                <span class="sc-day-num" [class.sc-num-circle]="cell.isToday"
+                    [class.sc-num-active]="cell.status === 'ACTIVE' && !cell.isToday"
+                    [class.sc-num-risk]="cell.status === 'AT_RISK'  && !cell.isToday"
+                    [class.sc-num-lost]="cell.status === 'LOST'     && !cell.isToday">
+                    {{ cell.day }}
+                </span>
+
+                @if (cell.status) {
+                <img [src]="flameIcon(cell.status)" alt="" class="sc-day-flame"
+                    [class.sc-flame-active]="cell.status === 'ACTIVE'" [class.sc-flame-risk]="cell.status === 'AT_RISK'"
+                    [class.sc-flame-lost]="cell.status === 'LOST'" />
+                }
+
+                @if (cell.status === 'ACTIVE' && cell.streakValue > 1) {
+                <span class="sc-streak-badge">{{ cell.streakValue }}</span>
+                }
+
+            </div>
+            }
+            }
+            }
+
+        </div>
+
+        @if (!loading() && activeDaysCount() === 0 && !isCurrentMonth()) {
+        <div class="text-center pt-4 pb-2">
+            <p class="text-subtle text-sm">Sin actividad registrada en este mes</p>
+            <p class="text-subtle text-xs mt-1 opacity-60">
+                El historial se acumula a partir de la primera vez que usas la app
+            </p>
+        </div>
+        }
+
+    </div>
+
+    <div class="flex items-center justify-center gap-8 flex-wrap pb-6 animate-fade-in" style="animation-delay: 380ms">
+
+        <div class="flex items-center gap-2">
+            <img src="/llamaprendida.png" class="w-6 h-6 object-contain" alt="" />
+            <span class="text-muted text-xs font-medium">Día activo</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <img src="/llamacongelada.png" class="w-6 h-6 object-contain" alt="" />
+            <span class="text-muted text-xs font-medium">Racha congelada</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <img src="/llamaapagada.png" class="w-6 h-6 object-contain" alt="" />
+            <span class="text-muted text-xs font-medium">Racha perdida</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg sc-legend-empty"></div>
+            <span class="text-muted text-xs font-medium">Sin actividad</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg sc-legend-today"></div>
+            <span class="text-muted text-xs font-medium">Hoy</span>
+        </div>
+
+    </div>
+
+</div>

@@ -17,7 +17,7 @@ interface QuizAgg {
 
 @Injectable()
 export class RankingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getRanking(page: number = 1, limit: number = 10) {
     const total = await this.prisma.user.count({ where: { isActive: true } });
@@ -173,10 +173,6 @@ export class RankingService {
 
     scored.sort((a, b) => b.score - a.score);
 
-    // TODO: add cache layer here (Redis, etc.)
-    // Por ahora solo retorna cuántos usuarios se procesaron.
-    // Si en el futuro se guarda el rank en DB, usar transacción aquí.
-
     return { updated: scored.length };
   }
 
@@ -186,13 +182,10 @@ export class RankingService {
     avgQuizScore: number,
     rewardsCount: number,
   ) {
-    // A) Actividad 15%
     const txScore = Math.min(stats.totalTransactions / MAX_TRANSACTIONS, 1) * 100;
 
-    // B) Consistencia 15%
     const streakScore = Math.min(gameStats.currentStreak / MAX_STREAK_DAYS, 1) * 100;
 
-    // C) Académico 25%
     const modulesScore = Math.min(stats.modulesCompleted / MAX_MODULES, 1) * 100;
     const lessonsScore = Math.min(stats.lessonsCompleted / MAX_LESSONS, 1) * 100;
     const approvalRate = stats.quizzesCompleted > 0
@@ -201,19 +194,16 @@ export class RankingService {
     const quizScore = avgQuizScore * 0.6 + approvalRate * 100 * 0.4;
     const academicScore = (modulesScore + lessonsScore + quizScore) / 3;
 
-    // D) Simulador 15%
     const matchScore = Math.min(stats.gamesPlayed / MAX_GAMES, 1) * 50;
     const winRate = stats.gamesPlayed > 0
       ? (stats.gamesWon / stats.gamesPlayed) * 50
       : 0;
     const simulatorScore = matchScore + winRate;
 
-    // E) Logros y recompensas 15%
     const achievementsScore = Math.min(stats.achievementsCount / MAX_ACHIEVEMENTS, 1) * 60;
     const rewardsScore = Math.min(rewardsCount / MAX_REWARDS, 1) * 40;
     const achievementTotal = achievementsScore + rewardsScore;
 
-    // F) XP 15%
     const xpScore = Math.min(gameStats.xp / MAX_XP, 1) * 100;
 
     const total = Math.round(
@@ -223,7 +213,7 @@ export class RankingService {
         simulatorScore * 0.15 +
         achievementTotal * 0.15 +
         xpScore * 0.15) *
-        100,
+      100,
     ) / 100;
 
     const breakdown = {

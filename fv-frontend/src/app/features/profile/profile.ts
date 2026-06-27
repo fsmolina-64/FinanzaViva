@@ -7,12 +7,13 @@ import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model'
 import { AchievementService } from '../../core/services/achievement.service';
 import { Reward } from '../../core/models/achievement.model';
 import { ToastService } from '../../core/services/toast.service';
+import { RouterModule } from '@angular/router';
 
 type Tab = 'perfil' | 'estadisticas' | 'cuenta';
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })

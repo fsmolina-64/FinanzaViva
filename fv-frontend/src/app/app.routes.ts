@@ -111,6 +111,11 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile').then(m => m.Profile)
+      },
+      {
+        path: 'streak-calendar',
+        loadComponent: () =>
+          import('./features/streak-calendar/streak-calendar').then(m => m.StreakCalendar)
       }
     ]
   },

@@ -62,13 +62,11 @@ export class EditTransactionModal implements OnInit, OnDestroy {
 
   topCategories = computed(() => this.filteredCategories().slice(0, 9));
 
-  // FIX: era método puro llamado en cada ciclo de detección de cambios
   selectedAccountBalance = computed(() => {
     const acc = this.accounts().find(a => a.id === this.selectedAccountId);
     return parseFloat(String(acc?.balance ?? '0'));
   });
 
-  // FIX: computed en lugar de método puro
   amountColorClass = computed<string>(() => {
     switch (this.editMode()) {
       case 'INCOME': return 'text-emerald-400';
@@ -113,7 +111,6 @@ export class EditTransactionModal implements OnInit, OnDestroy {
     });
   }
 
-  // FIX: limpia el timer al destruir el componente
   ngOnDestroy(): void {
     if (this.pressedTimer !== null) clearTimeout(this.pressedTimer);
   }
@@ -266,7 +263,7 @@ export class EditTransactionModal implements OnInit, OnDestroy {
       next: () => {
         this.toast.success('Transaccion actualizada');
         this.submitting.set(false);
-        this.editTxService.notifySaved(); // cierra + notifica al subscriber
+        this.editTxService.notifySaved();
       },
       error: err => {
         const msg = err?.error?.message ?? 'Error al actualizar';

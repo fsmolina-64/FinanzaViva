@@ -105,9 +105,6 @@ export class GamificationService {
     const now = new Date();
     const last = stats.lastActivityAt;
 
-    // FIX: Comparar por día calendario, no por milisegundos crudos.
-    // El bug original fallaba cuando el login cruzaba medianoche
-    // (ej: 23:59 → 00:01 daba diffDays=0 y la racha no avanzaba).
     const todayCalendar = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const lastCalendar = last
       ? new Date(last.getFullYear(), last.getMonth(), last.getDate())
@@ -119,7 +116,6 @@ export class GamificationService {
       )
       : null;
 
-    // Mismo día calendario — sin cambios
     if (diffDays === 0) {
       return {
         currentStreak: stats.currentStreak,
@@ -131,19 +127,15 @@ export class GamificationService {
     let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
 
     if (diffDays === null) {
-      // Primera vez
       newStreak = 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 1) {
-      // Día consecutivo — racha crece
       newStreak = stats.currentStreak + 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 2) {
-      // Saltó un día — racha se congela
       newStreak = stats.currentStreak;
       streakStatus = 'AT_RISK';
     } else {
-      // 2+ días de diferencia — racha perdida
       newStreak = 1;
       streakStatus = 'LOST';
     }
@@ -159,8 +151,6 @@ export class GamificationService {
       },
     });
 
-    // Insertar registro histórico para el calendario
-    // Guardamos UTC midnight del día actual para queries por mes/año
     const todayUtcMidnight = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );

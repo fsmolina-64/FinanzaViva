@@ -32,8 +32,7 @@
         [style.animation-delay.ms]="i * 40">
         @if (item.icon.endsWith('.png') || item.icon.length > 2) {
         <img [src]="item.icon" alt="Icono Premium"
-          class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out"
-          [ngClass]="item.path === '/ranking' 
+          class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out" [ngClass]="item.path === '/ranking' 
             ? 'object-cover ranking-icon' 
             : 'group-hover:scale-125'" />
         } @else {
@@ -64,14 +63,14 @@
       </button>
       <div class="flex items-center gap-4">
         @if (gamificationService.stats()) {
-        <div class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50"
-          [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'">
-          <span class="text-sm font-semibold"
-            [class.text-amber-400]="gamificationService.streakStatus() !== 'AT_RISK'"
+        <a routerLink="/streak-calendar"
+          class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50 no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors"
+          [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'" title="Ver calendario de racha">
+          <span class="text-sm font-semibold" [class.text-amber-400]="gamificationService.streakStatus() !== 'AT_RISK'"
             [class.text-muted]="gamificationService.streakStatus() === 'AT_RISK'">
             Racha: {{ gamificationService.stats()!.currentStreak }}
           </span>
-        </div>
+        </a>
         }
         @if (authService.currentUser()) {
         <div class="flex items-center gap-2 cursor-pointer select-none group" [routerLink]="['/profile']"> @if

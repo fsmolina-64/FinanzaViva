@@ -3,6 +3,7 @@
     opacity: 0;
     transform: translateX(-12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -14,6 +15,7 @@
     opacity: 0;
     transform: translateY(60px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -29,8 +31,8 @@
 }
 
 .tab-active {
-  background: linear-gradient(135deg, rgba(242,242,247,0.15), rgba(242,242,247,0.05));
-  box-shadow: 0 0 16px rgba(242,242,247,0.1);
+  background: linear-gradient(135deg, rgba(242, 242, 247, 0.15), rgba(242, 242, 247, 0.05));
+  box-shadow: 0 0 16px rgba(242, 242, 247, 0.1);
 }
 
 .kpi-card:nth-child(1) {
@@ -45,7 +47,6 @@
   animation: fade-in 0.3s 0.19s ease both;
 }
 
-/* ── Numpad buttons ─────────────────────────────────────────── */
 .numpad-key {
   position: relative;
   overflow: hidden;
@@ -65,21 +66,17 @@
   transition-timing-function: ease-out;
 }
 
-/* Shine highlight fija (top edge) */
 .numpad-key::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    transparent 50%
-  );
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%);
   pointer-events: none;
 }
 
-/* Flash overlay cuando se presiona via teclado */
 .numpad-key.is-pressed::before {
   content: '';
   position: absolute;
@@ -91,11 +88,15 @@
 }
 
 @keyframes numpad-flash {
-  0%   { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
-/* Amount card glow transition */
 .amount-card {
   transition: border-color 300ms ease, background 300ms ease;
 }

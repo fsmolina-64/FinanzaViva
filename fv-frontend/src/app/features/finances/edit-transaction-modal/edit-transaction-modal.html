@@ -4,12 +4,10 @@
   <div class="modal-sheet relative w-full md:max-w-lg bg-card border border-default/60
               rounded-t-3xl md:rounded-2xl shadow-2xl" style="max-height:95vh; overflow-y:auto">
 
-    <!-- Drag handle mobile -->
     <div class="flex justify-center pt-3 pb-1 md:hidden">
       <div class="w-10 h-1 bg-elevated rounded-full"></div>
     </div>
 
-    <!-- NUEVO: loading state mientras carga accounts/categories -->
     @if (loading()) {
     <div class="flex flex-col items-center justify-center py-24 gap-3">
       <div class="w-7 h-7 border-2 border-blue-500/40 border-t-blue-500 rounded-full animate-spin"></div>
@@ -17,7 +15,6 @@
     </div>
     } @else {
 
-    <!-- Header -->
     @if (editMode() === 'TRANSFER') {
     <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-default/80 mt-1">
       <span class="text-blue-400 font-semibold text-sm">Editar transferencia</span>
@@ -45,7 +42,6 @@
     </div>
     }
 
-    <!-- Debt confirm -->
     @if (showDebtConfirm()) {
     <div class="px-6 py-8 text-center space-y-4">
       <div class="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
@@ -72,7 +68,6 @@
     </div>
     } @else {
 
-    <!-- Amount display -->
     <div
       class="amount-card mx-4 mt-4 mb-2 rounded-2xl bg-gradient-to-b to-transparent border py-5 px-2 text-center select-none"
       [ngClass]="amountCardClass()">
@@ -95,7 +90,6 @@
       }
     </div>
 
-    <!-- Numpad -->
     <div class="px-4 pb-3">
       <div class="grid grid-cols-3 gap-2.5">
         @for (key of numpadKeys; track key) {
@@ -113,7 +107,6 @@
       </div>
     </div>
 
-    <!-- Transfer selectors -->
     @if (editMode() === 'TRANSFER') {
     <div class="px-4 pb-3 space-y-2">
       <div class="bg-elevated/30 rounded-xl border border-default/40 p-3 space-y-2.5">
@@ -121,7 +114,6 @@
           <p class="text-[11px] text-subtle font-semibold uppercase tracking-wider mb-1.5">Cuenta origen</p>
           <select [(ngModel)]="selectedAccountId"
             class="w-full bg-card border border-default text-primary text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
-            <!-- CAMBIO: accounts() en lugar de accounts -->
             @for (acc of accounts(); track acc.id) {
             <option [value]="acc.id">{{ acc.name }} -- ${{ (+acc.balance).toFixed(2) }}</option>
             }
@@ -141,7 +133,6 @@
     </div>
     } @else {
 
-    <!-- Category + Account -->
     <div class="px-4 pb-3 space-y-2">
       @if (editMode() !== 'BALANCE') {
       <div class="bg-elevated/30 rounded-xl border border-default/40 p-3">
@@ -175,7 +166,6 @@
         <p class="text-[11px] text-subtle font-semibold uppercase tracking-wider mb-1.5">Cuenta</p>
         <select [(ngModel)]="selectedAccountId"
           class="w-full bg-card border border-default text-primary text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
-          <!-- CAMBIO: accounts() en lugar de accounts -->
           @for (acc of accounts(); track acc.id) {
           <option [value]="acc.id">{{ acc.name }} -- ${{ (+acc.balance).toFixed(2) }}</option>
           }
@@ -184,7 +174,6 @@
     </div>
     }
 
-    <!-- Date & Note -->
     <div class="px-4 pb-3 space-y-2">
       <button (click)="showExtras = !showExtras"
         class="text-xs text-subtle hover:text-muted transition-colors flex items-center gap-1.5">
@@ -209,7 +198,6 @@
       }
     </div>
 
-    <!-- Submit -->
     <div class="px-4 pb-6">
       <button (click)="submit()" [disabled]="submitting()"
         class="w-full py-4 rounded-2xl text-primary font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"

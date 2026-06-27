@@ -34,11 +34,6 @@ export class QuickTransactionModal implements OnInit {
 
     selectedType = signal<ModalType>('EXPENSE');
 
-    /**
-     * integerStr: parte entera como string  ('0', '12', '1500')
-     * decimalStr: null = modo entero | '' | '5' | '50' = modo decimal
-     * Separación clara de estado → sin ambigüedad de "modo"
-     */
     integerStr = '0';
     decimalStr: string | null = null;
 
@@ -49,7 +44,6 @@ export class QuickTransactionModal implements OnInit {
     selectedDate = new Date().toISOString().split('T')[0];
     showExtras = false;
 
-    // ── Keyboard press visual feedback ───────────────────────────
     pressedKey = signal<string | null>(null);
     private pressedTimer: any = null;
 
@@ -67,7 +61,6 @@ export class QuickTransactionModal implements OnInit {
         { key: 'TRANSFER', label: 'Transferencia' }
     ];
 
-    /** true cuando el usuario ya presionó el punto decimal */
     get inDecimalMode(): boolean { return this.decimalStr !== null; }
 
     filteredCategories = computed(() => {
@@ -171,9 +164,9 @@ export class QuickTransactionModal implements OnInit {
         }
 
         const map: Record<string, string> = {
-            '0':'0','1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9',
-            'Numpad0':'0','Numpad1':'1','Numpad2':'2','Numpad3':'3','Numpad4':'4',
-            'Numpad5':'5','Numpad6':'6','Numpad7':'7','Numpad8':'8','Numpad9':'9',
+            '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+            'Numpad0': '0', 'Numpad1': '1', 'Numpad2': '2', 'Numpad3': '3', 'Numpad4': '4',
+            'Numpad5': '5', 'Numpad6': '6', 'Numpad7': '7', 'Numpad8': '8', 'Numpad9': '9',
         };
         const mapped = map[e.key] ?? map[e.code];
         if (mapped) { e.preventDefault(); this.visualPress(mapped); this.pad(mapped); }
@@ -313,9 +306,9 @@ export class QuickTransactionModal implements OnInit {
 
     amountCardClass(): string {
         switch (this.selectedType()) {
-            case 'EXPENSE':  return 'border-red-500/15 from-red-500/5';
-            case 'INCOME':   return 'border-emerald-500/15 from-emerald-500/5';
-            default:         return 'border-blue-500/15 from-blue-500/5';
+            case 'EXPENSE': return 'border-red-500/15 from-red-500/5';
+            case 'INCOME': return 'border-emerald-500/15 from-emerald-500/5';
+            default: return 'border-blue-500/15 from-blue-500/5';
         }
     }
 
