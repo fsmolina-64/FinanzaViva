@@ -60,9 +60,10 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {
     this.gamificationService.registerStreak().subscribe({
-      next: () => { this.loadStats(); this.loadRankingPosition(); },
-      error: () => { this.loadStats(); this.loadRankingPosition(); }
+      next: () => this.loadStats(),
+      error: () => this.loadStats()
     });
+    this.loadRankingPosition();
     this.loadSummary();
     this.loadUserData();
     this.loadAchievements();
