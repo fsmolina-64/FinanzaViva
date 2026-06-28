@@ -73,6 +73,8 @@ export class Game implements OnInit, OnDestroy {
   wildcardExpl = signal('');
   showExitModal = signal(false);
   showTooltip = signal<BoardCell | null>(null);
+  tooltipPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  actionLog = signal<string[]>([]);
   showCellExplain = signal<{
     cellName: string;
     description: string;
@@ -525,6 +527,7 @@ export class Game implements OnInit, OnDestroy {
 
   onCellClick(cell: BoardCell, e: MouseEvent): void {
     if (this.showTooltip()?.position === cell.position) { this.showTooltip.set(null); return; }
+    this.tooltipPos.set({ x: e.clientX, y: e.clientY });
     this.showTooltip.set(cell);
   }
 
