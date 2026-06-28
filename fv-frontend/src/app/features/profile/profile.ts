@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model';
@@ -150,14 +151,7 @@ export class Profile implements OnInit {
   }
 
   getRankLabel(rank: string): string {
-    return ({
-      ROOKIE: 'Novato',
-      APPRENTICE: 'Aprendiz',
-      INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado',
-      EXPERT: 'Experto',
-      MASTER: 'Master'
-    } as Record<string, string>)[rank] ?? rank;
+    return RANK_LABEL_MAP[rank] ?? rank;
   }
 
   getRankColor(rank: string): string {

@@ -10,7 +10,7 @@ export class GamificationService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async addXp(userId: string, dto: AddXpDto) {
     await this.prisma.xpTransaction.create({
@@ -109,7 +109,6 @@ export class GamificationService {
       ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
-    // Same day — no update, no notification
     if (diffDays === 0) {
       return {
         currentStreak: stats.currentStreak,
@@ -121,19 +120,15 @@ export class GamificationService {
     let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
 
     if (diffDays === null) {
-      // First time ever
       newStreak = 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 1) {
-      // Consecutive day — streak grows
       newStreak = stats.currentStreak + 1;
       streakStatus = 'ACTIVE';
     } else if (diffDays === 2) {
-      // Exactly 1 day gap — recover, streak stays same
       newStreak = stats.currentStreak;
       streakStatus = 'AT_RISK';
     } else {
-      // 2+ days gap — streak lost, reset to 1
       newStreak = 1;
       streakStatus = 'LOST';
     }
@@ -155,7 +150,7 @@ export class GamificationService {
   async checkAndEmitLevelUp(userId: string) {
     const stats = await this.prisma.userGameStats.findUnique({ where: { userId } });
     if (!stats) return null;
-    
+
     const newLevel = await this.checkLevelUp(userId, stats.xp);
     if (newLevel) {
       this.eventEmitter.emit('user.action', new UserActionEvent(userId));

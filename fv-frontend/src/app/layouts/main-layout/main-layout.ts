@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { GamificationService } from '../../core/services/gamification.service';
+import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { ToastComponent } from '../../shared/components/toast/toast';
 
 @Component({
@@ -36,11 +37,7 @@ export class MainLayout implements OnInit {
   }
 
   getRankLabel(rank: string): string {
-    const labels: Record<string, string> = {
-      ROOKIE: 'Novato', APPRENTICE: 'Aprendiz', INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado', EXPERT: 'Experto', MASTER: 'Master'
-    };
-    return labels[rank] ?? rank;
+    return RANK_LABEL_MAP[rank] ?? rank;
   }
 
   toggleSidebar(): void {

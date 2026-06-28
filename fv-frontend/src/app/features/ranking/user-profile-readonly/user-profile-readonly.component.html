@@ -37,10 +37,10 @@
 
   @if (!loading() && userData(); as user) {
 
-  <!-- ── Hero card ────────────────────────────────────────────── -->
+  <!-- ── Hero card ─────────────────────────────────────────────── -->
   <div class="bg-card rounded-2xl p-5 border border-default/60">
     <div class="flex items-center gap-4">
-      <!-- Avatar -->
+
       <div
         class="w-16 h-16 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0 ring-2 ring-default/30">
         @if (user.avatarUrl) {
@@ -50,7 +50,6 @@
         }
       </div>
 
-      <!-- Info -->
       <div class="flex-1 min-w-0">
         <h1 class="text-lg font-bold text-primary truncate">{{ user.displayName }}</h1>
         <div class="flex flex-wrap items-center gap-1.5 mt-1">
@@ -60,9 +59,8 @@
           </span>
           <span
             class="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/25">
-            {{ user.rank }}
+            {{ user.rank | rankLabel }}
           </span>
-          <!-- Racha badge -->
           <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold border"
             [class]="streakBadgeClass(user.currentStreak)">
             <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -74,45 +72,78 @@
             {{ user.currentStreak }}d racha
           </span>
         </div>
-        <p class="text-muted text-xs mt-1.5">
-          Miembro desde {{ formatDate(user.registeredAt) }}
-        </p>
+        <p class="text-muted text-xs mt-1.5">Miembro desde {{ formatDate(user.registeredAt) }}</p>
       </div>
 
-      <!-- Posicion + puntaje -->
       <div class="text-right flex-shrink-0">
         <p class="text-3xl font-black text-primary">#{{ user.position }}</p>
         <p class="text-muted text-xs mt-0.5">{{ user.score.toFixed(1) }} pts</p>
       </div>
+
     </div>
   </div>
 
-  <!-- ── Multiplicador de racha ────────────────────────────────── -->
+  <!-- ── Multiplicador de racha ─────────────────────────────────── -->
   <div class="bg-card rounded-2xl p-5 border border-default/60">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <h2 class="text-primary font-semibold text-sm">Multiplicador de racha</h2>
-        <p class="text-muted text-xs mt-0.5">{{ multiplierMessage(user.currentStreak, user.streakMultiplier) }}</p>
+
+    <div class="flex items-start justify-between mb-4">
+      <div class="flex-1 min-w-0 pr-4">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="w-7 h-7 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+            </svg>
+          </div>
+          <h2 class="text-primary font-semibold text-sm">Multiplicador de racha</h2>
+        </div>
+        <p class="text-muted text-xs leading-relaxed">{{ multiplierMessage(user.currentStreak) }}</p>
       </div>
-      <span class="text-2xl font-black" [class]="multiplierBadgeClass(user.streakMultiplier)">
-        &times;{{ user.streakMultiplier.toFixed(2) }}
-      </span>
+      <div class="text-right flex-shrink-0">
+        <p class="text-2xl font-black leading-none" [class]="multiplierColorClass(user.streakMultiplier)">
+          &times;{{ user.streakMultiplier.toFixed(2) }}
+        </p>
+        <p class="text-muted text-[10px] mt-0.5">{{ tierInfo()?.tierLabel }}</p>
+      </div>
     </div>
 
-    <!-- Barra visual del multiplicador -->
-    <div class="relative h-3 bg-elevated rounded-full overflow-hidden">
-      <div class="h-full rounded-full bg-gradient-to-r transition-all duration-700"
-        [class]="multiplierBarClass(user.streakMultiplier)"
-        [style.width.%]="loaded() ? multiplierBarWidth(user.streakMultiplier) : 0">
+    <!-- Chips de tiers -->
+    <div class="flex gap-1 mb-3">
+      @for (tier of streakTiers; track tier.mult) {
+      <span class="flex-1 px-1 py-1 rounded text-[10px] text-center border transition-colors duration-200 leading-none"
+        [class]="tierChipClass(tier.mult, tierInfo()?.currentMult ?? 1.00)">
+        &times;{{ tier.mult.toFixed(1) }}
+      </span>
+      }
+    </div>
+
+    <!-- Barra de progreso dentro del tier -->
+    @if (tierInfo()?.isMax) {
+    <div class="h-2.5 bg-elevated rounded-full overflow-hidden">
+      <div class="h-full w-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+    </div>
+    <p class="text-[10px] text-emerald-400 font-semibold text-center mt-1.5">
+      {{ user.currentStreak }} d&iacute;as de racha &mdash; Multiplicador m&aacute;ximo activo
+    </p>
+    } @else {
+    <div class="h-2.5 bg-elevated rounded-full overflow-hidden">
+      <div class="h-full rounded-full bg-gradient-to-r" [class]="multiplierBarClass(user.streakMultiplier)"
+        [style.width.%]="loaded() ? (tierInfo()?.progressInTier ?? 0) : 0" style="transition: width 700ms ease-out;">
       </div>
     </div>
     <div class="flex justify-between text-[10px] text-muted mt-1.5">
-      <span>0.4&times; &mdash; 0d</span>
-      <span class="text-center">1.3&times; &mdash; 7d</span>
-      <span>2.0&times; &mdash; 30d</span>
+      <span>{{ plural(user.currentStreak, 'dia', 'dias') }} en este tier</span>
+      <span [class]="multiplierColorClass(tierInfo()?.nextMult ?? 1.00)" class="font-semibold">
+        {{ daysToNextLabel(tierInfo()?.daysToNext ?? 0) }} para
+        &times;{{ tierInfo()?.nextMult?.toFixed(1) }}
+      </span>
     </div>
+    }
 
-    <!-- Racha actual vs máxima -->
+    <!-- Racha actual / maxima -->
     <div class="grid grid-cols-2 gap-3 mt-4">
       <div class="bg-elevated rounded-xl p-3 text-center">
         <p class="text-primary font-bold text-xl">{{ user.currentStreak }}</p>
@@ -123,101 +154,114 @@
         <p class="text-muted text-xs mt-0.5">Racha m&aacute;xima</p>
       </div>
     </div>
+
   </div>
 
-  <!-- ── Desglose del puntaje ─────────────────────────────────── -->
+  <!-- ── Motor de puntaje ───────────────────────────────────────── -->
   <div class="bg-card rounded-2xl p-5 border border-default/60">
-    <h2 class="text-primary font-semibold text-sm mb-4">Desglose del puntaje base</h2>
-    <div [@barAnimation]="loaded() ? 'loaded' : 'void'" class="space-y-3.5">
-      @for (item of breakdownLabels; track item.key) {
-      <div>
-        <div class="flex items-center justify-between text-sm mb-1.5">
-          <div class="flex items-center gap-1.5 text-muted">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" />
-            </svg>
-            <span class="text-xs">{{ item.label }}</span>
+
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-primary font-semibold text-sm">Motor de puntaje</h2>
+      <span class="text-[10px] text-muted bg-elevated px-2 py-1 rounded-lg">
+        {{ user.score.toFixed(1) }} pts totales
+      </span>
+    </div>
+
+    <div [@barAnimation]="loaded() ? 'loaded' : 'void'" class="space-y-2.5">
+      @for (cat of scoreCategories; track cat.key) {
+      <div class="score-card bg-elevated rounded-xl p-3.5 space-y-2.5">
+
+        <!-- Encabezado -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" [class]="cat.iconBgClass">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="cat.icon" />
+              </svg>
+            </div>
+            <div class="flex items-baseline gap-1.5 min-w-0">
+              <span class="text-primary text-xs font-semibold truncate">{{ cat.label }}</span>
+              <span class="text-[9px] text-muted flex-shrink-0">{{ cat.weight }}%</span>
+            </div>
           </div>
-          <span class="text-primary font-semibold text-xs">{{ user.breakdown[item.key] }}<span
-              class="text-muted font-normal">/100</span></span>
-        </div>
-        <div class="h-2 bg-elevated rounded-full overflow-hidden">
-          <div class="progress-bar h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
-            [style.width.%]="loaded() ? user.breakdown[item.key] : 0">
+          <div class="flex items-baseline gap-0.5 flex-shrink-0 ml-2">
+            <span class="text-primary font-bold text-sm">{{ user.breakdown[cat.key] }}</span>
+            <span class="text-muted text-[10px]">/100</span>
           </div>
         </div>
+
+        <!-- Barra animada -->
+        <div class="h-2 bg-card rounded-full overflow-hidden">
+          <div class="progress-bar h-full rounded-full bg-gradient-to-r" [class]="cat.barClass"
+            [style.width.%]="loaded() ? categoryBarWidth(cat.key, user) : 0">
+          </div>
+        </div>
+
+        <!-- Detalle por categoria -->
+        @switch (cat.key) {
+
+        @case ('academic') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.modulesCompleted }} de {{ TOTAL_MODULES }} m&oacute;dulos
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.lessonsCompleted }} de {{ TOTAL_LESSONS }} lecciones
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.distinctPassedQuizzes }}/{{ TOTAL_QUIZZES }} quizzes aprobados
+          </span>
+          <span class="stat-chip">{{ user.stats.approvalRate }}% aprobaci&oacute;n</span>
+        </div>
+        }
+
+        @case ('simulator') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">{{ user.stats.gamesPlayed }} partidas jugadas</span>
+          <span class="stat-chip">{{ user.stats.gamesWon }} victorias</span>
+          @if (user.stats.gamesPlayed > 0) {
+          <span class="stat-chip">
+            {{ winRate(user.stats.gamesWon, user.stats.gamesPlayed) }}% de victorias
+          </span>
+          }
+        </div>
+        }
+
+        @case ('achievements') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.achievementsCount }} de {{ TOTAL_ACHIEVEMENTS }}
+            {{ user.stats.achievementsCount === 1 ? 'logro' : 'logros' }}
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.rewardsCount }} de {{ TOTAL_REWARDS }}
+            {{ user.stats.rewardsCount === 1 ? 'recompensa' : 'recompensas' }}
+          </span>
+        </div>
+        }
+
+        @case ('activity') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.totalTransactions }} de {{ CAP_TRANSACTIONS }} transacciones
+          </span>
+        </div>
+        }
+
+        @case ('progress') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">Nivel {{ user.level }}/{{ CAP_LEVEL }}</span>
+          <span class="stat-chip">{{ user.stats.xp }} XP acumulado</span>
+          <span class="stat-chip">{{ user.rank | rankLabel }}</span>
+        </div>
+        }
+
+        }
+
       </div>
       }
     </div>
-  </div>
 
-  <!-- ── Detalle de actividad ─────────────────────────────────── -->
-  <div class="bg-card rounded-2xl p-5 border border-default/60">
-    <h2 class="text-primary font-semibold text-sm mb-4">Por qu&eacute; est&aacute; en esta posici&oacute;n</h2>
-
-    <div class="grid grid-cols-2 gap-2">
-
-      <!-- Academia -->
-      <div class="col-span-2">
-        <p class="text-muted text-[10px] font-semibold uppercase tracking-wider mb-2">Academia</p>
-        <div class="grid grid-cols-3 gap-2">
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.modulesCompleted }}</p>
-            <p class="text-muted text-[10px] mt-0.5">M&oacute;dulos</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.lessonsCompleted }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Lecciones</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.approvalRate }}%</p>
-            <p class="text-muted text-[10px] mt-0.5">Aprobaci&oacute;n</p>
-          </div>
-        </div>
-        <p class="text-muted text-[10px] mt-1.5 text-right">
-          {{ user.stats.quizzesPassed }} de {{ user.stats.quizzesCompleted }} quizzes aprobados
-        </p>
-      </div>
-
-      <!-- Simulador -->
-      <div class="col-span-2">
-        <p class="text-muted text-[10px] font-semibold uppercase tracking-wider mb-2 mt-2">Simulador financiero</p>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.gamesPlayed }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Partidas jugadas</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.gamesWon }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Partidas ganadas</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Logros, finanzas, XP -->
-      <div class="col-span-2">
-        <p class="text-muted text-[10px] font-semibold uppercase tracking-wider mb-2 mt-2">Otros</p>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.totalTransactions }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Transacciones</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.achievementsCount }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Logros</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.rewardsCount }}</p>
-            <p class="text-muted text-[10px] mt-0.5">Recompensas</p>
-          </div>
-          <div class="bg-elevated rounded-xl p-3 text-center">
-            <p class="text-primary font-bold text-lg">{{ user.stats.xp }}</p>
-            <p class="text-muted text-[10px] mt-0.5">XP total</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
   </div>
 
   }

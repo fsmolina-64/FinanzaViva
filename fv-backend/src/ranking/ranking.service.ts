@@ -2,15 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SimulatorStatus } from '@prisma/client';
 
-// ─── Normalisation caps ────────────────────────────────────────────────────────
 const CAP_TRANSACTIONS = 200;
 const CAP_MODULES = 7;
 const CAP_LESSONS = 28;
 const CAP_GAMES = 30;
-const CAP_ACHIEVEMENTS = 30;
+const CAP_ACHIEVEMENTS = 23;
 const CAP_REWARDS = 20;
 const CAP_XP = 10_000;
-const CAP_LEVEL = 20;
+const CAP_LEVEL = 10;
 
 type UserSelect = {
   id: string;
@@ -19,7 +18,7 @@ type UserSelect = {
   gameStats: { rank: string; level: number; xp: number; currentStreak: number; longestStreak: number } | null;
   statistics: {
     totalTransactions: number; modulesCompleted: number; lessonsCompleted: number;
-    quizzesCompleted: number; quizzesPassed: number; gamesWon: number; achievementsCount: number;
+    quizzesCompleted: number; quizzesPassed: number; distinctPassedQuizzes: number; gamesWon: number; achievementsCount: number;
   } | null;
   _count: { rewards: number };
 };
@@ -28,7 +27,6 @@ type UserSelect = {
 export class RankingService {
   constructor(private prisma: PrismaService) { }
 
-  // ─── Public API ───────────────────────────────────────────────────────────────
 
   async getRanking(page: number = 1, limit: number = 10) {
     const total = await this.prisma.user.count({ where: { isActive: true } });
@@ -69,7 +67,6 @@ export class RankingService {
     const position = scored.findIndex(u => u.userId === userId) + 1;
     const entry = scored.find(u => u.userId === userId)!;
 
-    // Stats extra para el perfil detallado
     const nonAbandonedGames = simulatorMap.get(userId) ?? 0;
     const rawStats = user.statistics!;
 
@@ -82,6 +79,7 @@ export class RankingService {
         lessonsCompleted: rawStats.lessonsCompleted,
         quizzesCompleted: rawStats.quizzesCompleted,
         quizzesPassed: rawStats.quizzesPassed,
+        distinctPassedQuizzes: rawStats.distinctPassedQuizzes,
         approvalRate: rawStats.quizzesCompleted > 0
           ? Math.round((rawStats.quizzesPassed / rawStats.quizzesCompleted) * 100)
           : 0,
@@ -97,11 +95,9 @@ export class RankingService {
 
   async updateRanking(): Promise<{ updated: number }> {
     const count = await this.prisma.user.count({ where: { isActive: true } });
-    // TODO: agregar capa de caché (Redis) cuando escale
     return { updated: count };
   }
 
-  // ─── Queries auxiliares ───────────────────────────────────────────────────────
 
   private userSelect() {
     return {
@@ -146,7 +142,6 @@ export class RankingService {
     return map;
   }
 
-  // ─── Scoring ──────────────────────────────────────────────────────────────────
 
   private scoreAndSort(
     users: UserSelect[],
@@ -184,14 +179,14 @@ export class RankingService {
   private calculateScore(
     stats: {
       totalTransactions: number; modulesCompleted: number; lessonsCompleted: number;
-      quizzesCompleted: number; quizzesPassed: number; gamesWon: number; achievementsCount: number;
+    quizzesCompleted: number; quizzesPassed: number; distinctPassedQuizzes: number;
+    gamesWon: number; achievementsCount: number;
     },
     gameStats: { currentStreak: number; xp: number; level: number },
     avgQuizScore: number,
     rewardsCount: number,
     nonAbandonedGames: number,
   ) {
-    // ── A) Académico 35% ──────────────────────────────────────────────────────
     const modulesScore = cap(stats.modulesCompleted, CAP_MODULES) * 100;
     const lessonsScore = cap(stats.lessonsCompleted, CAP_LESSONS) * 100;
     const approvalRate = stats.quizzesCompleted > 0
@@ -200,25 +195,20 @@ export class RankingService {
     const quizScore = avgQuizScore * 0.5 + approvalRate * 100 * 0.5;
     const academicScore = modulesScore * 0.35 + lessonsScore * 0.35 + quizScore * 0.30;
 
-    // ── B) Simulador 20% (sin ABANDONED) ─────────────────────────────────────
-    const gamesScore = cap(nonAbandonedGames, CAP_GAMES) * 60;
+    const gamesScore     = cap(nonAbandonedGames, CAP_GAMES) * 45;
     const winRate = nonAbandonedGames > 0
       ? Math.min(stats.gamesWon / nonAbandonedGames, 1)
       : 0;
-    const simulatorScore = gamesScore + winRate * 40;
+    const simulatorScore = gamesScore + winRate * 55;
 
-    // ── C) Logros + recompensas 20% ───────────────────────────────────────────
     const achTotal = cap(stats.achievementsCount, CAP_ACHIEVEMENTS) * 60
       + cap(rewardsCount, CAP_REWARDS) * 40;
 
-    // ── D) Actividad 15% ──────────────────────────────────────────────────────
     const activityScore = cap(stats.totalTransactions, CAP_TRANSACTIONS) * 100;
 
-    // ── E) Progreso (nivel + XP) 10% ─────────────────────────────────────────
     const progressScore = cap(gameStats.level - 1, CAP_LEVEL - 1) * 50
       + cap(gameStats.xp, CAP_XP) * 50;
 
-    // ── Base 0-100 ────────────────────────────────────────────────────────────
     const baseScore =
       academicScore * 0.35 +
       simulatorScore * 0.20 +
@@ -226,10 +216,8 @@ export class RankingService {
       activityScore * 0.15 +
       progressScore * 0.10;
 
-    // ── Multiplicador de racha ────────────────────────────────────────────────
     const multiplier = this.streakMultiplier(gameStats.currentStreak);
 
-    // ── Total, clamped 0-100 ──────────────────────────────────────────────────
     const total = round2(Math.min(baseScore * multiplier, 100));
 
     return {
@@ -246,18 +234,16 @@ export class RankingService {
   }
 
   private streakMultiplier(streak: number): number {
-    if (streak === 0) return 0.40;
-    if (streak === 1) return 0.50;
-    if (streak === 2) return 0.60;
-    if (streak <= 6) return 0.65 + (streak - 3) * 0.067;
-    if (streak === 7) return 1.30;
-    if (streak <= 14) return 1.30 + (streak - 7) * 0.050;
-    if (streak <= 30) return 1.65 + (streak - 14) * 0.022;
-    return Math.min(2.00 + (streak - 30) * 0.005, 2.50);
+    if (streak < 7) return 1.00;
+    if (streak < 15) return 1.10;
+    if (streak < 31) return 1.20;
+    if (streak < 46) return 1.40;
+    if (streak < 61) return 1.60;
+    if (streak < 91) return 1.80;
+    return 2.00;
   }
 }
 
-// ─── Helpers puros ────────────────────────────────────────────────────────────
 function cap(value: number, max: number): number {
   return Math.min(value / max, 1);
 }

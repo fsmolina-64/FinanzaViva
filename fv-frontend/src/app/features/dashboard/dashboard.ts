@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { staggerCards } from '../../core/animations/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { GamificationService } from '../../core/services/gamification.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -125,11 +126,7 @@ export class Dashboard implements OnInit {
   }
 
   getRankLabel(rank: string): string {
-    const labels: Record<string, string> = {
-      ROOKIE: 'Novato', APPRENTICE: 'Aprendiz', INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado', EXPERT: 'Experto', MASTER: 'Master'
-    };
-    return labels[rank] ?? rank;
+    return RANK_LABEL_MAP[rank] ?? rank;
   }
 
 

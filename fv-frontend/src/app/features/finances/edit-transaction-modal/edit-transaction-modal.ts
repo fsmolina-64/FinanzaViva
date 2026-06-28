@@ -62,13 +62,11 @@ export class EditTransactionModal implements OnInit, OnDestroy {
 
   topCategories = computed(() => this.filteredCategories().slice(0, 9));
 
-  // FIX: era método puro llamado en cada ciclo de detección de cambios
   selectedAccountBalance = computed(() => {
     const acc = this.accounts().find(a => a.id === this.selectedAccountId);
     return parseFloat(String(acc?.balance ?? '0'));
   });
 
-  // FIX: computed en lugar de método puro
   amountColorClass = computed<string>(() => {
     switch (this.editMode()) {
       case 'INCOME': return 'text-emerald-400';

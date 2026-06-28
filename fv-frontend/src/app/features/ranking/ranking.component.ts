@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
+import { RankLabelPipe } from '../../shared/pipes/rank-label.pipe';
 import { fadeInUp } from '../../core/animations/animations';
 import { environment } from '../../../environments/environment';
 
@@ -40,7 +41,7 @@ interface RankingResponse {
 @Component({
   selector: 'app-ranking',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RankLabelPipe],
   templateUrl: './ranking.component.html',
   styleUrl: './ranking.component.css',
   animations: [
@@ -120,7 +121,6 @@ export class RankingComponent implements OnInit {
     return new Date(dateStr).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
   }
 
-  // Devuelven clases de Tailwind — sin lógica en template
   positionClass(pos: number): string {
     if (pos === 1) return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
     if (pos === 2) return 'bg-slate-500/20 text-slate-300 border border-slate-500/30';
@@ -136,8 +136,10 @@ export class RankingComponent implements OnInit {
   }
 
   multiplierBadgeClass(mult: number): string {
-    if (mult >= 1.3) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-    if (mult >= 1.0) return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
-    return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+    if (mult >= 1.80) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+    if (mult >= 1.60) return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
+    if (mult >= 1.40) return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+    if (mult >= 1.10) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+    return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
   }
 }

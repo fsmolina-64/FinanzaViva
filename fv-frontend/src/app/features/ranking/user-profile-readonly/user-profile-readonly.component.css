@@ -1,3 +1,11 @@
 .progress-bar {
     transition: width 600ms ease-out;
 }
+
+.stat-chip {
+    @apply text-[10px] text-muted bg-card border border-default/20 rounded-md px-1.5 py-0.5 inline-block leading-none;
+}
+
+.score-card {
+    transition: background-color 150ms ease;
+}

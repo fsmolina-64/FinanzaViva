@@ -100,7 +100,7 @@
           </span>
         </div>
         <p class="text-muted text-[11px] mt-0.5 truncate">
-          Nv.{{ user.level }} &middot; {{ user.rank }} &middot; Desde {{ formatRegisteredDate(user.registeredAt) }}
+          Nv.{{ user.level }} &middot; {{ user.rank | rankLabel }} &middot; Desde {{ formatRegisteredDate(user.registeredAt) }}
         </p>
       </div>
 
