@@ -89,11 +89,7 @@ export class Profile implements OnInit {
         this.userService.getProfile().subscribe({
           next: fresh => {
             this.user.set(fresh);
-            this.authService.currentUser.update(prev => prev ? ({
-              ...prev,
-              displayName: fresh.profile?.displayName ?? prev.displayName,
-              avatarUrl: fresh.profile?.avatarUrl ?? prev.avatarUrl,
-            }) : prev);
+            this.authService.refreshProfile(fresh.profile);
           }
         });
         this.saving.set(false);

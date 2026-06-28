@@ -31,6 +31,18 @@ export class AuthService {
     return this.api.post<AuthResponse>('/auth/register', data);
   }
 
+  refreshProfile(profile: { displayName: string; avatarUrl: string | null }): void {
+    this.currentUser.update(prev => prev ? {
+      ...prev,
+      displayName: profile.displayName ?? prev.displayName,
+      avatarUrl: profile.avatarUrl ?? prev.avatarUrl,
+    } : prev);
+    const saved = this.currentUser();
+    if (saved) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(saved));
+    }
+  }
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);

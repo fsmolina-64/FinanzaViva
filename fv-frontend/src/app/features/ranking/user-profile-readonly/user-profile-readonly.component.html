@@ -42,8 +42,11 @@
     <div class="flex items-center gap-4">
 
       <div
-        class="w-16 h-16 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0 ring-2 ring-default/30">
-        @if (user.avatarUrl) {
+        class="w-16 h-16 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0"
+        [ngClass]="[getFrameClass(user.equippedFrame), getAuraClass(user.equippedAura)]">
+        @if (user.equippedAvatar) {
+        <span class="text-2xl">{{ user.equippedAvatar.icon }}</span>
+        } @else if (user.avatarUrl) {
         <img [src]="user.avatarUrl" alt="" class="w-full h-full object-cover" />
         } @else {
         <span class="text-primary font-bold text-2xl">{{ user.displayName.charAt(0).toUpperCase() }}</span>
@@ -51,7 +54,18 @@
       </div>
 
       <div class="flex-1 min-w-0">
-        <h1 class="text-lg font-bold text-primary truncate">{{ user.displayName }}</h1>
+        <h1 class="text-lg font-bold text-primary truncate flex items-center gap-1.5">
+          {{ user.displayName }}
+          @if (user.equippedBadge) {
+          <span class="text-base" [title]="user.equippedBadge.name">{{ user.equippedBadge.icon }}</span>
+          }
+          @if (user.equippedTitle) {
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/25 truncate max-w-36">
+            {{ user.equippedTitle.name }}
+          </span>
+          }
+        </h1>
         <div class="flex flex-wrap items-center gap-1.5 mt-1">
           <span
             class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25">
@@ -160,11 +174,8 @@
   <!-- ── Motor de puntaje ───────────────────────────────────────── -->
   <div class="bg-card rounded-2xl p-5 border border-default/60">
 
-    <div class="flex items-center justify-between mb-4">
+    <div class="mb-4">
       <h2 class="text-primary font-semibold text-sm">Motor de puntaje</h2>
-      <span class="text-[10px] text-muted bg-elevated px-2 py-1 rounded-lg">
-        {{ user.score.toFixed(1) }} pts totales
-      </span>
     </div>
 
     <div [@barAnimation]="loaded() ? 'loaded' : 'void'" class="space-y-2.5">
@@ -185,17 +196,19 @@
             </div>
           </div>
           <div class="flex items-baseline gap-0.5 flex-shrink-0 ml-2">
-            <span class="text-primary font-bold text-sm">{{ user.breakdown[cat.key] }}</span>
-            <span class="text-muted text-[10px]">/100</span>
+            <span class="text-primary font-bold text-sm">{{ categoryPoints(cat.key) }}</span>
+            <span class="text-muted text-[10px]">pts</span>
           </div>
         </div>
 
-        <!-- Barra animada -->
+        <!-- Barra animada (oculta para activity) -->
+        @if (cat.key !== 'activity') {
         <div class="h-2 bg-card rounded-full overflow-hidden">
           <div class="progress-bar h-full rounded-full bg-gradient-to-r" [class]="cat.barClass"
             [style.width.%]="loaded() ? categoryBarWidth(cat.key, user) : 0">
           </div>
         </div>
+        }
 
         <!-- Detalle por categoria -->
         @switch (cat.key) {
@@ -243,7 +256,7 @@
         @case ('activity') {
         <div class="flex flex-wrap gap-1.5">
           <span class="stat-chip">
-            {{ user.stats.totalTransactions }} de {{ CAP_TRANSACTIONS }} transacciones
+            {{ user.stats.totalTransactions }} transacciones ({{ categoryPoints('activity') }} pts)
           </span>
         </div>
         }
@@ -260,6 +273,22 @@
 
       </div>
       }
+
+      <!-- Footer de totales -->
+      <div class="border-t border-default/20 pt-3 mt-3 space-y-1 text-xs">
+        <div class="flex justify-between text-muted">
+          <span>Base (suma de categor&iacute;as)</span>
+          <span class="text-primary font-semibold">{{ basePoints() }} pts</span>
+        </div>
+        <div class="flex justify-between text-muted">
+          <span>Multiplicador de racha</span>
+          <span class="text-primary font-semibold">&times;{{ user.streakMultiplier.toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-sm pt-1.5 border-t border-default/20">
+          <span>TOTAL</span>
+          <span class="text-primary">{{ user.score.toFixed(2) }} pts</span>
+        </div>
+      </div>
     </div>
 
   </div>

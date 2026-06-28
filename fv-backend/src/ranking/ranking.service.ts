@@ -21,6 +21,7 @@ type UserSelect = {
     quizzesCompleted: number; quizzesPassed: number; distinctPassedQuizzes: number; gamesWon: number; achievementsCount: number;
   } | null;
   _count: { rewards: number };
+  rewards: { reward: { id: string; name: string; icon: string; type: string } }[];
 };
 
 @Injectable()
@@ -106,8 +107,12 @@ export class RankingService {
       profile: { select: { displayName: true, avatarUrl: true } },
       gameStats: true,
       statistics: true,
-      _count: { select: { rewards: true } },
-    } as const;
+    _count: { select: { rewards: true } },
+    rewards: {
+      where: { isEquipped: true },
+      select: { reward: { select: { id: true, name: true, icon: true, type: true } } },
+    },
+  } as const;
   }
 
   private fetchUsers() {
@@ -159,6 +164,9 @@ export class RankingService {
         simulatorMap.get(user.id) ?? 0,
       );
 
+      const findReward = (type: string) =>
+        user.rewards.find(r => r.reward.type === type)?.reward ?? null;
+
       return {
         userId: user.id,
         displayName: user.profile?.displayName ?? 'Usuario',
@@ -170,6 +178,11 @@ export class RankingService {
         score: result.total,
         streakMultiplier: result.multiplier,
         breakdown: result.breakdown,
+        equippedBadge: findReward('BADGE'),
+        equippedTitle: findReward('TITLE'),
+        equippedFrame: findReward('FRAME'),
+        equippedAura: findReward('AURA'),
+        equippedAvatar: findReward('AVATAR'),
       };
     });
 
@@ -192,10 +205,10 @@ export class RankingService {
     const approvalRate = stats.quizzesCompleted > 0
       ? stats.quizzesPassed / stats.quizzesCompleted
       : 0;
-    const quizScore = avgQuizScore * 0.5 + approvalRate * 100 * 0.5;
+    const quizScore = avgQuizScore * 0.3 + approvalRate * 100 * 0.7;
     const academicScore = modulesScore * 0.35 + lessonsScore * 0.35 + quizScore * 0.30;
 
-    const gamesScore     = cap(nonAbandonedGames, CAP_GAMES) * 45;
+    const gamesScore     = (1 - 1 / (1 + nonAbandonedGames / 15)) * 45;
     const winRate = nonAbandonedGames > 0
       ? Math.min(stats.gamesWon / nonAbandonedGames, 1)
       : 0;
@@ -204,7 +217,7 @@ export class RankingService {
     const achTotal = cap(stats.achievementsCount, CAP_ACHIEVEMENTS) * 60
       + cap(rewardsCount, CAP_REWARDS) * 40;
 
-    const activityScore = cap(stats.totalTransactions, CAP_TRANSACTIONS) * 100;
+    const activityScore = (1 - 1 / (1 + stats.totalTransactions / 50)) * 100;
 
     const progressScore = cap(gameStats.level - 1, CAP_LEVEL - 1) * 50
       + cap(gameStats.xp, CAP_XP) * 50;
@@ -224,11 +237,11 @@ export class RankingService {
       total,
       multiplier: round2(multiplier),
       breakdown: {
-        academic: Math.round(academicScore),
-        simulator: Math.round(simulatorScore),
-        achievements: Math.round(achTotal),
-        activity: Math.round(activityScore),
-        progress: Math.round(progressScore),
+        academic: round2(academicScore),
+        simulator: round2(simulatorScore),
+        achievements: round2(achTotal),
+        activity: round2(activityScore),
+        progress: round2(progressScore),
       },
     };
   }

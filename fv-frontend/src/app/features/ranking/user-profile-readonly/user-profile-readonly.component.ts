@@ -30,6 +30,10 @@ interface UserStats {
   xp: number;
 }
 
+interface EquippedReward {
+  id: string; name: string; icon: string; type: string;
+}
+
 interface RankingUser {
   position: number;
   userId: string;
@@ -44,6 +48,11 @@ interface RankingUser {
   streakMultiplier: number;
   breakdown: Breakdown;
   stats: UserStats;
+  equippedBadge: EquippedReward | null;
+  equippedTitle: EquippedReward | null;
+  equippedFrame: EquippedReward | null;
+  equippedAura: EquippedReward | null;
+  equippedAvatar: EquippedReward | null;
 }
 
 interface StreakTier {
@@ -201,6 +210,23 @@ export class UserProfileReadonlyComponent implements OnInit {
     return user.breakdown[key];
   }
 
+  // ── Puntos reales por categoría (ponderados) ──────────────────────────────
+  round2(n: number): number {
+    return Math.round(n * 100) / 100;
+  }
+
+  categoryPoints(key: keyof Breakdown): number {
+    const user = this.userData()!;
+    const cat = this.scoreCategories.find(c => c.key === key)!;
+    return this.round2(user.breakdown[key] * cat.weight / 100);
+  }
+
+  basePoints = computed(() => {
+    const user = this.userData();
+    if (!user) return 0;
+    return this.round2(user.score / user.streakMultiplier);
+  });
+
   // Helper singular/plural reutilizable
   plural(n: number, singular: string, pluralStr: string): string {
     return n === 1 ? `1 ${singular}` : `${n} ${pluralStr}`;
@@ -258,6 +284,25 @@ export class UserProfileReadonlyComponent implements OnInit {
     if (mult >= 1.20) return 'text-violet-400 bg-violet-500/15 border-violet-500/30 font-bold';
     if (mult >= 1.10) return 'text-amber-400 bg-amber-500/15 border-amber-500/30 font-bold';
     return 'text-slate-300 bg-slate-500/15 border-slate-500/30 font-bold';
+  }
+
+  getFrameClass(frame: EquippedReward | null): string {
+    if (!frame) return 'border-strong';
+    const map: Record<string, string> = {
+      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
+      '🥈': 'border-muted shadow-muted/40 shadow-md',
+      '🥇': 'border-warning shadow-warning/50 shadow-lg',
+      '💠': 'border-primary shadow-primary/50 shadow-lg',
+    };
+    return map[frame.icon] ?? 'border-strong';
+  }
+
+  getAuraClass(aura: EquippedReward | null): string {
+    if (!aura) return '';
+    if (aura.icon === '💙') return 'aura-blue';
+    if (aura.icon === '✨') return 'aura-gold';
+    if (aura.icon === '🔮') return 'aura-legendary';
+    return '';
   }
 
   private computeTierInfo(streak: number): TierInfo {

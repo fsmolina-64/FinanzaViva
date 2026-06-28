@@ -15,6 +15,10 @@ interface Breakdown {
   progress: number;
 }
 
+interface EquippedReward {
+  id: string; name: string; icon: string; type: string;
+}
+
 interface RankingUser {
   position: number;
   userId: string;
@@ -27,6 +31,11 @@ interface RankingUser {
   score: number;
   streakMultiplier: number;
   breakdown: Breakdown;
+  equippedBadge: EquippedReward | null;
+  equippedTitle: EquippedReward | null;
+  equippedFrame: EquippedReward | null;
+  equippedAura: EquippedReward | null;
+  equippedAvatar: EquippedReward | null;
 }
 
 interface RankingMeta {
@@ -141,5 +150,24 @@ export class RankingComponent implements OnInit {
     if (mult >= 1.40) return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
     if (mult >= 1.10) return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
     return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+  }
+
+  getFrameClass(frame: EquippedReward | null): string {
+    if (!frame) return 'border-strong';
+    const map: Record<string, string> = {
+      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
+      '🥈': 'border-muted shadow-muted/40 shadow-md',
+      '🥇': 'border-warning shadow-warning/50 shadow-lg',
+      '💠': 'border-primary shadow-primary/50 shadow-lg',
+    };
+    return map[frame.icon] ?? 'border-strong';
+  }
+
+  getAuraClass(aura: EquippedReward | null): string {
+    if (!aura) return '';
+    if (aura.icon === '💙') return 'aura-blue';
+    if (aura.icon === '✨') return 'aura-gold';
+    if (aura.icon === '🔮') return 'aura-legendary';
+    return '';
   }
 }

@@ -52,3 +52,28 @@
 .group:hover .ranking-icon {
   transform: scale(1.35);
 }
+
+.border-strong {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.aura-blue {
+  box-shadow: 0 0 18px 4px rgba(59, 130, 246, 0.55), 0 0 36px 8px rgba(59, 130, 246, 0.25);
+}
+
+.aura-gold {
+  box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.55), 0 0 36px 8px rgba(245, 158, 11, 0.25);
+}
+
+@keyframes aura-pulse {
+  0%, 100% {
+    box-shadow: 0 0 18px 4px rgba(139, 92, 246, 0.55), 0 0 36px 8px rgba(139, 92, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 30px 8px rgba(139, 92, 246, 0.75), 0 0 60px 16px rgba(139, 92, 246, 0.4);
+  }
+}
+
+.aura-legendary {
+  animation: aura-pulse 2s ease-in-out infinite;
+}

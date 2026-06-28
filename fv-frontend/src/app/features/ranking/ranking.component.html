@@ -71,10 +71,13 @@
         {{ user.position }}
       </div>
 
-      <!-- Avatar -->
+      <!-- Avatar + frame + aura -->
       <div
-        class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-elevated flex items-center justify-center ring-2 ring-default/20">
-        @if (user.avatarUrl) {
+        class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-elevated flex items-center justify-center"
+        [ngClass]="[getFrameClass(user.equippedFrame), getAuraClass(user.equippedAura)]">
+        @if (user.equippedAvatar) {
+        <span class="text-lg">{{ user.equippedAvatar.icon }}</span>
+        } @else if (user.avatarUrl) {
         <img [src]="user.avatarUrl" alt="" class="w-full h-full object-cover" />
         } @else {
         <span class="text-primary font-bold text-sm">{{ user.displayName.charAt(0).toUpperCase() }}</span>
@@ -85,6 +88,9 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-primary text-sm font-semibold truncate">{{ user.displayName }}</span>
+          @if (user.equippedBadge) {
+          <span class="text-sm" [title]="user.equippedBadge.name">{{ user.equippedBadge.icon }}</span>
+          }
           <!-- Badge de racha -->
           <span
             class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold border flex-shrink-0"
