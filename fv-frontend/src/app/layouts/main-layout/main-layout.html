@@ -74,22 +74,27 @@
         </div>
         }
         @if (authService.currentUser()) {
-        <div class="flex items-center gap-2 cursor-pointer select-none group" [routerLink]="['/profile']"> @if
-          (authService.currentUser()!.avatarUrl) {
-          <img [src]="authService.currentUser()!.avatarUrl" alt="avatar"
-            class="w-8 h-8 rounded-full object-cover border border-strong group-hover:border-primary transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/10" />
-          } @else {
-          <div
-            class="w-8 h-8 bg-elevated rounded-full flex items-center justify-center group-hover:bg-primary-muted transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/10">
+        <div class="flex items-center gap-2 cursor-pointer select-none group" [routerLink]="['/profile']">
+          <div class="w-8 h-8 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0"
+            [ngClass]="[getFrameClass(), getAuraClass()]">
+            @if (equippedAvatar()) {
+            <span class="text-sm">{{ equippedAvatar()!.icon }}</span>
+            } @else if (authService.currentUser()!.avatarUrl) {
+            <img [src]="authService.currentUser()!.avatarUrl" alt="avatar"
+              class="w-full h-full object-cover" />
+            } @else {
             <span class="text-primary text-xs font-bold">{{
               authService.currentUser()!.displayName.charAt(0).toUpperCase()
-              }}</span>
+            }}</span>
+            }
           </div>
-          }
           <span
             class="text-muted text-sm font-medium hidden md:block group-hover:text-primary transition-colors duration-200">{{
             authService.currentUser()!.displayName
             }}</span>
+          @if (equippedBadge()) {
+          <span class="text-sm" [title]="equippedBadge()!.name">{{ equippedBadge()!.icon }}</span>
+          }
         </div>
         }
       </div>

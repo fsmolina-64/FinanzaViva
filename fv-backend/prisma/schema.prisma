@@ -240,7 +240,6 @@ model UserGameStats {
 model Level {
   id          String  @id @default(uuid())
   number      Int     @unique
-  name        String
   xpRequired  Int
   badge       String
   rank        UserRank
@@ -673,6 +672,7 @@ model UserStatistics {
   totalXpEarned      Int      @default(0)
   quizzesCompleted   Int      @default(0)
   quizzesPassed      Int      @default(0)
+  distinctPassedQuizzes Int  @default(0)
   modulesCompleted   Int      @default(0)
   lessonsCompleted   Int      @default(0)
   gamesPlayed        Int      @default(0)
