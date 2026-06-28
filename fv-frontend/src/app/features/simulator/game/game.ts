@@ -52,28 +52,28 @@ interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' 
   `]
 })
 export class Game implements OnInit, OnDestroy {
-  gameState       = signal<GameStateResponse | null>(null);
-  loading         = signal(true);
-  error           = signal<string | null>(null);
+  gameState = signal<GameStateResponse | null>(null);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
-  dice1           = signal<number | null>(null);
-  dice2           = signal<number | null>(null);
-  isDiceRolling   = signal(false);
-  diceRevealed    = signal(false);
+  dice1 = signal<number | null>(null);
+  dice2 = signal<number | null>(null);
+  isDiceRolling = signal(false);
+  diceRevealed = signal(false);
 
-  isAnimating     = signal(false);
-  animatingId     = signal<string | null>(null);
-  animatingPos    = signal<number>(0);
-  bouncingId      = signal<string | null>(null);
+  isAnimating = signal(false);
+  animatingId = signal<string | null>(null);
+  animatingPos = signal<number>(0);
+  bouncingId = signal<string | null>(null);
 
-  showBuyModal      = signal(false);
-  buyCell           = signal<BoardCell | null>(null);
+  showBuyModal = signal(false);
+  buyCell = signal<BoardCell | null>(null);
   showWildcardModal = signal(false);
-  wildcardText      = signal('');
-  wildcardExpl      = signal('');
-  showExitModal     = signal(false);
-  showTooltip       = signal<BoardCell | null>(null);
-  showCellExplain   = signal<{
+  wildcardText = signal('');
+  wildcardExpl = signal('');
+  showExitModal = signal(false);
+  showTooltip = signal<BoardCell | null>(null);
+  showCellExplain = signal<{
     cellName: string;
     description: string;
     impactText: string;
@@ -90,15 +90,15 @@ export class Game implements OnInit, OnDestroy {
 
   gameId!: string;
 
-  game    = computed(() => this.gameState()?.game ?? null);
+  game = computed(() => this.gameState()?.game ?? null);
   players = computed(() => this.gameState()?.players ?? []);
-  cells   = computed(() => this.gameState()?.boardCells ?? []);
+  cells = computed(() => this.gameState()?.boardCells ?? []);
 
   currentPlayer = computed<BackendPlayer | null>(() => {
     const s = this.gameState();
     if (s?.currentPlayer) return s.currentPlayer;
     const ps = s?.players ?? [];
-    const g  = s?.game;
+    const g = s?.game;
     return (g && ps.length) ? (ps[g.currentPlayerIdx] ?? null) : null;
   });
 
@@ -129,7 +129,7 @@ export class Game implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     public router: Router,
     private svc: SimulatorService,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.gameState.set(null);
@@ -176,7 +176,7 @@ export class Game implements OnInit, OnDestroy {
 
   confirmLeave(): void {
     this.showExitModal.set(false);
-    this.svc.abandonGame(this.gameId).subscribe({ error: () => {} });
+    this.svc.abandonGame(this.gameId).subscribe({ error: () => { } });
     this.leaveCallback?.(true);
     this.leaveCallback = null;
   }
@@ -362,7 +362,7 @@ export class Game implements OnInit, OnDestroy {
     const botPlayer = currentPlayers.find(p => p.displayName === m.playerName);
     if (botPlayer) await this.animateToken(botPlayer.id, m.fromPosition, m.diceSum);
 
-    if (m.passedGo)     this.toast(`${m.playerName} completo una vuelta`, 'success', 3500);
+    if (m.passedGo) this.toast(`${m.playerName} completo una vuelta`, 'success', 3500);
     if (m.actionDetail) this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', 3500);
     await this.delay(1000);
   }
@@ -442,9 +442,9 @@ export class Game implements OnInit, OnDestroy {
 
   cellSection(pos: number): 'bottom' | 'right' | 'top' | 'left' | 'corner' {
     if ([0, 10, 20, 30].includes(pos)) return 'corner';
-    if (pos < 10)  return 'bottom';
-    if (pos < 20)  return 'right';
-    if (pos < 30)  return 'top';
+    if (pos < 10) return 'bottom';
+    if (pos < 20) return 'right';
+    if (pos < 30) return 'top';
     return 'left';
   }
 
@@ -458,25 +458,25 @@ export class Game implements OnInit, OnDestroy {
   }
 
   cellBg(cell: BoardCell): string {
-    const g: Record<string, string> = { purple:'#2D1B69', blue:'#1a3360', pink:'#4A1030', orange:'#4A2010', red:'#4A0E0E', yellow:'#3A2C08', green:'#0E3A1A' };
+    const g: Record<string, string> = { purple: '#2D1B69', blue: '#1a3360', pink: '#4A1030', orange: '#4A2010', red: '#4A0E0E', yellow: '#3A2C08', green: '#0E3A1A' };
     if (cell.group && g[cell.group]) return g[cell.group];
-    const t: Record<string, string> = { TAX:'#3A0E0E', SCAM:'#3A0E0E', LOTTERY:'#332408', PENSION:'#0D2A3A', PENSION_ESPECIAL:'#0D2A3A', WILDCARD:'#221060', INICIO:'#0D3A1A', JAIL:'#111827', GO_TO_JAIL:'#2A1505' };
+    const t: Record<string, string> = { TAX: '#3A0E0E', SCAM: '#3A0E0E', LOTTERY: '#332408', PENSION: '#0D2A3A', PENSION_ESPECIAL: '#0D2A3A', WILDCARD: '#221060', INICIO: '#0D3A1A', JAIL: '#111827', GO_TO_JAIL: '#2A1505' };
     return t[cell.type] ?? '#0E1827';
   }
 
   cellBandColor(cell: BoardCell): string {
-    const g: Record<string, string> = { purple:'#7C3AED', blue:'#2563EB', pink:'#BE185D', orange:'#EA580C', red:'#DC2626', yellow:'#CA8A04', green:'#16A34A' };
+    const g: Record<string, string> = { purple: '#7C3AED', blue: '#2563EB', pink: '#BE185D', orange: '#EA580C', red: '#DC2626', yellow: '#CA8A04', green: '#16A34A' };
     if (cell.group && g[cell.group]) return g[cell.group];
-    const t: Record<string, string> = { TAX:'#991B1B', SCAM:'#991B1B', LOTTERY:'#B45309', PENSION:'#1D4ED8', PENSION_ESPECIAL:'#1D4ED8', WILDCARD:'#6D28D9', INICIO:'#15803D', JAIL:'#374151', GO_TO_JAIL:'#92400E' };
+    const t: Record<string, string> = { TAX: '#991B1B', SCAM: '#991B1B', LOTTERY: '#B45309', PENSION: '#1D4ED8', PENSION_ESPECIAL: '#1D4ED8', WILDCARD: '#6D28D9', INICIO: '#15803D', JAIL: '#374151', GO_TO_JAIL: '#92400E' };
     return t[cell.type] ?? '#334155';
   }
 
   playerHex(idx: number): string {
-    return ['#3B82F6','#EF4444','#10B981','#EAB308','#A855F7','#EC4899','#06B6D4','#F97316'][idx % 8];
+    return ['#3B82F6', '#EF4444', '#10B981', '#EAB308', '#A855F7', '#EC4899', '#06B6D4', '#F97316'][idx % 8];
   }
 
   playerBg(idx: number): string {
-    return ['bg-blue-500','bg-red-500','bg-emerald-500','bg-yellow-500','bg-purple-500','bg-pink-500','bg-cyan-500','bg-orange-500'][idx % 8];
+    return ['bg-blue-500', 'bg-red-500', 'bg-emerald-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-orange-500'][idx % 8];
   }
 
   getOwner(pos: number): BackendPlayer | null {
@@ -498,27 +498,27 @@ export class Game implements OnInit, OnDestroy {
 
   phaseLabel(ph?: GamePhase): string {
     const m: Record<string, string> = {
-      ROLLING:'Lanzar dados', MOVING:'Moviendo', ACTION:'Accion',
-      BUYING:'Comprar', WILDCARD_REVEAL:'Carta', BETWEEN_TURNS:'Terminar turno',
-      FINISHED:'Finalizada', ABANDONED:'Abandonada', WAITING:'Esperando',
+      ROLLING: 'Lanzar dados', MOVING: 'Moviendo', ACTION: 'Accion',
+      BUYING: 'Comprar', WILDCARD_REVEAL: 'Carta', BETWEEN_TURNS: 'Terminar turno',
+      FINISHED: 'Finalizada', ABANDONED: 'Abandonada', WAITING: 'Esperando',
     };
     return m[ph ?? ''] ?? '';
   }
 
   modeLabel(m?: string): string {
-    return { SOLO:'Solo', MULTIPLAYER:'Multijugador', MIXED:'Mixto', SIMULATION:'Observar' }[m ?? ''] ?? '';
+    return { SOLO: 'Solo', MULTIPLAYER: 'Multijugador', MIXED: 'Mixto', SIMULATION: 'Observar' }[m ?? ''] ?? '';
   }
 
   fmt(v: number): string {
-    return new Intl.NumberFormat('es-EC', { style:'currency', currency:'USD', minimumFractionDigits:0 }).format(v);
+    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(v);
   }
 
   calcXP(): number {
     const maxR = this.game()?.maxRounds ?? 5;
-    const rank  = this.rankedPlayers();
-    const hIdx  = rank.findIndex(p => !p.isBot);
-    const base  = [50, 80, 120, 175][ maxR <= 3 ? 0 : maxR <= 5 ? 1 : maxR <= 7 ? 2 : 3 ];
-    const mult  = [2.0, 1.5, 1.2, 1.0][Math.max(0, hIdx)] ?? 1.0;
+    const rank = this.rankedPlayers();
+    const hIdx = rank.findIndex(p => !p.isBot);
+    const base = [50, 80, 120, 175][maxR <= 3 ? 0 : maxR <= 5 ? 1 : maxR <= 7 ? 2 : 3];
+    const mult = [2.0, 1.5, 1.2, 1.0][Math.max(0, hIdx)] ?? 1.0;
     const props = (rank[hIdx]?.properties?.length ?? 0) * 3;
     return Math.max(10, Math.round(base * mult + props));
   }
@@ -535,7 +535,7 @@ export class Game implements OnInit, OnDestroy {
   }
 
   playerText(idx: number): string {
-    return ['text-blue-400','text-red-400','text-emerald-400','text-yellow-400','text-purple-400','text-pink-400','text-cyan-400','text-orange-400'][idx % 8];
+    return ['text-blue-400', 'text-red-400', 'text-emerald-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-cyan-400', 'text-orange-400'][idx % 8];
   }
 
   private async showCellModal(cell: BoardCell, action: string, amount?: number): Promise<void> {

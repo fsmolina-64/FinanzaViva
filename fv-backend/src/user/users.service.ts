@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -53,6 +54,20 @@ export class UsersService {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
 
     return { message: 'Contraseña actualizada correctamente' };
+  }
+
+  async updateOnboarding(userId: string, dto: UpdateOnboardingDto) {
+    return this.prisma.profile.update({
+      where: { userId },
+      data: {
+        ...(dto.onboardingCompleted !== undefined && {
+          onboardingCompleted: dto.onboardingCompleted,
+        }),
+        ...(dto.onboardingStep !== undefined && {
+          onboardingStep: dto.onboardingStep,
+        }),
+      },
+    });
   }
 
   async deleteAccount(userId: string) {

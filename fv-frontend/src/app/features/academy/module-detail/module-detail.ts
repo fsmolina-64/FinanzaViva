@@ -4,6 +4,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { AcademyService } from '../../../core/services/academy.service';
 import { QuizService } from '../../../core/services/quiz.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { ReadingProgressService } from '../../../core/services/reading-progress.service';
 import { AcademyModule, Lesson } from '../../../core/models/academy.model';
 import { Quiz } from '../../../core/models/quiz.model';
 
@@ -19,6 +20,7 @@ export class ModuleDetail implements OnInit {
   quiz = signal<Quiz | null>(null);
   quizLoading = signal(true);
   quizPassed = signal(false);
+  readingProgress = signal(0);
 
   private moduleId = '';
 
@@ -27,14 +29,19 @@ export class ModuleDetail implements OnInit {
     private router: Router,
     private academyService: AcademyService,
     private quizService: QuizService,
-    private toast: ToastService
+    private toast: ToastService,
+    private readingProgressService: ReadingProgressService
   ) { }
 
   ngOnInit(): void {
     this.moduleId = this.route.snapshot.paramMap.get('moduleId')!;
 
     this.academyService.getModule(this.moduleId).subscribe({
-      next: d => { this.module.set(d); this.loading.set(false); },
+      next: d => {
+        this.module.set(d);
+        this.loading.set(false);
+        this.readingProgressService.refreshProgress(this.moduleId, v => this.readingProgress.set(v));
+      },
       error: () => { this.loading.set(false); this.toast.error('Error al cargar el módulo'); }
     });
 
@@ -79,8 +86,8 @@ export class ModuleDetail implements OnInit {
     return ({
       COMPLETED: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       AVAILABLE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      LOCKED: 'bg-slate-700 text-slate-500 border-slate-600'
-    } as any)[status] ?? 'bg-slate-700 text-slate-500';
+      LOCKED: 'bg-elevated text-subtle border-strong'
+    } as any)[status] ?? 'bg-elevated text-subtle';
   }
 
   getLessonStatusLabel(status: string): string {

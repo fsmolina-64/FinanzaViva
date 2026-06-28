@@ -39,7 +39,7 @@ export class SimulatorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
-  ) {}
+  ) { }
 
   async createGame(userId: string, dto: CreateGameDto) {
     const humanCount = dto.humanPlayers?.length ?? 0;
@@ -655,9 +655,7 @@ export class SimulatorService {
     return this.prisma.boardCell.findMany({ orderBy: { position: 'asc' } });
   }
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
+
 
   private async advanceToHuman(gameId: string): Promise<{ gameState: any; botMoves: BotMoveData[] }> {
     const botMoves: BotMoveData[] = [];
@@ -741,7 +739,6 @@ export class SimulatorService {
         continue;
       }
 
-      // Reset hasRolled for all players on new round
       if (isNewRound) {
         await this.prisma.simulatorPlayer.updateMany({
           where: { gameId },
@@ -782,7 +779,6 @@ export class SimulatorService {
     const player = game.players[game.currentPlayerIdx];
     if (!player || !player.isBot) return null;
 
-    // --- Roll dice ---
     const dice1 = Math.floor(Math.random() * 6) + 1;
     const dice2 = Math.floor(Math.random() * 6) + 1;
     const sum = dice1 + dice2;
@@ -791,7 +787,6 @@ export class SimulatorService {
     const passedGo = rawNewPos >= 40;
     let newPosition = rawNewPos % 40;
 
-    // Handle jail for bot
     if (player.isInJail) {
       player.jailTurnsLeft--;
       if (dice1 === dice2 || player.jailTurnsLeft <= 0) {
@@ -819,7 +814,6 @@ export class SimulatorService {
 
     const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
 
-    // --- Process cell ---
     let purchased = false;
     let action = 'NOTHING';
     let actionDetail = '';
@@ -1079,9 +1073,45 @@ export class SimulatorService {
     });
     if (!game) throw new NotFoundException('Partida no encontrada');
 
-    for (let i = 0; i < game.players.length; i++) {
+    const boardCells = await this.prisma.boardCell.findMany();
+    const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
+
+    const ranked = [...game.players].sort((a, b) => {
+      if (a.isEliminated && !b.isEliminated) return 1;
+      if (!a.isEliminated && b.isEliminated) return -1;
+      return b.money - a.money;
+    });
+
+    const recipientId = game.xpRecipientId ?? game.createdByUserId;
+    const baseXP = this.getBaseXP(game.maxRounds);
+
+    const humanPlayers = game.players.filter((p: any) => !p.isBot);
+    const bestHuman = humanPlayers.length > 0 ? humanPlayers[0] : ranked[0];
+
+    const bestHumanRank =
+      ranked.findIndex((p: any) => p.id === bestHuman.id) + 1;
+
+    const positionMultiplier = this.getPositionMultiplier(bestHumanRank);
+
+    const propertiesCount = allProperties.filter(
+      p => p.playerId === bestHuman.id
+    ).length;
+
+    const completeGroups = this.countCompleteGroups(
+      bestHuman.id,
+      boardCells,
+      allProperties
+    );
+
+    const xpAmount = Math.floor(
+      baseXP * positionMultiplier +
+      propertiesCount * 3 +
+      completeGroups * 15
+    );
+
+    for (let i = 0; i < ranked.length; i++) {
       await this.prisma.simulatorPlayer.update({
-        where: { id: game.players[i].id },
+        where: { id: ranked[i].id },
         data: { finalRank: i + 1 },
       });
     }
@@ -1089,45 +1119,39 @@ export class SimulatorService {
     if (game.mode === 'SIMULATION') {
       return this.prisma.simulatorGame.update({
         where: { id: gameId },
-        data: { status: 'FINISHED', gamePhase: 'FINISHED', finishedAt: new Date() },
+        data: {
+          status: 'FINISHED',
+          gamePhase: 'FINISHED',
+          finishedAt: new Date(),
+        },
       });
     }
 
-    const recipientId = game.xpRecipientId ?? game.createdByUserId;
-    const humanPlayers = game.players.filter((p: any) => !p.isBot);
-    const winner = game.players[0];
+    const isWinner = bestHumanRank === 1;
 
-    await this.prisma.userStatistics
-      .update({
-        where: { userId: recipientId },
-        data: { gamesPlayed: { increment: 1 } },
-      })
-      .catch(() => {});
-
-    const humanWon = humanPlayers.some((p: any) => p.id === winner.id);
-    if (humanWon) {
-      await this.prisma.userStatistics
-        .update({
-          where: { userId: recipientId },
-          data: { gamesWon: { increment: 1 } },
-        })
-        .catch(() => {});
-    }
-
-    const xpAmount = this.getBaseXP(game.maxRounds);
-    await this.gamification
-      .addXp(recipientId, {
-        amount: xpAmount,
-        source: XpSource.SIMULATOR_GAME_FINISHED,
-        referenceId: gameId,
-        description: `Tablero financiero completado - ${game.mode}`,
-      })
-      .catch(() => {});
-
-    return this.prisma.simulatorGame.update({
-      where: { id: gameId },
-      data: { status: 'FINISHED', gamePhase: 'FINISHED', finishedAt: new Date() },
+    await this.prisma.userStatistics.upsert({
+      where: { userId: recipientId },
+      update: {
+        gamesPlayed: { increment: 1 },
+        gamesWon: isWinner ? { increment: 1 } : undefined,
+      },
+      create: {
+        userId: recipientId,
+        gamesPlayed: 1,
+        gamesWon: isWinner ? 1 : 0,
+      },
     });
+
+    if (xpAmount > 0) {
+      try {
+        await this.gamification.addXp(recipientId, {
+          amount: xpAmount,
+          source: XpSource.SIMULATOR_GAME_FINISHED,
+          referenceId: gameId,
+          description: `Simulador completado — Posición #${bestHumanRank} de ${game.players.length} jugadores`,
+        });
+      } catch {}
+    }
   }
 
   private getBaseXP(maxRounds: number): number {

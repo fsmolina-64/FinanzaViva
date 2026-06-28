@@ -1,6 +1,9 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
+import { staggerCards } from '../../core/animations/animations';
+import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { GamificationService } from '../../core/services/gamification.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -28,9 +31,10 @@ interface UserStatistics {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkeletonComponent],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css'
+  styleUrl: './dashboard.css',
+  animations: [staggerCards]
 })
 export class Dashboard implements OnInit {
 
@@ -40,16 +44,18 @@ export class Dashboard implements OnInit {
   achievements = signal<Achievement[]>([]);
   rewards = signal<Reward[]>([]);
   loading = signal(true);
+  rankingPosition = signal<number | null>(null);
 
   readonly TOTAL_MODULES = 7;
   readonly TOTAL_LESSONS = 28;
 
   constructor(
     private financeService: FinanceService,
-    private gamificationService: GamificationService,
+    public gamificationService: GamificationService,
     private achievementService: AchievementService,
     private api: ApiService,
     private toast: ToastService,
+    private router: Router,
     public authService: AuthService
   ) { }
 
@@ -58,10 +64,20 @@ export class Dashboard implements OnInit {
       next: () => this.loadStats(),
       error: () => this.loadStats()
     });
+    this.loadRankingPosition();
     this.loadSummary();
     this.loadUserData();
     this.loadAchievements();
     this.loadRewards();
+  }
+
+  private loadRankingPosition(): void {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+    this.api.get<{ position: number }>('/ranking/user/' + userId).subscribe({
+      next: (data) => this.rankingPosition.set(data.position),
+      error: () => {}
+    });
   }
 
   private loadStats(): void {
@@ -110,11 +126,7 @@ export class Dashboard implements OnInit {
   }
 
   getRankLabel(rank: string): string {
-    const labels: Record<string, string> = {
-      ROOKIE: 'Novato', APPRENTICE: 'Aprendiz', INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado', EXPERT: 'Experto', MASTER: 'Master'
-    };
-    return labels[rank] ?? rank;
+    return RANK_LABEL_MAP[rank] ?? rank;
   }
 
 
@@ -149,5 +161,10 @@ export class Dashboard implements OnInit {
 
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(amount);
+  }
+
+  onQuizzesClick(): void {
+    this.toast.success('Completa todas las lecciones de un módulo para desbloquear su quiz');
+    this.router.navigate(['/academy']);
   }
 }

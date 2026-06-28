@@ -75,6 +75,11 @@ export class QuizDetail implements OnInit {
   }
 
   next(): void {
+    const q = this.currentQuestion();
+    if (q && !this.answers()[q.id]) {
+      this.toast.warning('Responde esta pregunta antes de continuar');
+      return;
+    }
     if (this.currentIndex() < (this.quiz()?.questions.length ?? 1) - 1)
       this.currentIndex.update(i => i + 1);
   }
@@ -101,14 +106,14 @@ export class QuizDetail implements OnInit {
     const selected = this.answers()[questionId];
     if (!res) {
       return selected === optionId
-        ? 'border-blue-500 bg-blue-500/20 text-white'
-        : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500';
+        ? 'border-primary bg-primary/20 text-app'
+        : 'border-strong bg-card text-muted hover:border-strong';
     }
     const qResult = res.results.find(r => r.questionId === questionId);
-    if (!qResult) return 'border-slate-600 bg-slate-800 text-slate-300';
+    if (!qResult) return 'border-strong bg-card text-muted';
     if (optionId === qResult.correctAnswerId) return 'border-emerald-500 bg-emerald-500/20 text-emerald-300';
-    if (optionId === selected && !qResult.correct) return 'border-red-500 bg-red-500/20 text-red-300';
-    return 'border-slate-600 bg-slate-800 text-slate-500';
+    if (optionId === selected && !qResult.correct) return 'border-danger bg-danger/20 text-danger';
+    return 'border-strong bg-card text-subtle';
   }
 
   isQuestionCorrect(questionId: string): boolean {

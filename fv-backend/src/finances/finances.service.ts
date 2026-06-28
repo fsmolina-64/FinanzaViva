@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { CreateAccountDto } from './dto/create-account.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -69,18 +70,40 @@ export class FinancesService {
     });
   }
 
+  async updateAccount(userId: string, accountId: string, dto: UpdateAccountDto) {
+    const account = await this.prisma.financialAccount.findUnique({ where: { id: accountId } });
+    if (!account) throw new NotFoundException('Cuenta no encontrada');
+    if (account.userId !== userId) throw new ForbiddenException();
+
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.type !== undefined) data.type = dto.type;
+    if (dto.balance !== undefined) data.balance = dto.balance;
+
+    return this.prisma.financialAccount.update({
+      where: { id: accountId },
+      data,
+    });
+  }
+
   async deleteAccount(userId: string, accountId: string) {
     const account = await this.prisma.financialAccount.findUnique({
       where: { id: accountId },
-      include: { _count: { select: { transactions: true } } },
+      include: {
+        transactions: {
+          where: { isInitialBalance: false },
+          take: 1,
+        },
+      },
     });
     if (!account) throw new NotFoundException('Cuenta no encontrada');
     if (account.userId !== userId) throw new ForbiddenException();
-    if (account._count.transactions > 0) {
+    if (account.transactions.length > 0) {
       throw new BadRequestException(
-        `No puedes eliminar esta cuenta porque tiene ${account._count.transactions} transacción(es) asociada(s).`,
+        'No puedes eliminar esta cuenta porque tiene transacciones asociadas. Elimina primero las transacciones.',
       );
     }
+    await this.prisma.transaction.deleteMany({ where: { accountId, isInitialBalance: true } });
     return this.prisma.financialAccount.delete({ where: { id: accountId } });
   }
 
@@ -211,7 +234,7 @@ export class FinancesService {
         where: { id: transactionId },
         data: {
           ...(dto.accountId && { accountId: dto.accountId }),
-          ...(dto.categoryId && { categoryId: dto.categoryId }),
+          categoryId: dto.categoryId ?? null,
           ...(dto.amount !== undefined && { amount: dto.amount }),
           ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
@@ -257,10 +280,22 @@ export class FinancesService {
 
 
   async getCategories(userId: string) {
-    return this.prisma.category.findMany({
+    const hidden = await this.prisma.userHiddenCategory.findMany({
+      where: { userId },
+      select: { categoryId: true },
+    });
+    const hiddenIds = new Set(hidden.map(h => h.categoryId));
+
+    const all = await this.prisma.category.findMany({
       where: { OR: [{ isGlobal: true }, { userId }] },
       orderBy: { name: 'asc' },
     });
+
+    const userCatIds = new Set(all.filter(c => c.userId === userId).map(c => c.originalCategoryId).filter(Boolean));
+    return all.filter(c =>
+      !c.isGlobal ||
+      (!hiddenIds.has(c.id) && !userCatIds.has(c.id))
+    );
   }
 
   async createCategory(userId: string, dto: CreateCategoryDto) {
@@ -269,8 +304,8 @@ export class FinancesService {
         userId,
         name: dto.name,
         type: dto.type,
-        icon: dto.icon,
-        color: dto.color,
+        icon: dto.icon ?? 'help-circle',
+        color: dto.color ?? '#6b7280',
         isGlobal: false,
       },
     });
@@ -280,6 +315,20 @@ export class FinancesService {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
     if (category.userId && category.userId !== userId) throw new ForbiddenException();
+
+    if (!category.userId) {
+      return this.prisma.category.create({
+        data: {
+          userId,
+          name: dto.name ?? category.name,
+          type: category.type,
+          icon: dto.icon ?? category.icon,
+          color: dto.color ?? category.color,
+          isGlobal: false,
+          originalCategoryId: category.id,
+        },
+      });
+    }
 
     return this.prisma.category.update({
       where: { id: categoryId },
@@ -310,13 +359,20 @@ export class FinancesService {
       const target = await this.prisma.category.findUnique({ where: { id: reassignToId } });
       if (!target) throw new BadRequestException('La categoría de reasignación no existe');
 
-      await this.prisma.$transaction([
-        this.prisma.transaction.updateMany({
-          where: { categoryId },
-          data: { categoryId: reassignToId },
-        }),
-        this.prisma.category.delete({ where: { id: categoryId } }),
-      ]);
+      await this.prisma.transaction.updateMany({
+        where: { categoryId },
+        data: { categoryId: reassignToId },
+      });
+    }
+
+    if (!category.userId) {
+      await this.prisma.userHiddenCategory.create({
+        data: { userId, categoryId },
+      });
+      return { message: 'Categoría oculta para este usuario.' };
+    }
+
+    if (txCount > 0) {
       return { message: 'Categoría eliminada y transacciones reasignadas' };
     }
 
@@ -328,7 +384,7 @@ export class FinancesService {
     return this.prisma.budget.create({
       data: {
         userId,
-        categoryId: dto.categoryId,
+        ...(dto.categoryId && { categoryId: dto.categoryId }),
         amount: dto.amount,
         period: dto.period,
         startDate: new Date(dto.startDate),

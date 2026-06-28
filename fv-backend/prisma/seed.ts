@@ -356,16 +356,16 @@ const MODULES_DATA: ModuleData[] = [
 async function main() {
 
   const levels = [
-    { number: 1, name: 'Novato', xpRequired: 0, rank: UserRank.ROOKIE, badge: '🌱' },
-    { number: 2, name: 'Aprendiz', xpRequired: 100, rank: UserRank.ROOKIE, badge: '📘' },
-    { number: 3, name: 'Estudiante', xpRequired: 250, rank: UserRank.APPRENTICE, badge: '📗' },
-    { number: 4, name: 'Ahorrador', xpRequired: 500, rank: UserRank.APPRENTICE, badge: '💰' },
-    { number: 5, name: 'Planificador', xpRequired: 900, rank: UserRank.INTERMEDIATE, badge: '📊' },
-    { number: 6, name: 'Inversor', xpRequired: 1400, rank: UserRank.INTERMEDIATE, badge: '📈' },
-    { number: 7, name: 'Estratega', xpRequired: 2000, rank: UserRank.ADVANCED, badge: '🧠' },
-    { number: 8, name: 'Experto', xpRequired: 2800, rank: UserRank.ADVANCED, badge: '⚡' },
-    { number: 9, name: 'Maestro', xpRequired: 4000, rank: UserRank.EXPERT, badge: '🏆' },
-    { number: 10, name: 'Leyenda', xpRequired: 6000, rank: UserRank.MASTER, badge: '👑' },
+    { number: 1, xpRequired: 0, rank: UserRank.ROOKIE, badge: '🌱' },
+    { number: 2, xpRequired: 100, rank: UserRank.ROOKIE, badge: '📘' },
+    { number: 3, xpRequired: 250, rank: UserRank.APPRENTICE, badge: '📗' },
+    { number: 4, xpRequired: 500, rank: UserRank.APPRENTICE, badge: '💰' },
+    { number: 5, xpRequired: 900, rank: UserRank.INTERMEDIATE, badge: '📊' },
+    { number: 6, xpRequired: 1400, rank: UserRank.INTERMEDIATE, badge: '📈' },
+    { number: 7, xpRequired: 2000, rank: UserRank.ADVANCED, badge: '🧠' },
+    { number: 8, xpRequired: 2800, rank: UserRank.ADVANCED, badge: '⚡' },
+    { number: 9, xpRequired: 4000, rank: UserRank.EXPERT, badge: '🏆' },
+    { number: 10, xpRequired: 6000, rank: UserRank.MASTER, badge: '👑' },
   ];
 
   for (const level of levels) {

@@ -1,7 +1,7 @@
-<div class="space-y-5 animate-slide-up">
+<div class="space-y-5 animate-slide-up animate-fade-in-up">
 
     <a [routerLink]="lesson() ? backLink : '/academy'"
-        class="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm no-underline group">
+        class="inline-flex items-center gap-1.5 text-muted hover:text-primary transition-colors text-sm no-underline group">
         <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-200" fill="none"
             stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -11,22 +11,22 @@
 
     @if (loading()) {
     <div class="space-y-4">
-        <div class="bg-slate-800 rounded-2xl h-28 animate-pulse border border-slate-700"></div>
-        <div class="bg-slate-800 rounded-2xl h-96 animate-pulse border border-slate-700"></div>
+        <div class="bg-card rounded-2xl h-28 animate-pulse border border-default"></div>
+        <div class="bg-card rounded-2xl h-96 animate-pulse border border-default"></div>
     </div>
     }
 
     @if (!loading() && lesson()) {
     <div class="animate-fade-in space-y-5">
 
-        <div class="bg-[#1E293B] rounded-2xl p-5 space-y-4 border transition-colors duration-300"
+        <div class="bg-card card-hover shadow-sm rounded-2xl p-5 space-y-4 border transition-colors duration-300" style="animation-delay: 80ms"
             [class.border-emerald-500]="isCompleted" [class.border-emerald-500\/30]="isCompleted"
-            [class.border-slate-700]="!isCompleted">
+            [class.border-default]="!isCompleted">
 
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 space-y-2">
-                    <h1 class="text-white text-xl font-bold leading-tight">{{ lesson()!.title }}</h1>
-                    <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                    <h1 class="text-primary text-xl font-bold leading-tight">{{ lesson()!.title }}</h1>
+                    <div class="flex items-center gap-4 text-xs text-muted flex-wrap">
                         <span class="flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
@@ -35,7 +35,7 @@
                             </svg>
                             {{ lesson()!.duration }} min
                         </span>
-                        <span class="text-slate-600">·</span>
+                        <span class="text-subtle">·</span>
                         <span class="flex items-center gap-1 text-amber-400">
                             <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                                 <path
@@ -44,12 +44,12 @@
                             +{{ lesson()!.xpReward }} XP
                         </span>
                         @if (conceptCount() > 0) {
-                        <span class="text-slate-600">·</span>
+                        <span class="text-subtle">·</span>
                         <span>{{ conceptCount() }} conceptos</span>
                         }
                         @if (exerciseCount() > 0) {
-                        <span class="text-slate-600">·</span>
-                        <span class="text-purple-400">{{ exerciseCount() }} retos</span>
+                        <span class="text-subtle">·</span>
+                        <span class="text-accent-purple">{{ exerciseCount() }} retos</span>
                         }
                     </div>
                 </div>
@@ -76,19 +76,19 @@
             </div>
 
             <div class="space-y-1">
-                <div class="flex justify-between text-xs text-slate-500">
-                    <span>Progreso de lectura</span>
-                    <span>{{ scrollProgress() }}%</span>
+                <div class="flex justify-between text-xs text-subtle">
+                    <span>Progreso de lectura del módulo</span>
+                    <span>{{ moduleReadingProgress() }}%</span>
                 </div>
-                <div class="h-1.5 bg-slate-700/80 rounded-full overflow-hidden">
+                <div class="h-1.5 bg-elevated/80 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-200"
-                        [style.width.%]="scrollProgress()">
+                        [style.width.%]="moduleReadingProgress()">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="bg-[#1E293B] rounded-2xl border border-slate-700 overflow-hidden">
+        <div class="bg-card card-hover shadow-sm rounded-2xl border border-default/60 overflow-hidden" style="animation-delay: 160ms">
             <div class="p-6 space-y-6">
                 @for (block of lesson()!.content; track $index) {
                 @switch (block.type) {
@@ -97,12 +97,12 @@
                 <div class="flex items-center gap-3 pt-2">
                     <div class="w-0.5 h-5 bg-gradient-to-b from-blue-400 to-purple-500 rounded-full flex-shrink-0">
                     </div>
-                    <h2 class="text-white font-bold text-base leading-snug">{{ block.text }}</h2>
+                    <h2 class="text-primary font-bold text-base leading-snug">{{ block.text }}</h2>
                 </div>
                 }
 
                 @case ('text') {
-                <p class="text-slate-300 text-sm leading-7">{{ block.text }}</p>
+                <p class="text-muted text-sm leading-7">{{ block.text }}</p>
                 }
 
                 @case ('key_concept') {
@@ -115,9 +115,9 @@
                             <span
                                 class="bg-blue-500/20 text-blue-300 text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wider flex-shrink-0">Concepto
                                 clave</span>
-                            <span class="text-white font-semibold text-sm">{{ block.title }}</span>
+                            <span class="text-primary font-semibold text-sm">{{ block.title }}</span>
                         </div>
-                        <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+                        <p class="text-muted text-sm leading-relaxed">{{ block.text }}</p>
                     </div>
                 </div>
                 }
@@ -135,13 +135,13 @@
                     </div>
                     <div class="p-4 space-y-2">
                         <p class="text-emerald-200 font-semibold text-sm">{{ block.title }}</p>
-                        <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+                        <p class="text-muted text-sm leading-relaxed">{{ block.text }}</p>
                     </div>
                 </div>
                 }
 
                 @case ('tip') {
-                <div class="flex gap-3 rounded-xl p-4 bg-amber-500/10 border border-amber-500/25">
+                <div class="flex gap-4 rounded-xl p-5 bg-amber-500/10 border border-amber-500/25">
                     <div class="flex-shrink-0 mt-0.5">
                         <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
@@ -151,43 +151,43 @@
                     </div>
                     <div class="space-y-0.5">
                         <p class="text-amber-400 font-semibold text-xs uppercase tracking-wide">Consejo</p>
-                        <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+                        <p class="text-muted text-sm leading-relaxed">{{ block.text }}</p>
                     </div>
                 </div>
                 }
 
                 @case ('warning') {
-                <div class="flex gap-3 rounded-xl p-4 bg-red-500/10 border border-red-500/25">
+                <div class="flex gap-4 rounded-xl p-5 bg-danger/10 border border-red-500/25">
                     <div class="flex-shrink-0 mt-0.5">
-                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="2"
+                        <svg class="w-4 h-4 text-danger" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                     </div>
                     <div class="space-y-0.5">
-                        <p class="text-red-400 font-semibold text-xs uppercase tracking-wide">Atencion</p>
-                        <p class="text-slate-200 text-sm leading-relaxed">{{ block.text }}</p>
+                        <p class="text-danger font-semibold text-xs uppercase tracking-wide">Atencion</p>
+                        <p class="text-muted text-sm leading-relaxed">{{ block.text }}</p>
                     </div>
                 </div>
                 }
 
                 @case ('video') {
                 <a [href]="block.url" target="_blank" rel="noopener"
-                    class="flex items-center gap-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 hover:border-red-500/40 rounded-xl p-4 transition-all duration-200 no-underline group">
+                    class="flex items-center gap-4 bg-elevated/50 hover:bg-elevated border border-strong hover:border-danger/40 rounded-xl p-4 transition-all duration-200 no-underline group">
                     <div
-                        class="w-10 h-10 bg-red-500/20 border border-red-500/30 group-hover:border-red-500/60 rounded-xl flex items-center justify-center text-red-400 flex-shrink-0 transition-all duration-200">
+                        class="w-10 h-10 bg-red-500/20 border border-danger/30 group-hover:border-red-500/60 rounded-xl flex items-center justify-center text-danger flex-shrink-0 transition-all duration-200">
                         <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z" />
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p
-                            class="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors truncate">
+                            class="text-primary font-semibold text-sm group-hover:text-blue-300 transition-colors truncate">
                             {{ block.title }}</p>
-                        <p class="text-slate-400 text-xs mt-0.5">Ver en YouTube</p>
+                        <p class="text-muted text-xs mt-0.5">Ver en YouTube</p>
                     </div>
-                    <svg class="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors flex-shrink-0"
+                    <svg class="w-4 h-4 text-subtle group-hover:text-muted transition-colors flex-shrink-0"
                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -198,13 +198,13 @@
                 @case ('list') {
                 <div class="space-y-3">
                     @if (block.title) {
-                    <p class="text-white font-semibold text-sm">{{ block.title }}</p>
+                    <p class="text-primary font-semibold text-sm">{{ block.title }}</p>
                     }
                     <div class="space-y-2">
                         @for (item of block.items ?? []; track $index) {
-                        <div class="flex items-start gap-3 p-3 rounded-lg bg-slate-800/60 border border-slate-700/60">
-                            <div class="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2 flex-shrink-0"></div>
-                            <p class="text-slate-300 text-sm leading-relaxed">{{ item }}</p>
+                        <div class="flex items-center gap-3 rounded-xl p-5 bg-card/60 border border-default/60">
+                            <div class="w-1.5 h-1.5 rounded-full bg-primary-light mt-2 flex-shrink-0"></div>
+                            <p class="text-muted text-sm leading-relaxed">{{ item }}</p>
                         </div>
                         }
                     </div>
@@ -214,24 +214,24 @@
                 @case ('exercise') {
                 <div
                     class="rounded-xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-transparent">
-                    <div class="flex items-center gap-3 bg-purple-500/10 px-4 py-3 border-b border-purple-500/20">
+                    <div class="flex items-center gap-3 bg-accent-purple/10 px-4 py-3 border-b border-accent-purple/20">
                         <div
-                            class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            class="w-6 h-6 bg-accent-purple rounded-full flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
                             {{ exerciseIndices().get($index) ?? 1 }}
                         </div>
-                        <svg class="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor"
+                        <svg class="w-3.5 h-3.5 text-accent-purple flex-shrink-0" fill="none" stroke="currentColor"
                             stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" />
                             <circle cx="12" cy="12" r="6" />
                             <circle cx="12" cy="12" r="2" />
                         </svg>
-                        <p class="text-purple-300 font-bold text-xs uppercase tracking-wider">Reto práctico</p>
+                        <p class="text-accent-purple/80 font-bold text-xs uppercase tracking-wider">Reto práctico</p>
                     </div>
-                    <div class="p-4 space-y-3">
-                        <p class="text-slate-100 text-sm leading-relaxed font-medium">{{ block.question }}</p>
+                    <div class="p-5 space-y-4">
+                        <p class="text-primary text-sm leading-relaxed font-medium">{{ block.question }}</p>
                         @if (block.hint) {
                         <button (click)="toggleHint($index)"
-                            class="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 text-xs font-medium transition-colors">
+                            class="flex items-center gap-1.5 text-accent-purple hover:text-accent-purple/80 text-xs font-medium transition-colors btn-press">
                             <svg class="w-3.5 h-3.5 transition-transform duration-200"
                                 [class.rotate-180]="isHintVisible($index)" fill="none" stroke="currentColor"
                                 stroke-width="2" viewBox="0 0 24 24">
@@ -240,8 +240,8 @@
                             {{ isHintVisible($index) ? 'Ocultar pista' : 'Ver pista' }}
                         </button>
                         @if (isHintVisible($index)) {
-                        <div class="bg-purple-900/20 border border-purple-500/20 rounded-lg px-3 py-2.5">
-                            <p class="text-slate-400 text-xs italic leading-relaxed">{{ block.hint }}</p>
+                        <div class="bg-purple-900/20 border border-accent-purple/20 rounded-lg px-3 py-2.5">
+                            <p class="text-muted text-xs italic leading-relaxed">{{ block.hint }}</p>
                         </div>
                         }
                         }
@@ -250,9 +250,9 @@
                 }
 
                 @case ('comparison') {
-                <div class="rounded-xl overflow-hidden border border-slate-600">
+                <div class="rounded-xl overflow-hidden border border-strong">
                     <div class="grid grid-cols-2">
-                        <div class="p-3 bg-blue-500/15 border-r border-slate-600">
+                        <div class="p-3 bg-blue-500/15 border-r border-strong">
                             <p class="text-blue-300 font-bold text-xs uppercase tracking-wider text-center">{{
                                 block.leftLabel }}</p>
                         </div>
@@ -262,12 +262,12 @@
                         </div>
                     </div>
                     @for (row of getComparisonRows(block); track $index) {
-                    <div class="grid grid-cols-2 border-t border-slate-700/50">
-                        <div class="p-3 border-r border-slate-700/50 bg-slate-800/20">
-                            <p class="text-slate-300 text-xs leading-relaxed">{{ row.left }}</p>
+                    <div class="grid grid-cols-2 border-t border-default/50">
+                        <div class="p-3 border-r border-default/50 bg-card/20">
+                            <p class="text-muted text-xs leading-relaxed">{{ row.left }}</p>
                         </div>
                         <div class="p-3">
-                            <p class="text-slate-300 text-xs leading-relaxed">{{ row.right }}</p>
+                            <p class="text-muted text-xs leading-relaxed">{{ row.right }}</p>
                         </div>
                     </div>
                     }
@@ -275,7 +275,7 @@
                 }
 
                 @case ('formula') {
-                <div class="rounded-xl overflow-hidden border border-blue-500/20 bg-slate-900/50">
+                <div class="rounded-xl overflow-hidden border border-blue-500/20 bg-app/50">
                     <div class="px-4 py-2.5 bg-blue-500/5 border-b border-blue-500/20 flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
@@ -284,8 +284,8 @@
                         </svg>
                         <span class="text-blue-400 font-bold text-xs uppercase tracking-wider">Formula</span>
                     </div>
-                    <div class="p-4 space-y-3">
-                        <div class="bg-slate-900/80 rounded-lg py-3 px-4">
+                    <div class="p-5 space-y-4">
+                        <div class="bg-app/80 rounded-lg py-3 px-4">
                             <p class="font-mono text-blue-300 text-sm font-bold text-center tracking-wide">{{
                                 block.formula }}</p>
                         </div>
@@ -293,8 +293,8 @@
                         <div class="space-y-1.5 pt-1">
                             @for (v of block.variables; track $index) {
                             <div class="flex items-start gap-2">
-                                <span class="w-1 h-1 rounded-full bg-slate-600 mt-2 flex-shrink-0"></span>
-                                <p class="font-mono text-slate-400 text-xs leading-relaxed">{{ v }}</p>
+                                <span class="w-1 h-1 rounded-full bg-strong mt-2 flex-shrink-0"></span>
+                                <p class="font-mono text-muted text-xs leading-relaxed">{{ v }}</p>
                             </div>
                             }
                         </div>
@@ -310,20 +310,20 @@
 
         @if (result()) {
         <div
-            class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
+            class="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-4 card-hover shadow-sm" style="animation-delay: 240ms">
             @if (result()!.totalXpEarned > 0) {
             <div class="text-emerald-400 font-bold text-3xl">+{{ result()!.totalXpEarned }} XP</div>
             @if (result()!.lessonXpEarned > 0 && result()!.moduleXpEarned > 0) {
-            <p class="text-slate-400 text-xs">
+            <p class="text-muted text-xs">
                 Lección: +{{ result()!.lessonXpEarned }} XP &nbsp;&middot;&nbsp;
                 Módulo: +{{ result()!.moduleXpEarned }} XP
             </p>
             }
             }
             @if (result()!.moduleCompleted) {
-            <p class="text-white font-bold text-lg">Módulo completado</p>
+            <p class="text-primary font-bold text-lg">Módulo completado</p>
             } @else {
-            <p class="text-white font-semibold text-base">Lección completada</p>
+            <p class="text-primary font-semibold text-base">Lección completada</p>
             }
             @if (result()!.leveledUp) {
             <div class="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-500/30 rounded-xl px-4 py-2">
@@ -336,7 +336,7 @@
             }
             <div>
                 <button (click)="goNext()"
-                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+                    class="inline-flex items-center gap-2 bg-accent-blue hover:bg-accent-blue/90 text-primary text-sm font-semibold px-6 py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25 btn-press">
                     {{ result()!.nextLesson ? 'Siguiente lección' : 'Volver al módulo' }}
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -349,7 +349,7 @@
         @if (!result()) {
         @if (!isCompleted) {
         <button (click)="complete()" [disabled]="completing()"
-            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2">
+            class="w-full bg-accent-blue hover:bg-accent-blue/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary font-semibold py-3.5 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-accent-blue/25 flex items-center justify-center gap-2 btn-press">
             @if (completing()) {
             <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -373,11 +373,11 @@
                 Lección ya completada
             </div>
             <button (click)="reset()" [disabled]="resetting()"
-                class="sm:w-auto px-5 py-3 rounded-2xl border border-slate-600 text-slate-400 text-sm font-medium hover:text-white hover:border-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+                class="sm:w-auto px-5 py-3 rounded-2xl border border-strong text-muted text-sm font-medium hover:text-primary hover:border-strong disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 btn-press">
                 {{ resetting() ? 'Actualizando...' : 'Marcar como pendiente' }}
             </button>
         </div>
-        <p class="text-slate-600 text-xs text-center">
+        <p class="text-subtle text-xs text-center">
             El XP ya fue otorgado y no se duplicará si vuelves a completar.
         </p>
         }

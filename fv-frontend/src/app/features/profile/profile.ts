@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model';
@@ -88,11 +89,7 @@ export class Profile implements OnInit {
         this.userService.getProfile().subscribe({
           next: fresh => {
             this.user.set(fresh);
-            this.authService.currentUser.update(prev => prev ? ({
-              ...prev,
-              displayName: fresh.profile?.displayName ?? prev.displayName,
-              avatarUrl: fresh.profile?.avatarUrl ?? prev.avatarUrl,
-            }) : prev);
+            this.authService.refreshProfile(fresh.profile);
           }
         });
         this.saving.set(false);
@@ -150,25 +147,18 @@ export class Profile implements OnInit {
   }
 
   getRankLabel(rank: string): string {
-    return ({
-      ROOKIE: 'Novato',
-      APPRENTICE: 'Aprendiz',
-      INTERMEDIATE: 'Intermedio',
-      ADVANCED: 'Avanzado',
-      EXPERT: 'Experto',
-      MASTER: 'Master'
-    } as Record<string, string>)[rank] ?? rank;
+    return RANK_LABEL_MAP[rank] ?? rank;
   }
 
   getRankColor(rank: string): string {
     return ({
-      ROOKIE: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-      APPRENTICE: 'bg-green-500/20  text-green-400  border-green-500/30',
-      INTERMEDIATE: 'bg-blue-500/20   text-blue-400   border-blue-500/30',
-      ADVANCED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-      EXPERT: 'bg-amber-500/20  text-amber-400  border-amber-500/30',
-      MASTER: 'bg-red-500/20    text-red-400    border-red-500/30'
-    } as Record<string, string>)[rank] ?? 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      ROOKIE: 'bg-subtle/20 text-muted border-subtle/30',
+      APPRENTICE: 'bg-success/20  text-success  border-success/30',
+      INTERMEDIATE: 'bg-primary/20   text-primary   border-primary/30',
+      ADVANCED: 'bg-primary-muted/20 text-primary-light border-primary-muted/30',
+      EXPERT: 'bg-warning/20  text-warning  border-warning/30',
+      MASTER: 'bg-danger/20    text-danger    border-danger/30'
+    } as Record<string, string>)[rank] ?? 'bg-subtle/20 text-muted border-subtle/30';
   }
 
   getInitials(name: string): string {
@@ -189,14 +179,14 @@ export class Profile implements OnInit {
 
   getFrameClass(): string {
     const f = this.equippedFrame();
-    if (!f) return 'border-slate-600';
+    if (!f) return 'border-strong';
     const map: Record<string, string> = {
       '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
-      '🥈': 'border-slate-300 shadow-slate-300/40 shadow-md',
-      '🥇': 'border-yellow-400 shadow-yellow-400/50 shadow-lg',
-      '💠': 'border-cyan-400 shadow-cyan-400/50 shadow-lg',
+      '🥈': 'border-muted shadow-muted/40 shadow-md',
+      '🥇': 'border-warning shadow-warning/50 shadow-lg',
+      '💠': 'border-primary shadow-primary/50 shadow-lg',
     };
-    return map[f.icon] ?? 'border-slate-600';
+    return map[f.icon] ?? 'border-strong';
   }
   getAuraClass(): string {
     const a = this.equippedAura();

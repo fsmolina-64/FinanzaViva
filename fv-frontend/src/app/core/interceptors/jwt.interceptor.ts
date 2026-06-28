@@ -1,10 +1,9 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
+
+const TOKEN_KEY = 'fv_token';
 
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getToken();
+  const token = localStorage.getItem(TOKEN_KEY);
 
   if (token) {
     const cloned = req.clone({
