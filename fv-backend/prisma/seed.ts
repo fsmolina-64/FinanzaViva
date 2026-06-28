@@ -564,83 +564,89 @@ async function main() {
   await seedLessons(prisma);
 
   // ── Board cells ──────────────────────────────────────────────
-  const cells: { position: number; name: string; type: string; group: string | null; price: number | null; rent: number | null; amount: number | null; description: string }[] = [
-    { position: 0,  name: 'Inicio',                     type: 'INICIO',            group: null,     price: null, rent: null, amount: null,   description: 'Punto de salida' },
-    { position: 1,  name: 'Cuenta de Ahorros',          type: 'PROPERTY',          group: 'purple', price: 60,   rent: 10,  amount: null,  description: 'Propiedad grupo purple' },
-    { position: 2,  name: 'Dividendos',                 type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 100,   description: 'Recibes dividendos de tus inversiones' },
-    { position: 3,  name: 'Fondo Mutuo',                type: 'PROPERTY',          group: 'purple', price: 60,   rent: 10,  amount: null,  description: 'Propiedad grupo purple' },
-    { position: 4,  name: 'Impuesto IVA',               type: 'TAX',               group: null,     price: null, rent: null, amount: -100,  description: 'Pagas IVA' },
-    { position: 5,  name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
-    { position: 6,  name: 'Startup Digital',            type: 'PROPERTY',          group: 'blue',   price: 100,  rent: 20,  amount: null,  description: 'Propiedad grupo blue' },
-    { position: 7,  name: 'App Fintech',                type: 'PROPERTY',          group: 'blue',   price: 100,  rent: 20,  amount: null,  description: 'Propiedad grupo blue' },
-    { position: 8,  name: 'Ingreso Freelance',          type: 'PENSION',           group: null,     price: null, rent: null, amount: 150,  description: 'Recibes ingreso freelance' },
-    { position: 9,  name: 'Negocio Online',             type: 'PROPERTY',          group: 'blue',   price: 120,  rent: 25,  amount: null,  description: 'Propiedad grupo blue' },
-    { position: 10, name: 'Cárcel / Visita',            type: 'JAIL',              group: null,     price: null, rent: null, amount: null,  description: 'Solo de visita' },
-    { position: 11, name: 'Food Truck',                 type: 'PROPERTY',          group: 'pink',   price: 140,  rent: 30,  amount: null,  description: 'Propiedad grupo pink' },
-    { position: 12, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
-    { position: 13, name: 'Café Boutique',              type: 'PROPERTY',          group: 'pink',   price: 140,  rent: 30,  amount: null,  description: 'Propiedad grupo pink' },
-    { position: 14, name: 'Tasa Municipal',             type: 'TAX',               group: null,     price: null, rent: null, amount: -150,  description: 'Pagas tasa municipal' },
-    { position: 15, name: 'Restaurante',                type: 'PROPERTY',          group: 'pink',   price: 160,  rent: 35,  amount: null,  description: 'Propiedad grupo pink' },
-    { position: 16, name: 'Herencia Familiar',          type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 200,  description: 'Recibes una herencia familiar' },
-    { position: 17, name: 'Plaza Comercial',            type: 'PROPERTY',          group: 'orange', price: 180,  rent: 40,  amount: null,  description: 'Propiedad grupo orange' },
-    { position: 18, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
-    { position: 19, name: 'Tienda Ancla',               type: 'PROPERTY',          group: 'orange', price: 180,  rent: 40,  amount: null,  description: 'Propiedad grupo orange' },
-    { position: 20, name: 'Salario y Renta',            type: 'PENSION_ESPECIAL',  group: null,     price: null, rent: null, amount: 300,  description: 'Recibes salario y renta' },
-    { position: 21, name: 'Centro Comercial',           type: 'PROPERTY',          group: 'orange', price: 200,  rent: 45,  amount: null,  description: 'Propiedad grupo orange' },
-    { position: 22, name: 'Esquema Ponzi',              type: 'SCAM',              group: null,     price: null, rent: null, amount: -200,  description: 'Caíste en un esquema Ponzi' },
-    { position: 23, name: 'Oficinas Clase A',           type: 'PROPERTY',          group: 'red',    price: 220,  rent: 50,  amount: null,  description: 'Propiedad grupo red' },
-    { position: 24, name: 'Impuesto Predial',           type: 'TAX',               group: null,     price: null, rent: null, amount: -200,  description: 'Pagas impuesto predial' },
-    { position: 25, name: 'Residencial Premium',        type: 'PROPERTY',          group: 'red',    price: 220,  rent: 50,  amount: null,  description: 'Propiedad grupo red' },
-    { position: 26, name: 'Evento Financiero',          type: 'WILDCARD',          group: null,     price: null, rent: null, amount: null,  description: 'Toma una carta del mazo' },
-    { position: 27, name: 'Torre Empresarial',          type: 'PROPERTY',          group: 'red',    price: 240,  rent: 55,  amount: null,  description: 'Propiedad grupo red' },
-    { position: 28, name: 'IPO Exitosa',                type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 250,  description: 'Tu IPO fue exitosa' },
-    { position: 29, name: 'ETF Dividendos',             type: 'PROPERTY',          group: 'yellow', price: 260,  rent: 60,  amount: null,  description: 'Propiedad grupo yellow' },
-    { position: 30, name: 'Ir a Cárcel',                type: 'GO_TO_JAIL',        group: null,     price: null, rent: null, amount: null,  description: 'Ve a la cárcel' },
-    { position: 31, name: 'Fondo Indexado',             type: 'PROPERTY',          group: 'yellow', price: 260,  rent: 60,  amount: null,  description: 'Propiedad grupo yellow' },
-    { position: 32, name: 'Fraude Financiero',          type: 'SCAM',              group: null,     price: null, rent: null, amount: -300,  description: 'Fuiste víctima de fraude financiero' },
-    { position: 33, name: 'Portafolio Bonos',           type: 'PROPERTY',          group: 'yellow', price: 280,  rent: 65,  amount: null,  description: 'Propiedad grupo yellow' },
-    { position: 34, name: 'Retención Fiscal',           type: 'TAX',               group: null,     price: null, rent: null, amount: -250,  description: 'Pagas retención fiscal' },
-    { position: 35, name: 'Fondo Diversificado',        type: 'PROPERTY',          group: 'green',  price: 300,  rent: 70,  amount: null,  description: 'Propiedad grupo green' },
-    { position: 36, name: 'Bono Extraordinario',        type: 'LOTTERY',           group: null,     price: null, rent: null, amount: 300,  description: 'Recibes un bono extraordinario' },
-    { position: 37, name: 'Venture Capital',            type: 'PROPERTY',          group: 'green',  price: 320,  rent: 75,  amount: null,  description: 'Propiedad grupo green' },
-    { position: 38, name: 'Renta Pasiva',               type: 'PENSION',           group: null,     price: null, rent: null, amount: 200,  description: 'Recibes renta pasiva' },
-    { position: 39, name: 'Fondo Soberano',             type: 'PROPERTY',          group: 'green',  price: 350,  rent: 90,  amount: null,  description: 'Propiedad grupo green' },
+  await prisma.boardCell.deleteMany();
+
+  const cells: {
+    position: number; name: string; type: any;
+    group: string | null; price: number | null;
+    rent: number | null; amount: number | null;
+    description: string;
+  }[] = [
+    { position: 0,  name: 'INICIO',               type: 'INICIO',          group: null,     price: null, rent: null, amount: null, description: 'Punto de partida. Cada vez que completes una vuelta demuestras disciplina financiera.' },
+    { position: 10, name: 'Carcel - Visita',       type: 'JAIL',            group: null,     price: null, rent: null, amount: null, description: 'Solo de visita hoy. Los malos habitos financieros pueden traerte aqui en el futuro.' },
+    { position: 20, name: 'Salario y Rendimientos',type: 'PENSION_ESPECIAL', group: null,     price: null, rent: null, amount: 300,  description: 'Tu salario mensual mas rendimientos de inversiones. El ingreso pasivo es la meta.' },
+    { position: 30, name: 'Ir a Carcel',           type: 'GO_TO_JAIL',      group: null,     price: null, rent: null, amount: null, description: 'Decisiones financieras impulsivas tienen consecuencias. Pierdes tu proximo turno.' },
+    { position: 1,  name: 'Cuenta de Ahorros',     type: 'PROPERTY', group: 'purple', price: 80,  rent: 15,  amount: null, description: 'Una cuenta de ahorros basica. Bajo riesgo, retorno minimo pero seguro.' },
+    { position: 2,  name: 'Dividendos',             type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 150,  description: 'Recibiste dividendos de tus inversiones. El mercado recompensa la paciencia.' },
+    { position: 3,  name: 'Fondo Mutuo',            type: 'PROPERTY', group: 'purple', price: 80,  rent: 15,  amount: null, description: 'Un fondo diversificado de inversion. Riesgo moderado, retorno predecible.' },
+    { position: 4,  name: 'Impuesto al Consumo',    type: 'TAX',      group: null,     price: null,rent: null,amount: 200,  description: 'Impuesto al consumo. El estado cobra el 12% de tus compras. Afecta tu flujo mensual.' },
+    { position: 5,  name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'Un evento inesperado que puede cambiar tu situacion financiera en segundos.' },
+    { position: 6,  name: 'Startup Digital',        type: 'PROPERTY', group: 'blue',   price: 120, rent: 25,  amount: null, description: 'Una empresa tecnologica en etapa temprana. Alto riesgo, alto potencial de retorno.' },
+    { position: 7,  name: 'App Fintech',            type: 'PROPERTY', group: 'blue',   price: 120, rent: 25,  amount: null, description: 'Aplicacion de servicios financieros digitales. El futuro del dinero es tecnologico.' },
+    { position: 8,  name: 'Ingreso Freelance',      type: 'PENSION',  group: null,     price: null,rent: null,amount: 200,  description: 'Cobras por un proyecto freelance. Los ingresos variables bien gestionados suman.' },
+    { position: 9,  name: 'Negocio Online',         type: 'PROPERTY', group: 'blue',   price: 150, rent: 35,  amount: null, description: 'Un negocio digital con bajo costo fijo pero alta competencia de mercado.' },
+    { position: 11, name: 'Food Truck',             type: 'PROPERTY', group: 'pink',   price: 200, rent: 50,  amount: null, description: 'Negocio movil de comida. Requiere permisos municipales y tiene alta rotacion de clientes.' },
+    { position: 12, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'El mercado es impredecible. Este evento puede beneficiarte o perjudicarte.' },
+    { position: 13, name: 'Cafe Boutique',          type: 'PROPERTY', group: 'pink',   price: 200, rent: 50,  amount: null, description: 'Cafe de especialidad con clientela fidelizada. Margen moderado, alta repeticion.' },
+    { position: 14, name: 'Tasa Municipal',         type: 'TAX',      group: null,     price: null,rent: null,amount: 250,  description: 'Impuesto municipal obligatorio. El costo de vivir y operar en una ciudad.' },
+    { position: 15, name: 'Restaurante',            type: 'PROPERTY', group: 'pink',   price: 250, rent: 65,  amount: null, description: 'Restaurante con clientela fija. Alto potencial pero costos operativos elevados.' },
+    { position: 16, name: 'Herencia Familiar',      type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 300,  description: 'Herencia inesperada. La suerte financiera existe, pero no se debe depender de ella.' },
+    { position: 17, name: 'Plaza Comercial',        type: 'PROPERTY', group: 'orange', price: 300, rent: 80,  amount: null, description: 'Local en centro comercial. Alta visibilidad garantiza flujo de clientes constante.' },
+    { position: 18, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'La economia global afecta tu situacion local. Preparate para lo inesperado.' },
+    { position: 19, name: 'Tienda Ancla',           type: 'PROPERTY', group: 'orange', price: 300, rent: 80,  amount: null, description: 'Tienda principal que atrae clientes al centro comercial. Posicion privilegiada.' },
+    { position: 21, name: 'Centro Comercial',       type: 'PROPERTY', group: 'orange', price: 350, rent: 95,  amount: null, description: 'Centro comercial completo. Multiples negocios ancla generan ingresos diversificados.' },
+    { position: 22, name: 'Esquema Ponzi',          type: 'SCAM',     group: null,     price: null,rent: null,amount: 400,  description: 'Invertiste en un fraude piramidal. El fraude financiero destruye patrimonios. Investiga antes de invertir.' },
+    { position: 23, name: 'Oficinas Clase A',       type: 'PROPERTY', group: 'red',    price: 400, rent: 110, amount: null, description: 'Oficinas de lujo en zona prime. Alta demanda corporativa, arrendatarios solventes.' },
+    { position: 24, name: 'Impuesto Predial',       type: 'TAX',      group: null,     price: null,rent: null,amount: 300,  description: 'Impuesto anual sobre propiedades. Las inversiones inmobiliarias tienen costos recurrentes.' },
+    { position: 25, name: 'Residencial Premium',    type: 'PROPERTY', group: 'red',    price: 400, rent: 110, amount: null, description: 'Conjunto residencial de lujo. Valoracion alta respaldada por la ubicacion.' },
+    { position: 26, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'La volatilidad del mercado es permanente. Tu estrategia define si ganas o pierdes.' },
+    { position: 27, name: 'Torre Empresarial',      type: 'PROPERTY', group: 'red',    price: 450, rent: 125, amount: null, description: 'Torre de oficinas premium en el distrito financiero. El activo mas cotizado de la zona.' },
+    { position: 28, name: 'IPO Exitosa',            type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 450,  description: 'Tu empresa salio a bolsa exitosamente. El mercado recompensa la innovacion y el riesgo calculado.' },
+    { position: 29, name: 'ETF Dividendos',         type: 'PROPERTY', group: 'yellow', price: 480, rent: 130, amount: null, description: 'Fondo que replica indices y paga dividendos trimestrales. El camino inteligente al mercado.' },
+    { position: 31, name: 'Fondo Indexado',         type: 'PROPERTY', group: 'yellow', price: 480, rent: 130, amount: null, description: 'Replica el mercado global a bajo costo. La estrategia favorita de los grandes inversores.' },
+    { position: 32, name: 'Fraude Financiero',      type: 'SCAM',     group: null,     price: null,rent: null,amount: 500,  description: 'Fraude sofisticado. Antes de invertir: verifica licencias, rastrea el dinero, desconfia de retornos garantizados.' },
+    { position: 33, name: 'Portafolio Bonos',       type: 'PROPERTY', group: 'yellow', price: 520, rent: 140, amount: null, description: 'Cartera de bonos gubernamentales y corporativos. Ingreso fijo y predecible.' },
+    { position: 34, name: 'Retencion Fiscal',       type: 'TAX',      group: null,     price: null,rent: null,amount: 380,  description: 'El fisco retiene un porcentaje de tus ingresos por inversiones. La planificacion fiscal es legal y necesaria.' },
+    { position: 35, name: 'Fondo Diversificado',    type: 'PROPERTY', group: 'green',  price: 560, rent: 155, amount: null, description: 'Portafolio global en multiples activos y paises. La diversificacion real reduce el riesgo sistematico.' },
+    { position: 36, name: 'Bono Extraordinario',    type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 400,  description: 'Tu desempeno excepcional es recompensado. La carrera profesional impacta directamente el patrimonio.' },
+    { position: 37, name: 'Venture Capital',        type: 'PROPERTY', group: 'green',  price: 600, rent: 170, amount: null, description: 'Capital de riesgo en startups de alto crecimiento. La inversion mas volatile y con mayor upside.' },
+    { position: 38, name: 'Renta Pasiva',           type: 'PENSION',  group: null,     price: null,rent: null,amount: 300,  description: 'Tus activos trabajan mientras duermes. La renta pasiva es el objetivo final de la educacion financiera.' },
+    { position: 39, name: 'Fondo Soberano',         type: 'PROPERTY', group: 'green',  price: 650, rent: 190, amount: null, description: 'El activo mas exclusivo del tablero. Solo los inversores mas disciplinados llegan hasta aqui.' },
   ];
 
-  for (const c of cells) {
-    await prisma.boardCell.upsert({
-      where: { position: c.position },
-      update: { name: c.name, type: c.type as any, group: c.group, price: c.price, rent: c.rent, amount: c.amount, description: c.description },
-      create: { position: c.position, name: c.name, type: c.type as any, group: c.group, price: c.price, rent: c.rent, amount: c.amount, description: c.description },
-    });
+  for (const cell of cells) {
+    await prisma.boardCell.create({ data: cell });
   }
+  console.log('OK Casillas del tablero creadas: 40 casillas');
 
   // ── Board wildcards ──────────────────────────────────────────
-  const wildcards: { text: string; type: string; effectAmount: number; explanation: string }[] = [
-    { text: 'Ganaste un concurso de ahorro', type: 'POSITIVE', effectAmount: 100, explanation: 'Recibes $100 por tu buen hábito de ahorro' },
-    { text: 'Te multaron por mal estacionamiento', type: 'NEGATIVE', effectAmount: -50, explanation: 'Pagas una multa de $50' },
-    { text: 'Vendes tu auto usado', type: 'POSITIVE', effectAmount: 200, explanation: 'Recibes $200 por la venta' },
-    { text: 'Se daña tu refrigerador', type: 'NEGATIVE', effectAmount: -150, explanation: 'Pagas $150 por reparación' },
-    { text: 'Ganas un sorteo de la empresa', type: 'POSITIVE', effectAmount: 150, explanation: 'Recibes un bono de $150' },
-    { text: 'Te roban el celular', type: 'NEGATIVE', effectAmount: -100, explanation: 'Pierdes $100 por el robo' },
-    { text: 'Cobras una deuda olvidada', type: 'POSITIVE', effectAmount: 120, explanation: 'Recibes $120 de una deuda antigua' },
-    { text: 'Tienes una emergencia dental', type: 'NEGATIVE', effectAmount: -200, explanation: 'Pagas $200 por la emergencia' },
-    { text: 'Recibes cashback de tus tarjetas', type: 'POSITIVE', effectAmount: 80, explanation: 'Recibes $80 de cashback' },
-    { text: 'Aumenta la prima de tu seguro', type: 'NEGATIVE', effectAmount: -120, explanation: 'Pagas $120 más de seguro' },
-    { text: 'Ganas un premio por fidelidad', type: 'POSITIVE', effectAmount: 90, explanation: 'Recibes $90 por tu fidelidad' },
-    { text: 'Te hackean una cuenta', type: 'NEGATIVE', effectAmount: -180, explanation: 'Pierdes $180 por el hackeo' },
-    { text: 'Cada jugador te paga $50', type: 'COLLECT_FROM_ALL', effectAmount: 50, explanation: 'Cada jugador te paga $50' },
-    { text: 'pagas $75 a cada jugador', type: 'PAY_TO_ALL', effectAmount: 75, explanation: 'pagas $75 a cada jugador' },
-    { text: 'Ve a la cárcel. No cobras salario', type: 'GO_TO_JAIL', effectAmount: 0, explanation: 'Ve directamente a la cárcel' },
+  await prisma.boardWildcard.deleteMany({});
+
+  const wildcards = [
+    { text: 'Tus acciones subieron 15% este mes. El mercado te favorece.', type: 'POSITIVE' as const, effectAmount: 280, explanation: 'El mercado recompensa a quienes invierten con horizonte de largo plazo y no venden en el panico.' },
+    { text: 'Tu empresa te otorgo un bono por cumplimiento de objetivos.', type: 'POSITIVE' as const, effectAmount: 350, explanation: 'Negociar beneficios variables es tan importante como el salario base. Define bien tus objetivos al inicio.' },
+    { text: 'Vendiste activos innecesarios y recuperaste capital liquido.', type: 'POSITIVE' as const, effectAmount: 200, explanation: 'Liberar capital inmovilizado en activos que no generan retorno es una decision financiera inteligente.' },
+    { text: 'Encontraste una cuenta inactiva con fondos olvidados.', type: 'POSITIVE' as const, effectAmount: 175, explanation: 'Revisa periodicamente todas tus cuentas. El dinero olvidado pierde valor por la inflacion.' },
+    { text: 'Tu propiedad se revalorizo por obras en el barrio.', type: 'POSITIVE' as const, effectAmount: 250, explanation: 'La ubicacion y el desarrollo urbano impactan directamente el valor de los inmuebles a largo plazo.' },
+    { text: 'Un cliente te pago una deuda pendiente de hace meses.', type: 'POSITIVE' as const, effectAmount: 220, explanation: 'La gestion activa de cuentas por cobrar es fundamental. El dinero que no cobras es capital que no trabaja.' },
+    { text: 'Tu startup recibio inversion angel de un contacto.', type: 'POSITIVE' as const, effectAmount: 400, explanation: 'Las redes de contacto son uno de los activos mas valiosos de un emprendedor. Cuidalas.' },
+    { text: 'Tu vehiculo sufrio una averia grave. Reparacion urgente.', type: 'NEGATIVE' as const, effectAmount: 350, explanation: 'El fondo de emergencias debe cubrir al menos 3-6 meses de gastos, incluyendo imprevistos mecanicos.' },
+    { text: 'Gastos medicos inesperados no cubiertos por el seguro.', type: 'NEGATIVE' as const, effectAmount: 450, explanation: 'Un seguro medico completo y un fondo de emergencia son las dos defensas esenciales ante la salud.' },
+    { text: 'Multa por incumplimiento de obligaciones tributarias.', type: 'NEGATIVE' as const, effectAmount: 300, explanation: 'El incumplimiento fiscal genera multas e intereses acumulados. La prevencion siempre es menos costosa.' },
+    { text: 'Tu proveedor fallo y perdiste un contrato importante.', type: 'NEGATIVE' as const, effectAmount: 400, explanation: 'Diversificar proveedores y tener contratos con penalizaciones protege tu negocio de interrupciones costosas.' },
+    { text: 'Caida del mercado afecta temporalmente tu portafolio.', type: 'NEGATIVE' as const, effectAmount: 250, explanation: 'La volatilidad es normal e inevitable. Los inversores que venden en panico consolidan las perdidas.' },
+    { text: 'Reparaciones urgentes en tu inmueble de inversion.', type: 'NEGATIVE' as const, effectAmount: 320, explanation: 'Las propiedades requieren reserva de mantenimiento. Calcula entre 1-2% del valor anual para imprevistos.' },
+    { text: 'Inflacion acelerada reduce el valor real de tu efectivo.', type: 'NEGATIVE' as const, effectAmount: 200, explanation: 'La inflacion es un impuesto invisible al ahorro. Mantener dinero invertido es la defensa principal.' },
+    { text: 'Compraste en impulso algo que no necesitabas.', type: 'NEGATIVE' as const, effectAmount: 280, explanation: 'El gasto impulsivo es el mayor enemigo del ahorro. Aplicar la regla de las 72 horas antes de comprar ayuda.' },
+    { text: 'Decisiones financieras impulsivas te mandan directo a la carcel financiera.', type: 'GO_TO_JAIL' as const, effectAmount: 0, explanation: 'Actuar sin planificar tiene consecuencias. La disciplina financiera se construye con cada decision correcta.' },
+    { text: 'La comunidad te reconoce como referente financiero. Cada jugador te paga $100.', type: 'COLLECT_FROM_ALL' as const, effectAmount: 100, explanation: 'La educacion financiera abre puertas y genera confianza. Ser percibido como experto tiene valor economico real.' },
+    { text: 'Organizaste un evento financiado con deuda. Pagas $120 a cada participante.', type: 'PAY_TO_ALL' as const, effectAmount: 120, explanation: 'Gastar mas de lo que tienes y a credito es una trampa comun. El costo real incluye los intereses futuros.' },
   ];
 
-  for (const w of wildcards) {
-    await prisma.boardWildcard.create({
-      data: { text: w.text, type: w.type as any, effectAmount: w.effectAmount, explanation: w.explanation },
-    });
+  for (const wc of wildcards) {
+    await prisma.boardWildcard.create({ data: wc });
   }
-
-  console.log('✓ Board cells and wildcards seeded');
+  console.log(`OK Cartas comodin creadas: ${wildcards.length} cartas`);
 }
 
 main()
