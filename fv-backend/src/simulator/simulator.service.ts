@@ -1,22 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { GameStateService } from './game-state.service';
+import { BotService, BotMoveData } from './bot.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { DecideBuyDto } from './dto/decide-buy.dto';
-import { XpSource, WildcardType, SimulatorStatus, GamePhase } from '@prisma/client';
-import { SimulatorPlayer, SimulatorGame, PlayerProperty, BoardCell, BoardWildcard } from '@prisma/client';
-
-export interface BotMoveData {
-  playerName: string;
-  dice1: number;
-  dice2: number;
-  diceSum: number;
-  fromPosition: number;
-  toPosition: number;
-  passedGo: boolean;
-  action: string;
-  actionDetail: string;
-}
+import { GamePhase } from '@prisma/client';
 
 const WILDCARD_TYPE_CODE: Record<string, number> = {
   POSITIVE: 0,
@@ -39,7 +28,9 @@ export class SimulatorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
-  ) { }
+    private readonly gameState: GameStateService,
+    private readonly bot: BotService,
+  ) {}
 
   async createGame(userId: string, dto: CreateGameDto) {
     const humanCount = dto.humanPlayers?.length ?? 0;
@@ -64,7 +55,7 @@ export class SimulatorService {
     for (const p of dto.humanPlayers ?? []) {
       entries.push({
         displayName: p.displayName,
-        userId: p.userId ?? userId,
+        userId: userId,
         isBot: false,
         botPersonality: null,
         tokenSymbol: p.tokenSymbol ?? '★',
@@ -93,7 +84,7 @@ export class SimulatorService {
         status: 'WAITING',
         gamePhase: 'WAITING',
         initialMoney,
-        xpRecipientId: dto.xpRecipientId ?? userId,
+        xpRecipientId: userId,
         players: {
           create: entries.map((e, i) => ({
             displayName: e.displayName,
@@ -142,26 +133,7 @@ export class SimulatorService {
   }
 
   async getGameState(gameId: string, userId?: string) {
-    const game = await this.prisma.simulatorGame.findUnique({
-      where: { id: gameId },
-      include: {
-        players: {
-          orderBy: { turnOrder: 'asc' },
-          include: { properties: true },
-        },
-      },
-    });
-
-    if (!game) throw new NotFoundException('Partida no encontrada');
-
-    const boardCells = await this.prisma.boardCell.findMany({ orderBy: { position: 'asc' } });
-    const wildcards = await this.prisma.boardWildcard.findMany();
-
-    const currentPlayer = game.players.length > 0
-      ? game.players[game.currentPlayerIdx] ?? null
-      : null;
-
-    return { game, players: game.players, boardCells, wildcards, currentPlayer };
+    return this.gameState.getGameState(gameId);
   }
 
   async rollDice(gameId: string, userId: string) {
@@ -203,7 +175,7 @@ export class SimulatorService {
           newPosition: currentPlayer.position,
           action: 'STAY_IN_JAIL',
           actionDetails: { jailTurnsLeft: currentPlayer.jailTurnsLeft },
-          gameState: await this.getGameState(gameId, userId),
+          gameState: await this.gameState.getGameState(gameId),
         };
       }
     }
@@ -247,7 +219,7 @@ export class SimulatorService {
           action = 'NOTHING';
         } else {
           const owner = game.players.find(p => p.id === existingProp.playerId);
-          const rent = await this.calculateRent(cell, existingProp.playerId, gameId, boardCells, allProperties);
+          const rent = await this.bot.calculateRent(cell, existingProp.playerId, gameId, boardCells, allProperties);
           moneyChange = -rent;
           currentPlayer.money -= rent;
           if (owner) {
@@ -329,7 +301,7 @@ export class SimulatorService {
             passedGo: newPosition < oldPosition,
             action: 'WILDCARD',
             actionDetails,
-            gameState: await this.getGameState(gameId, userId),
+            gameState: await this.gameState.getGameState(gameId),
           };
         }
         break;
@@ -408,7 +380,7 @@ export class SimulatorService {
       passedGo,
       action,
       actionDetails,
-      gameState: await this.getGameState(gameId, userId),
+      gameState: await this.gameState.getGameState(gameId),
     };
   }
 
@@ -467,7 +439,7 @@ export class SimulatorService {
       data: { gamePhase: 'BETWEEN_TURNS' },
     });
 
-    return { bought: dto.buy, gameState: await this.getGameState(gameId, userId) };
+    return { bought: dto.buy, gameState: await this.gameState.getGameState(gameId) };
   }
 
   async dismissWildcard(gameId: string, userId: string) {
@@ -570,7 +542,7 @@ export class SimulatorService {
       effectAmount,
       moneyChange,
       isInJail: player.isInJail,
-      gameState: await this.getGameState(gameId, userId),
+      gameState: await this.gameState.getGameState(gameId),
     };
   }
 
@@ -628,34 +600,12 @@ export class SimulatorService {
   }
 
   async getHistory(userId: string) {
-    const games = await this.prisma.simulatorGame.findMany({
-      where: { createdByUserId: userId },
-      include: { players: { orderBy: { money: 'desc' } } },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-    });
-
-    return games.map(g => ({
-      id: g.id,
-      rounds: g.maxRounds,
-      mode: g.mode,
-      status: g.status,
-      humanPlayerCount: g.players.filter((p: any) => !p.isBot).length,
-      winner:
-        g.status === 'FINISHED'
-          ? (g.players.find((p: any) => !p.isBot && p.finalRank === 1)?.displayName ??
-             g.players[0]?.displayName ??
-             '-')
-          : '-',
-      finishedAt: g.finishedAt ?? g.createdAt,
-    }));
+    return this.gameState.getHistory(userId);
   }
 
   async getBoardCells() {
-    return this.prisma.boardCell.findMany({ orderBy: { position: 'asc' } });
+    return this.gameState.getBoardCells();
   }
-
-
 
   private async advanceToHuman(gameId: string): Promise<{ gameState: any; botMoves: BotMoveData[] }> {
     const botMoves: BotMoveData[] = [];
@@ -668,8 +618,8 @@ export class SimulatorService {
 
       if (!game || game.status !== 'IN_PROGRESS') break;
 
-      if (this.checkLapFinish(game)) {
-        return { gameState: await this.finishGame(gameId), botMoves };
+      if (this.gameState.checkLapFinish(game)) {
+        return { gameState: await this.gameState.finishGame(gameId), botMoves };
       }
 
       const currentPlayer = game.players[game.currentPlayerIdx];
@@ -684,7 +634,7 @@ export class SimulatorService {
       }
 
       if (currentPlayer.isBot) {
-        const move = await this.processBotFullTurn(gameId);
+        const move = await this.bot.processBotFullTurn(gameId);
         if (move) botMoves.push(move);
         const nextIdx = (game.currentPlayerIdx + 1) % game.players.length;
         await this.prisma.simulatorGame.update({
@@ -699,10 +649,10 @@ export class SimulatorService {
         data: { gamePhase: 'ROLLING' },
       });
 
-      return { gameState: await this.getGameState(gameId), botMoves };
+      return { gameState: await this.gameState.getGameState(gameId), botMoves };
     }
 
-    return { gameState: await this.getGameState(gameId), botMoves };
+    return { gameState: await this.gameState.getGameState(gameId), botMoves };
   }
 
   private async advanceToNextTurn(gameId: string): Promise<{ gameState: any; botMoves: BotMoveData[] }> {
@@ -715,15 +665,15 @@ export class SimulatorService {
       });
 
       if (!game || game.status !== 'IN_PROGRESS') {
-        return { gameState: await this.getGameState(gameId), botMoves };
+        return { gameState: await this.gameState.getGameState(gameId), botMoves };
       }
 
-      if (this.checkGameOver(game)) {
-        return { gameState: await this.finishGame(gameId), botMoves };
+      if (this.gameState.checkGameOver(game)) {
+        return { gameState: await this.gameState.finishGame(gameId), botMoves };
       }
 
-      if (this.checkLapFinish(game)) {
-        return { gameState: await this.finishGame(gameId), botMoves };
+      if (this.gameState.checkLapFinish(game)) {
+        return { gameState: await this.gameState.finishGame(gameId), botMoves };
       }
 
       const nextIdx = (game.currentPlayerIdx + 1) % game.players.length;
@@ -759,438 +709,12 @@ export class SimulatorService {
       });
 
       if (nextPlayer.isBot) {
-        const move = await this.processBotFullTurn(gameId);
+        const move = await this.bot.processBotFullTurn(gameId);
         if (move) botMoves.push(move);
         continue;
       }
 
-      return { gameState: await this.getGameState(gameId), botMoves };
+      return { gameState: await this.gameState.getGameState(gameId), botMoves };
     }
-  }
-
-  private async processBotFullTurn(gameId: string): Promise<BotMoveData | null> {
-    const game = await this.prisma.simulatorGame.findUnique({
-      where: { id: gameId },
-      include: { players: { orderBy: { turnOrder: 'asc' }, include: { properties: true } } },
-    });
-
-    if (!game || game.status !== 'IN_PROGRESS') return null;
-
-    const player = game.players[game.currentPlayerIdx];
-    if (!player || !player.isBot) return null;
-
-    const dice1 = Math.floor(Math.random() * 6) + 1;
-    const dice2 = Math.floor(Math.random() * 6) + 1;
-    const sum = dice1 + dice2;
-    const oldPosition = player.position;
-    const rawNewPos = oldPosition + sum;
-    const passedGo = rawNewPos >= 40;
-    let newPosition = rawNewPos % 40;
-
-    if (player.isInJail) {
-      player.jailTurnsLeft--;
-      if (dice1 === dice2 || player.jailTurnsLeft <= 0) {
-        player.isInJail = false;
-        player.jailTurnsLeft = 0;
-      } else {
-        await this.prisma.simulatorPlayer.update({
-          where: { id: player.id },
-          data: { jailTurnsLeft: player.jailTurnsLeft, hasRolled: true },
-        });
-        return null;
-      }
-    }
-
-    if (passedGo) {
-      await this.prisma.simulatorPlayer.update({
-        where: { id: player.id },
-        data: { lapsCompleted: { increment: 1 } },
-      });
-    }
-
-    const boardCells = await this.prisma.boardCell.findMany({ orderBy: { position: 'asc' } });
-    const cell = boardCells.find(c => c.position === newPosition);
-    if (!cell) return null;
-
-    const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
-
-    let purchased = false;
-    let action = 'NOTHING';
-    let actionDetail = '';
-
-    switch (cell.type) {
-      case 'PROPERTY': {
-        const existingProp = allProperties.find(p => p.cellPosition === cell.position);
-        if (!existingProp) {
-          const botDecision = this.botDecideBuy(player, cell, allProperties, boardCells);
-          if (botDecision) {
-            const price = cell.price ?? 0;
-            if (player.money >= price) {
-              await this.prisma.playerProperty.create({
-                data: { gameId, playerId: player.id, cellPosition: cell.position },
-              });
-              player.money -= price;
-              purchased = true;
-              action = 'BUY';
-              actionDetail = `${player.displayName} compro ${cell.name}`;
-            }
-          }
-        } else if (existingProp.playerId !== player.id) {
-          const rent = await this.calculateRent(cell, existingProp.playerId, gameId, boardCells, allProperties);
-          player.money -= rent;
-          if (player.money <= 0) player.isEliminated = true;
-          const owner = game.players.find(p => p.id === existingProp.playerId);
-          if (owner) {
-            owner.money += rent;
-            await this.prisma.simulatorPlayer.update({
-              where: { id: owner.id },
-              data: { money: owner.money },
-            });
-          }
-          action = 'PAY_RENT';
-          actionDetail = `Pago $${rent} de renta a ${owner?.displayName ?? '?'}`;
-        }
-        break;
-      }
-
-      case 'TAX':
-      case 'SCAM': {
-        const amount = cell.amount ?? 0;
-        player.money -= amount;
-        if (player.money <= 0) player.isEliminated = true;
-        action = cell.type === 'TAX' ? 'PAY_TAX' : 'SCAM';
-        actionDetail = `Pago $${amount} en ${cell.name}`;
-        break;
-      }
-
-      case 'LOTTERY':
-      case 'PENSION':
-      case 'PENSION_ESPECIAL': {
-        const amount = cell.amount ?? 0;
-        player.money += amount;
-        action = 'COLLECT';
-        actionDetail = `Recibio $${amount} de ${cell.name}`;
-        break;
-      }
-
-      case 'WILDCARD': {
-        const wildcards = await this.prisma.boardWildcard.findMany();
-        if (wildcards.length > 0) {
-          const wildcard = wildcards[Math.floor(Math.random() * wildcards.length)];
-          this.applyBotWildcard(player, game, wildcard);
-          action = 'WILDCARD';
-          actionDetail = `Carta: ${wildcard.text}`;
-        }
-        break;
-      }
-
-      case 'GO_TO_JAIL': {
-        newPosition = 10;
-        player.isInJail = true;
-        player.jailTurnsLeft = 1;
-        action = 'GO_TO_JAIL';
-        actionDetail = `${player.displayName} fue a la carcel`;
-        break;
-      }
-    }
-
-    player.position = newPosition;
-    if (!purchased && player.money <= 0) {
-      player.isEliminated = true;
-    }
-
-    await this.prisma.simulatorPlayer.update({
-      where: { id: player.id },
-      data: {
-        position: player.position,
-        money: player.money,
-        isEliminated: player.isEliminated,
-        isInJail: player.isInJail,
-        jailTurnsLeft: player.jailTurnsLeft,
-        hasRolled: true,
-      },
-    });
-
-    this.saveMultiPlayerMoney(game, allProperties, gameId);
-
-    return {
-      playerName: player.displayName,
-      dice1,
-      dice2,
-      diceSum: sum,
-      fromPosition: oldPosition,
-      toPosition: newPosition,
-      passedGo,
-      action,
-      actionDetail,
-    };
-  }
-
-  private applyBotWildcard(
-    bot: any,
-    game: any,
-    wildcard: BoardWildcard,
-  ) {
-    const amount = wildcard.effectAmount;
-
-    switch (wildcard.type) {
-      case 'GO_TO_JAIL': {
-        bot.position = 10;
-        bot.isInJail = true;
-        bot.jailTurnsLeft = 1;
-        break;
-      }
-
-      case 'COLLECT_FROM_ALL': {
-        const others = game.players.filter((p: any) => p.id !== bot.id && !p.isEliminated);
-        for (const other of others) {
-          other.money -= amount;
-          if (other.money <= 0) other.isEliminated = true;
-        }
-        bot.money += amount * others.length;
-        break;
-      }
-
-      case 'PAY_TO_ALL': {
-        const others = game.players.filter((p: any) => p.id !== bot.id && !p.isEliminated);
-        bot.money -= amount * others.length;
-        if (bot.money <= 0) bot.isEliminated = true;
-        for (const other of others) {
-          other.money += amount;
-        }
-        break;
-      }
-
-      case 'POSITIVE': {
-        bot.money += amount;
-        break;
-      }
-
-      case 'NEGATIVE': {
-        bot.money -= amount;
-        if (bot.money <= 0) bot.isEliminated = true;
-        break;
-      }
-    }
-  }
-
-  private async saveMultiPlayerMoney(game: any, properties: PlayerProperty[], gameId: string) {
-    for (const p of game.players) {
-      if (p.isBot || p.userId) {
-        await this.prisma.simulatorPlayer.update({
-          where: { id: p.id },
-          data: { money: p.money, isEliminated: p.isEliminated },
-        });
-      }
-    }
-  }
-
-  private botDecideBuy(
-    player: any,
-    cell: BoardCell,
-    ownedProperties: PlayerProperty[],
-    boardCells: BoardCell[],
-  ): boolean {
-    const cash = player.money;
-    const price = cell.price ?? 0;
-    if (price <= 0) return false;
-
-    const personality = player.botPersonality ?? 'CONSERVATIVE';
-    const playerProps = ownedProperties.filter(p => p.playerId === player.id);
-    const owned = playerProps.length;
-
-    switch (personality) {
-      case 'CONSERVATIVE':
-        return price <= 150 && cash - price >= 400;
-
-      case 'RISKY':
-        return price <= 350 && cash >= price;
-
-      case 'IMPULSIVE':
-        return cash >= price && Math.random() < 0.7;
-
-      case 'INVESTOR': {
-        const groupCells = boardCells.filter(c => c.group === cell.group);
-        const groupTotal = groupCells.length;
-        const groupOwned = playerProps.filter(pp => {
-          const c = boardCells.find(bc => bc.position === pp.cellPosition);
-          return c && c.group === cell.group;
-        }).length;
-        const completesGroup = groupOwned === groupTotal - 1 && groupTotal > 1;
-        return cash >= price && (completesGroup || Math.random() < 0.5);
-      }
-
-      case 'SAVER':
-        return cash >= price * 2 && Math.random() < 0.2;
-
-      default:
-        return cash >= price && Math.random() < 0.5;
-    }
-  }
-
-  private async calculateRent(
-    cell: BoardCell,
-    ownerId: string,
-    gameId: string,
-    boardCells: BoardCell[],
-    allProperties: PlayerProperty[],
-  ): Promise<number> {
-    const baseRent = cell.rent ?? 0;
-    if (!cell.group) return baseRent;
-
-    const groupCells = boardCells.filter(c => c.group === cell.group);
-    const ownedInGroup = allProperties.filter(
-      p => p.playerId === ownerId && groupCells.some(gc => gc.position === p.cellPosition),
-    );
-
-    if (ownedInGroup.length === groupCells.length && groupCells.length > 1) {
-      return baseRent * 2;
-    }
-
-    return baseRent;
-  }
-
-  private checkLapFinish(game: any): boolean {
-    const allPlayers = game.players.filter((p: any) => !p.isEliminated);
-    if (allPlayers.length === 0) return true;
-    return allPlayers.every((p: any) => (p.lapsCompleted ?? 0) >= game.maxRounds);
-  }
-
-  private checkGameOver(game: any): boolean {
-    const activePlayers = game.players.filter((p: any) => !p.isEliminated);
-    if (activePlayers.length <= 1) return true;
-
-    const humansLeft = activePlayers.filter((p: any) => !p.isBot);
-    if (humansLeft.length === 0) return true;
-
-    return false;
-  }
-
-  private async finishGame(gameId: string) {
-    const game = await this.prisma.simulatorGame.findUnique({
-      where: { id: gameId },
-      include: { players: { orderBy: { money: 'desc' } } },
-    });
-    if (!game) throw new NotFoundException('Partida no encontrada');
-
-    const boardCells = await this.prisma.boardCell.findMany();
-    const allProperties = await this.prisma.playerProperty.findMany({ where: { gameId } });
-
-    const ranked = [...game.players].sort((a, b) => {
-      if (a.isEliminated && !b.isEliminated) return 1;
-      if (!a.isEliminated && b.isEliminated) return -1;
-      return b.money - a.money;
-    });
-
-    const recipientId = game.xpRecipientId ?? game.createdByUserId;
-    const baseXP = this.getBaseXP(game.maxRounds);
-
-    const humanPlayers = game.players.filter((p: any) => !p.isBot);
-    const bestHuman = humanPlayers.length > 0 ? humanPlayers[0] : ranked[0];
-
-    const bestHumanRank =
-      ranked.findIndex((p: any) => p.id === bestHuman.id) + 1;
-
-    const positionMultiplier = this.getPositionMultiplier(bestHumanRank);
-
-    const propertiesCount = allProperties.filter(
-      p => p.playerId === bestHuman.id
-    ).length;
-
-    const completeGroups = this.countCompleteGroups(
-      bestHuman.id,
-      boardCells,
-      allProperties
-    );
-
-    const xpAmount = Math.floor(
-      baseXP * positionMultiplier +
-      propertiesCount * 3 +
-      completeGroups * 15
-    );
-
-    for (let i = 0; i < ranked.length; i++) {
-      await this.prisma.simulatorPlayer.update({
-        where: { id: ranked[i].id },
-        data: { finalRank: i + 1 },
-      });
-    }
-
-    if (game.mode === 'SIMULATION') {
-      return this.prisma.simulatorGame.update({
-        where: { id: gameId },
-        data: {
-          status: 'FINISHED',
-          gamePhase: 'FINISHED',
-          finishedAt: new Date(),
-        },
-      });
-    }
-
-    const isWinner = bestHumanRank === 1;
-
-    await this.prisma.userStatistics.upsert({
-      where: { userId: recipientId },
-      update: {
-        gamesPlayed: { increment: 1 },
-        gamesWon: isWinner ? { increment: 1 } : undefined,
-      },
-      create: {
-        userId: recipientId,
-        gamesPlayed: 1,
-        gamesWon: isWinner ? 1 : 0,
-      },
-    });
-
-    if (xpAmount > 0) {
-      try {
-        await this.gamification.addXp(recipientId, {
-          amount: xpAmount,
-          source: XpSource.SIMULATOR_GAME_FINISHED,
-          referenceId: gameId,
-          description: `Simulador completado — Posición #${bestHumanRank} de ${game.players.length} jugadores`,
-        });
-      } catch {}
-    }
-  }
-
-  private getBaseXP(maxRounds: number): number {
-    if (maxRounds >= 10) return 175;
-    if (maxRounds >= 7) return 120;
-    if (maxRounds >= 5) return 80;
-    if (maxRounds >= 3) return 50;
-    return 25;
-  }
-
-  private getPositionMultiplier(position: number): number {
-    if (position <= 1) return 2.0;
-    if (position === 2) return 1.5;
-    if (position === 3) return 1.2;
-    return 1.0;
-  }
-
-  private countCompleteGroups(
-    playerId: string,
-    boardCells: BoardCell[],
-    allProperties: PlayerProperty[],
-  ): number {
-    const groups = new Set(boardCells.filter(c => c.group).map(c => c.group));
-    let complete = 0;
-
-    for (const group of groups) {
-      if (!group) continue;
-      const groupCells = boardCells.filter(c => c.group === group);
-      if (groupCells.length <= 1) continue;
-
-      const ownedInGroup = allProperties.filter(
-        p => p.playerId === playerId && groupCells.some(gc => gc.position === p.cellPosition),
-      );
-
-      if (ownedInGroup.length === groupCells.length) {
-        complete++;
-      }
-    }
-
-    return complete;
   }
 }

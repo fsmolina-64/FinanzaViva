@@ -7,8 +7,17 @@ import { Observable, firstValueFrom, of } from 'rxjs';
 import { SimulatorService } from '../../../core/services/simulator.service';
 import {
   GameStateResponse, BackendPlayer, BoardCell,
-  GamePhase, BotMove
+  BotMove
 } from '../../../core/models/simulator.model';
+import {
+  getTokenPos, getPlayersOnCell, cellCol, cellRow, cellSection,
+  cellFlexClass, bandIsHorizontal, cellBg, cellBandColor,
+  getOwner, cellByPos,
+} from './game-board.utils';
+import {
+  playerHex, playerBg, playerText, playerToken, abbr,
+  cellTypeIcon, phaseLabel, modeLabel, fmt, calcXP,
+} from './game-display.utils';
 
 interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' | 'error'; }
 
@@ -421,108 +430,39 @@ export class Game implements OnInit, OnDestroy {
   // ──── Helpers tablero ────────────────────────────────────────────────
 
   getTokenPos(p: BackendPlayer): number {
-    return p.id === this.animatingId() ? this.animatingPos() : p.position;
+    return getTokenPos(p, this.animatingId(), this.animatingPos());
   }
 
   getPlayersOnCell(pos: number): BackendPlayer[] {
-    return this.players().filter(p => this.getTokenPos(p) === pos);
+    return getPlayersOnCell(this.players(), pos, this.animatingId(), this.animatingPos());
   }
 
-  cellCol(pos: number): number {
-    if (pos <= 10) return pos + 1;
-    if (pos <= 19) return 11;
-    if (pos <= 30) return 11 - (pos - 20);
-    return 1;
-  }
-
-  cellRow(pos: number): number {
-    if (pos <= 10) return 11;
-    if (pos <= 19) return 11 - (pos - 10);
-    if (pos <= 30) return 1;
-    return pos - 29;
-  }
-
-  cellSection(pos: number): 'bottom' | 'right' | 'top' | 'left' | 'corner' {
-    if ([0, 10, 20, 30].includes(pos)) return 'corner';
-    if (pos < 10) return 'bottom';
-    if (pos < 20) return 'right';
-    if (pos < 30) return 'top';
-    return 'left';
-  }
-
-  cellFlexClass(pos: number): string {
-    return { bottom: 'flex-col', right: 'flex-row', top: 'flex-col-reverse', left: 'flex-row-reverse', corner: 'flex-col' }[this.cellSection(pos)];
-  }
-
-  bandIsHorizontal(pos: number): boolean {
-    const s = this.cellSection(pos);
-    return s === 'bottom' || s === 'top';
-  }
-
-  cellBg(cell: BoardCell): string {
-    const g: Record<string, string> = { purple: '#2D1B69', blue: '#1a3360', pink: '#4A1030', orange: '#4A2010', red: '#4A0E0E', yellow: '#3A2C08', green: '#0E3A1A' };
-    if (cell.group && g[cell.group]) return g[cell.group];
-    const t: Record<string, string> = { TAX: '#3A0E0E', SCAM: '#3A0E0E', LOTTERY: '#332408', PENSION: '#0D2A3A', PENSION_ESPECIAL: '#0D2A3A', WILDCARD: '#221060', INICIO: '#0D3A1A', JAIL: '#111827', GO_TO_JAIL: '#2A1505' };
-    return t[cell.type] ?? '#0E1827';
-  }
-
-  cellBandColor(cell: BoardCell): string {
-    const g: Record<string, string> = { purple: '#7C3AED', blue: '#2563EB', pink: '#BE185D', orange: '#EA580C', red: '#DC2626', yellow: '#CA8A04', green: '#16A34A' };
-    if (cell.group && g[cell.group]) return g[cell.group];
-    const t: Record<string, string> = { TAX: '#991B1B', SCAM: '#991B1B', LOTTERY: '#B45309', PENSION: '#1D4ED8', PENSION_ESPECIAL: '#1D4ED8', WILDCARD: '#6D28D9', INICIO: '#15803D', JAIL: '#374151', GO_TO_JAIL: '#92400E' };
-    return t[cell.type] ?? '#334155';
-  }
-
-  playerHex(idx: number): string {
-    return ['#3B82F6', '#EF4444', '#10B981', '#EAB308', '#A855F7', '#EC4899', '#06B6D4', '#F97316'][idx % 8];
-  }
-
-  playerBg(idx: number): string {
-    return ['bg-blue-500', 'bg-red-500', 'bg-emerald-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-orange-500'][idx % 8];
-  }
+  cellCol = cellCol;
+  cellRow = cellRow;
+  cellFlexClass = cellFlexClass;
+  bandIsHorizontal = bandIsHorizontal;
+  cellBg = cellBg;
+  cellBandColor = cellBandColor;
+  abbr = abbr;
+  cellTypeIcon = cellTypeIcon;
+  phaseLabel = phaseLabel;
+  modeLabel = modeLabel;
+  fmt = fmt;
+  playerToken = playerToken;
+  playerText = playerText;
+  playerHex = playerHex;
+  playerBg = playerBg;
 
   getOwner(pos: number): BackendPlayer | null {
-    return this.players().find(p => p.properties?.some(pr => pr.cellPosition === pos)) ?? null;
+    return getOwner(this.players(), pos);
   }
 
-  cellByPos(pos: number): BoardCell | undefined { return this.cells().find(c => c.position === pos); }
-
-  abbr(name: string, max = 10): string { return name.length <= max ? name : name.slice(0, max - 1) + '.'; }
-
-  cellTypeIcon(cell: BoardCell): string {
-    if (cell.type === 'TAX' || cell.type === 'SCAM') return '-$';
-    if (cell.type === 'LOTTERY') return '+$';
-    if (cell.type === 'PENSION' || cell.type === 'PENSION_ESPECIAL') return '$';
-    if (cell.type === 'WILDCARD') return '?';
-    if (cell.type === 'GO_TO_JAIL') return '!';
-    return '';
-  }
-
-  phaseLabel(ph?: GamePhase): string {
-    const m: Record<string, string> = {
-      ROLLING: 'Lanzar dados', MOVING: 'Moviendo', ACTION: 'Accion',
-      BUYING: 'Comprar', WILDCARD_REVEAL: 'Carta', BETWEEN_TURNS: 'Terminar turno',
-      FINISHED: 'Finalizada', ABANDONED: 'Abandonada', WAITING: 'Esperando',
-    };
-    return m[ph ?? ''] ?? '';
-  }
-
-  modeLabel(m?: string): string {
-    return { SOLO: 'Solo', MULTIPLAYER: 'Multijugador', MIXED: 'Mixto', SIMULATION: 'Observar' }[m ?? ''] ?? '';
-  }
-
-  fmt(v: number): string {
-    return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(v);
+  cellByPos(pos: number): BoardCell | undefined {
+    return cellByPos(this.cells(), pos);
   }
 
   calcXP(): number {
-    const maxR = this.game()?.maxRounds ?? 5;
-    const rank = this.rankedPlayers();
-    const hIdx = rank.findIndex(p => !p.isBot);
-    const base = [50, 80, 120, 175][maxR <= 3 ? 0 : maxR <= 5 ? 1 : maxR <= 7 ? 2 : 3];
-    const mult = [2.0, 1.5, 1.2, 1.0][Math.max(0, hIdx)] ?? 1.0;
-    const props = (rank[hIdx]?.properties?.length ?? 0) * 3;
-    return Math.max(10, Math.round(base * mult + props));
+    return calcXP(this.game()?.maxRounds ?? 5, this.rankedPlayers());
   }
 
   onCellClick(cell: BoardCell, e: MouseEvent): void {
@@ -532,14 +472,6 @@ export class Game implements OnInit, OnDestroy {
   }
 
   readonly Math = Math;
-
-  playerToken(p: BackendPlayer): string {
-    return (p as any).tokenSymbol ?? '★';
-  }
-
-  playerText(idx: number): string {
-    return ['text-blue-400', 'text-red-400', 'text-emerald-400', 'text-yellow-400', 'text-purple-400', 'text-pink-400', 'text-cyan-400', 'text-orange-400'][idx % 8];
-  }
 
   private async showCellModal(cell: BoardCell, action: string, amount?: number): Promise<void> {
     let impactText = '';
