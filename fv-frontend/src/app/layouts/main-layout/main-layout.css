@@ -1,16 +1,9 @@
 /* ── Estado activo ── */
 .nav-active {
-<<<<<<< HEAD
   background: linear-gradient(135deg, rgba(37,99,235,0.25) 0%, rgba(59,130,246,0.12) 100%);
   color: #60a5fa !important;
   border-left: 3px solid #2563EB;
   box-shadow: inset 0 0 20px rgba(37,99,235,0.08), 4px 0 12px rgba(37,99,235,0.12);
-=======
-  background: rgba(242, 242, 247, 0.1) !important;
-  color: #F2F2F7 !important;
-  border-left: 3px solid #F2F2F7;
-  box-shadow: inset 0 0 0 1px rgba(242, 242, 247, 0.06);
->>>>>>> origin/develop
 }
 
 /* ── Item base ── */
@@ -34,7 +27,6 @@
 .nav-item::after {
   content: '';
   position: absolute;
-<<<<<<< HEAD
   top: 0; left: -100%; width: 60%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(96,165,250,0.18), transparent);
   transition: left 0.5s ease;
@@ -42,12 +34,6 @@
 }
 .nav-item:hover::after {
   left: 140%;
-=======
-  inset: 0;
-  background: linear-gradient(135deg, rgba(242,242,247,0.06), transparent);
-  opacity: 0;
-  transition: opacity 0.2s ease;
->>>>>>> origin/develop
 }
 
 /* Brillo de borde izquierdo al hover */
@@ -64,7 +50,6 @@
   opacity: 1;
 }
 
-<<<<<<< HEAD
 /* ── Animación fade-in general ── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-4px); }
@@ -72,59 +57,4 @@
 }
 .animate-fade-in {
   animation: fade-in 0.3s ease forwards;
-=======
-.sidebar-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(242,242,247,0.1) transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(242,242,247,0.1);
-  border-radius: 4px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(242,242,247,0.2);
-}
-
-.ranking-icon {
-  transform: scale(1.1);
-}
-
-.group:hover .ranking-icon {
-  transform: scale(1.35);
-}
-
-.border-strong {
-  border: 2px solid rgba(255, 255, 255, 0.15);
-}
-
-.aura-blue {
-  box-shadow: 0 0 18px 4px rgba(59, 130, 246, 0.55), 0 0 36px 8px rgba(59, 130, 246, 0.25);
-}
-
-.aura-gold {
-  box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.55), 0 0 36px 8px rgba(245, 158, 11, 0.25);
-}
-
-@keyframes aura-pulse {
-  0%, 100% {
-    box-shadow: 0 0 18px 4px rgba(139, 92, 246, 0.55), 0 0 36px 8px rgba(139, 92, 246, 0.25);
-  }
-  50% {
-    box-shadow: 0 0 30px 8px rgba(139, 92, 246, 0.75), 0 0 60px 16px rgba(139, 92, 246, 0.4);
-  }
-}
-
-.aura-legendary {
-  animation: aura-pulse 2s ease-in-out infinite;
->>>>>>> origin/develop
 }
