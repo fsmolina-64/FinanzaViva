@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, UserRank, QuizDifficulty, QuestionType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { seedLessons } from './seed-lessons';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -355,16 +356,16 @@ const MODULES_DATA: ModuleData[] = [
 async function main() {
 
   const levels = [
-    { number: 1, name: 'Novato', xpRequired: 0, rank: UserRank.ROOKIE, badge: '🌱' },
-    { number: 2, name: 'Aprendiz', xpRequired: 100, rank: UserRank.ROOKIE, badge: '📘' },
-    { number: 3, name: 'Estudiante', xpRequired: 250, rank: UserRank.APPRENTICE, badge: '📗' },
-    { number: 4, name: 'Ahorrador', xpRequired: 500, rank: UserRank.APPRENTICE, badge: '💰' },
-    { number: 5, name: 'Planificador', xpRequired: 900, rank: UserRank.INTERMEDIATE, badge: '📊' },
-    { number: 6, name: 'Inversor', xpRequired: 1400, rank: UserRank.INTERMEDIATE, badge: '📈' },
-    { number: 7, name: 'Estratega', xpRequired: 2000, rank: UserRank.ADVANCED, badge: '🧠' },
-    { number: 8, name: 'Experto', xpRequired: 2800, rank: UserRank.ADVANCED, badge: '⚡' },
-    { number: 9, name: 'Maestro', xpRequired: 4000, rank: UserRank.EXPERT, badge: '🏆' },
-    { number: 10, name: 'Leyenda', xpRequired: 6000, rank: UserRank.MASTER, badge: '👑' },
+    { number: 1, xpRequired: 0, rank: UserRank.ROOKIE, badge: '🌱' },
+    { number: 2, xpRequired: 100, rank: UserRank.ROOKIE, badge: '📘' },
+    { number: 3, xpRequired: 250, rank: UserRank.APPRENTICE, badge: '📗' },
+    { number: 4, xpRequired: 500, rank: UserRank.APPRENTICE, badge: '💰' },
+    { number: 5, xpRequired: 900, rank: UserRank.INTERMEDIATE, badge: '📊' },
+    { number: 6, xpRequired: 1400, rank: UserRank.INTERMEDIATE, badge: '📈' },
+    { number: 7, xpRequired: 2000, rank: UserRank.ADVANCED, badge: '🧠' },
+    { number: 8, xpRequired: 2800, rank: UserRank.ADVANCED, badge: '⚡' },
+    { number: 9, xpRequired: 4000, rank: UserRank.EXPERT, badge: '🏆' },
+    { number: 10, xpRequired: 6000, rank: UserRank.MASTER, badge: '👑' },
   ];
 
   for (const level of levels) {
@@ -449,824 +450,7 @@ async function main() {
   }
   console.log('✅ Módulos y quizzes creados');
 
-  // Eliminar eventos anteriores con cascade manual para evitar FK
-  await prisma.simulatorPlayerRound.deleteMany({});
-  await prisma.simulatorConsequence.deleteMany({});
-  await prisma.simulatorEvent.deleteMany({});
-  console.log('🗑️  Eventos anteriores eliminados');
 
-  interface SimulatorOptionSeed {
-    text: string;
-    explanation: string;
-    effectMoney: number;
-    effectIncome: number;
-    effectExpenses: number;
-    effectDebt: number;
-    effectScore: number;
-    effectSavings: number;
-    effectAssets: number;
-    effectInvestments: number;
-    consequenceRounds: number;
-    consequenceDesc: string | null;
-  }
-
-  interface SimulatorEventSeed {
-    name: string;
-    description: string;
-    category: string;
-    probability: number;
-    isGlobal: boolean;
-    options: SimulatorOptionSeed[];
-  }
-
-  const events: SimulatorEventSeed[] = [
-
-    // ══════════════════════════════ EMPLEO ══════════════════════════════
-
-    {
-      name: 'Reduccion de personal',
-      description: 'Tu empresa anuncio una restructuracion inesperada. Tu puesto fue eliminado y recibes un mes de indemnizacion equivalente a $800.',
-      category: 'RISK',
-      probability: 0.15,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Vivir de la indemnizacion mientras buscas trabajo por tu cuenta',
-          explanation: 'Tomarse tiempo para encontrar el trabajo correcto puede resultar en mejor posicion a largo plazo. El riesgo real es que el proceso tome mas tiempo del esperado y el colchon se agote. Sin ingresos, cada mes cuenta.',
-          effectMoney: -800, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: -5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Sin empleo: -$800 mensuales para cubrir gastos de subsistencia'
-        },
-        {
-          text: 'Aceptar el primer trabajo disponible aunque pague un 30% menos',
-          explanation: 'Mantener el flujo de ingresos reduce la presion inmediata. El costo es la reduccion permanente de ingresos mientras buscas algo mejor. A veces el trabajo temporal es el puente correcto, otras veces bloquea la busqueda real.',
-          effectMoney: 0, effectIncome: -600, effectExpenses: 0, effectDebt: 0, effectScore: -10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Solicitar un prestamo de emergencia al banco para cubrir gastos',
-          explanation: 'Endeudarse durante el desempleo acumula presion financiera exactamente cuando los ingresos desaparecen. Los intereses corren independientemente de tu situacion laboral. Es comprensible como ultima opcion pero su costo real es alto.',
-          effectMoney: 1200, effectIncome: 0, effectExpenses: 0, effectDebt: 1600, effectScore: -20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota prestamo desempleo: -$150 mensuales por 3 meses'
-        }
-      ]
-    },
-
-    {
-      name: 'Oferta de aumento salarial con condiciones',
-      description: 'Tu empresa te ofrece un aumento del 25% pero debes asumir mas responsabilidades y trabajar fines de semana. Simultaneamente recibes oferta de otra empresa con 40% de aumento.',
-      category: 'OPPORTUNITY',
-      probability: 0.18,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Aceptar el aumento del 25% con tu empleador actual',
-          explanation: 'Quedarte con una empresa conocida reduce el riesgo: mantienes tu red de contactos, evitas la curva de adaptacion y conservas beneficios acumulados. El 25% compuesto durante varios anos tiene impacto significativo.',
-          effectMoney: 0, effectIncome: 500, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Aceptar la oferta de la empresa externa con el 40% de aumento',
-          explanation: 'Cambiar de empresa puede acelerar el crecimiento salarial significativamente. El primer ano siempre implica costos de adaptacion y mayor incertidumbre. Los beneficios acumulados y relaciones establecidas se pierden.',
-          effectMoney: 0, effectIncome: 800, effectExpenses: 100, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Usar la oferta externa como palanca para negociar con tu empresa actual',
-          explanation: 'Negociar el salario con una oferta real como respaldo es la herramienta mas poderosa en una negociacion laboral. El riesgo es que el empleador no acepte y la relacion se deteriore o decidan prescindir de ti.',
-          effectMoney: 0, effectIncome: 650, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    {
-      name: 'Contrato freelance de alto valor',
-      description: 'Una empresa te ofrece un proyecto freelance de $2,000 que toma 2 meses. Implica trabajar fines de semana y reducir tiempo libre.',
-      category: 'OPPORTUNITY',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Aceptar el contrato y destinar los ingresos a ahorros',
-          explanation: 'Los ingresos extraordinarios invertidos o ahorrados tienen el mayor impacto en el patrimonio a largo plazo. Al no ser parte del presupuesto habitual, no afectan el gasto mensual si se gestionan correctamente.',
-          effectMoney: 1000, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: 1000, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 1, consequenceDesc: 'Contrato en curso: +$1000 adicional el proximo mes al completar el proyecto'
-        },
-        {
-          text: 'Aceptar el contrato y usar el dinero para saldar deudas',
-          explanation: 'Eliminar deuda de alto interes con ingresos extraordinarios garantiza un retorno equivalente a la tasa de esa deuda. Si tus deudas cobran 20% anual, pagarlas genera un retorno garantizado del 20%.',
-          effectMoney: 2000, effectIncome: 0, effectExpenses: 0, effectDebt: -1500, effectScore: 25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Rechazar el contrato por priorizar el descanso y tiempo personal',
-          explanation: 'El tiempo tiene valor economico y personal. No toda oportunidad de ingreso debe tomarse. Si tu situacion financiera lo permite y el equilibrio personal es prioritario, es una decision valida aunque implique menor ingreso.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ EMPRENDIMIENTO ══════════════════════════════
-
-    {
-      name: 'Propuesta de negocio con un conocido',
-      description: 'Un amigo con experiencia en comercio te propone crear juntos una tienda en linea. Tu aporte seria de $500. El negocio podria generar $300 mensuales o podria no despegar.',
-      category: 'OPPORTUNITY',
-      probability: 0.18,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Invertir los $500 y participar activamente en el negocio',
-          explanation: 'Emprender con capital propio limita la perdida maxima al monto invertido. El retorno puede ser positivo si el negocio funciona, o perder la inversion si no. Los negocios digitales tienen bajo costo de entrada pero alta tasa de fracaso en el primer ano.',
-          effectMoney: -500, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: -500, effectAssets: 0, effectInvestments: 300,
-          consequenceRounds: 2, consequenceDesc: 'Negocio en desarrollo: potencial de +$300 mensuales al consolidarse'
-        },
-        {
-          text: 'Participar aportando solo tiempo y habilidades sin capital propio',
-          explanation: 'Eliminar el riesgo financiero a cambio de menor participacion puede ser prudente. La clave es acordar de forma clara la distribucion de beneficios si el negocio funciona.',
-          effectMoney: 0, effectIncome: 100, effectExpenses: 50, effectDebt: 0, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Rechazar la propuesta y mantener el foco en el empleo actual',
-          explanation: 'No toda oportunidad de negocio es adecuada para cada persona en cada momento. Evaluar el costo de oportunidad del tiempo, el riesgo del capital y si tienes las condiciones correctas es inteligencia financiera aplicada.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 0,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    {
-      name: 'Oportunidad de franquicia',
-      description: 'Una empresa de comida saludable ofrece una franquicia por $3,000 de inversion. Promete $800 mensuales de ganancia neta y requiere 15 horas semanales de dedicacion.',
-      category: 'OPPORTUNITY',
-      probability: 0.12,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Financiar la franquicia con un credito bancario al 15%',
-          explanation: 'Financiar un negocio con deuda amplifica el riesgo: si el negocio no genera lo esperado la deuda persiste. La ecuacion funciona si los ingresos del negocio superan la cuota mas los costos operativos. Muchas franquicias tienen costos ocultos no mencionados en la presentacion inicial.',
-          effectMoney: 2700, effectIncome: 0, effectExpenses: 0, effectDebt: 3000, effectScore: -5,
-          effectSavings: 0, effectAssets: 500, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota franquicia financiada: -$150 mensuales durante 3 meses de arranque'
-        },
-        {
-          text: 'Pagar la franquicia con ahorros propios sin endeudarse',
-          explanation: 'Invertir con capital propio elimina la presion de la deuda pero reduce tu liquidez y fondo de emergencia. Si el negocio funciona el retorno es limpio. Si no funciona, la perdida es real y sin red de seguridad financiera.',
-          effectMoney: -3000, effectIncome: 400, effectExpenses: 100, effectDebt: 0, effectScore: 15,
-          effectSavings: -3000, effectAssets: 500, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Franquicia en fase de arranque: ingresos creciendo gradualmente'
-        },
-        {
-          text: 'Solicitar mas informacion y hablar con otros franquiciados antes de decidir',
-          explanation: 'Hacer diligencia previa antes de invertir en una franquicia es critico. Hablar con franquiciados actuales revela la realidad operativa que los materiales de venta no muestran. El costo de esperar es no comenzar a generar ese ingreso potencial.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ INVERSIONES ══════════════════════════════
-
-    {
-      name: 'Caida del mercado de valores',
-      description: 'El mercado de valores cayo 22% en las ultimas semanas por una crisis economica internacional. Tienes $700 disponibles y un asesor te senala que historicamente estas caidas son oportunidades.',
-      category: 'MARKET',
-      probability: 0.15,
-      isGlobal: true,
-      options: [
-        {
-          text: 'Invertir los $700 en un fondo indexado que replica el mercado global',
-          explanation: 'Comprar cuando el mercado baja es una estrategia respaldada por evidencia historica de largo plazo. No garantiza ganancias inmediatas: el mercado puede seguir cayendo antes de recuperarse. El horizonte temporal es el factor mas importante aqui.',
-          effectMoney: -700, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 700,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Mantener el dinero en cuenta de ahorro hasta que el mercado se estabilice',
-          explanation: 'Tratar de identificar el momento perfecto para entrar al mercado se llama market timing. La evidencia muestra que predecir el piso de una caida es practicamente imposible incluso para profesionales. Preservar liquidez tambien tiene valor real.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 0,
-          effectSavings: 700, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Pedir un prestamo para invertir mayor capital aprovechando la caida',
-          explanation: 'Invertir con deuda en mercados volatiles amplifica ganancias si el mercado sube y amplifica perdidas si sigue cayendo. Las cuotas del prestamo corren independientemente del resultado de la inversion. Es una apuesta de riesgo elevado.',
-          effectMoney: -150, effectIncome: 0, effectExpenses: 0, effectDebt: 2000, effectScore: -10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 2700,
-          consequenceRounds: 3, consequenceDesc: 'Cuota prestamo de inversion: -$150 mensuales por 3 meses'
-        }
-      ]
-    },
-
-    {
-      name: 'Inversion en startup tecnologica',
-      description: 'Un conocido te invita a invertir en una startup de tecnologia en etapa temprana. La inversion minima es $1,000. Podria multiplicarse por 10 o perder todo el capital.',
-      category: 'OPPORTUNITY',
-      probability: 0.12,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Invertir los $1,000 en la startup',
-          explanation: 'Las startups en etapa temprana tienen el mayor potencial de retorno y la mayor tasa de fracaso: estadisticamente mas del 90% no llegan a ser rentables. Esta inversion no debe hacerse con dinero necesario para gastos o emergencias.',
-          effectMoney: -1000, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: -1000, effectAssets: 0, effectInvestments: 1000,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Invertir $250 como maximo tolerable de perdida total',
-          explanation: 'Limitar la exposicion a inversiones de alto riesgo a un porcentaje pequeno que puedas perder sin afectar tu estabilidad es gestion de riesgo aplicada. Participas en el potencial sin comprometer tu situacion financiera.',
-          effectMoney: -250, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: -250, effectAssets: 0, effectInvestments: 250,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Rechazar por no tener suficiente informacion sobre el modelo de negocio',
-          explanation: 'No invertir en lo que no entiendes completamente es un principio fundamental. La presion de tiempo o social para invertir rapido es una senal de alerta clasica. Mas vale perder una oportunidad que perder el capital en algo que no comprendes.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    {
-      name: 'Criptomonedas en tendencia viral',
-      description: 'Una criptomoneda subio 200% en el ultimo mes. Tus amigos hablan de ella constantemente y algunos dicen haber ganado mucho. Sientes presion de no quedarte afuera.',
-      category: 'MARKET',
-      probability: 0.15,
-      isGlobal: true,
-      options: [
-        {
-          text: 'Invertir $600 de tus ahorros en la criptomoneda mas popular',
-          explanation: 'Invertir cuando el activo ya subio 200% y todos hablan de el es comprar en el pico de la mania especulativa. La mayoria de personas que entra en esta etapa pierde dinero cuando el precio corrige. Las subidas pasadas no predicen subidas futuras.',
-          effectMoney: -600, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: -10,
-          effectSavings: -600, effectAssets: 0, effectInvestments: 600,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Invertir $150 como experimentacion con dinero que puedes perder',
-          explanation: 'Destinar un porcentaje pequeno y tolerable a activos especulativos permite participar sin comprometer la estabilidad financiera. La clave es que sea dinero que no necesitas y cuya perdida no afectaria tu plan financiero principal.',
-          effectMoney: -150, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: -150, effectAssets: 0, effectInvestments: 150,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Estudiar el activo a fondo antes de comprometer cualquier capital',
-          explanation: 'La diligencia previa es el habito que diferencia a quienes construyen riqueza de quienes la pierden. Entender el modelo tecnico, la utilidad real, el equipo detras y los riesgos regulatorios antes de invertir es lo correcto.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ EDUCACION ══════════════════════════════
-
-    {
-      name: 'Bootcamp de especializacion profesional',
-      description: 'Una academia reconocida ofrece un programa de 4 meses en tu area por $1,200. Garantizan mejor empleabilidad y el programa tiene buenas referencias verificables.',
-      category: 'EDUCATION',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Pagar el bootcamp con tus ahorros actuales',
-          explanation: 'La educacion relevante para tu area de trabajo tiene historicamente uno de los mejores retornos de inversion a largo plazo. El costo inmediato en liquidez es real pero un aumento de $300 mensuales en ingresos recupera la inversion en 4 meses.',
-          effectMoney: -1200, effectIncome: 300, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: -1200, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Financiarlo con un credito educativo al 12% anual',
-          explanation: 'El credito educativo puede tener sentido si el retorno esperado supera el costo del credito. Si el programa genera $300/mes de ingreso adicional y la cuota es $150/mes, la ecuacion es positiva. La deuda educativa es de las mas aceptadas financieramente.',
-          effectMoney: 0, effectIncome: 300, effectExpenses: 0, effectDebt: 1200, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota credito educativo: -$150 mensuales por 3 meses'
-        },
-        {
-          text: 'Buscar cursos gratuitos o de muy bajo costo como alternativa',
-          explanation: 'Plataformas de calidad ofrecen contenido de alto nivel a costo cero o minimo. La diferencia con programas pagados suele estar en la estructura, certificacion formal, red de contactos y atencion personalizada.',
-          effectMoney: 0, effectIncome: 100, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ CREDITO ══════════════════════════════
-
-    {
-      name: 'Credito personal pre-aprobado',
-      description: 'Tu banco te ofrece un credito personal de $5,000 al 18% anual pre-aprobado. No requiere justificar el destino y puedes tenerlo disponible en 24 horas.',
-      category: 'CREDIT',
-      probability: 0.22,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Rechazar el credito por no tener necesidad urgente de ese dinero',
-          explanation: 'La disponibilidad de credito no es razon para endeudarse. El dinero no solicitado no tiene costo. Tomar deuda sin un proposito claro y bien calculado es uno de los errores mas frecuentes en finanzas personales.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Tomar el credito para consolidar deudas con tasas mas altas',
-          explanation: 'Consolidar deudas con una de menor tasa reduce el costo total del endeudamiento. La matematica funciona solo si la tasa nueva es inferior al promedio actual y no generas nueva deuda sobre la consolidada.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: -500, effectScore: 10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 4, consequenceDesc: 'Cuota consolidacion de deuda: -$140 mensuales por 4 meses'
-        },
-        {
-          text: 'Tomar el credito para cubrir gastos del hogar, viajes y consumo general',
-          explanation: 'Financiar consumo con deuda al 18% anual significa que cada compra cuesta un 18% mas de lo que parece. Un viaje de $2,000 financiado a 12 meses termina costando cerca de $2,200. El costo real suele ser invisible hasta que las cuotas acumulan.',
-          effectMoney: 4000, effectIncome: 0, effectExpenses: 200, effectDebt: 5000, effectScore: -25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 4, consequenceDesc: 'Cuota credito de consumo: -$200 mensuales por 4 meses'
-        }
-      ]
-    },
-
-    {
-      name: 'Limite de tarjeta de credito aumentado',
-      description: 'Tu banco aumento automaticamente el limite de tu tarjeta de credito de $1,000 a $3,500. Recibes una notificacion celebrandolo como un logro financiero.',
-      category: 'CREDIT',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Aprovechar el limite adicional para compras que tenias postergadas',
-          explanation: 'El aumento de limite no es un aumento de ingresos. Gastar hasta el nuevo limite crea deuda real con intereses reales. Muchas personas confunden el credito disponible con dinero propio, lo que lleva a ciclos de endeudamiento progresivo.',
-          effectMoney: 1000, effectIncome: 0, effectExpenses: 0, effectDebt: 1500, effectScore: -20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota tarjeta de credito elevada: -$180 mensuales por 3 meses'
-        },
-        {
-          text: 'Mantener el mismo patron de gasto y pagar el saldo completo cada mes',
-          explanation: 'Tener mayor limite disponible sin usarlo mejora la razon de utilizacion de credito, componente importante del score crediticio. Pagar el total mensual evita cualquier interes y construye historial positivo.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Solicitar al banco reducir el limite para mayor control del gasto',
-          explanation: 'Reconocer los propios habitos de consumo y establecer limites externos es una forma valida y madura de gestion financiera. No todo el mundo se beneficia de tener mayor credito disponible.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ HIPOTECA ══════════════════════════════
-
-    {
-      name: 'Oportunidad de primera vivienda',
-      description: 'Un departamento de $78,000 esta disponible en tu ciudad. Puedes dar $8,000 de pie y financiar el resto con hipoteca al 8.5% anual a 20 anos. La cuota mensual seria de $590.',
-      category: 'MORTGAGE',
-      probability: 0.10,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Comprar el departamento con hipoteca ahora',
-          explanation: 'Una hipoteca bien calculada construye patrimonio: cada cuota reduce la deuda y aumenta el activo. La regla es que la cuota no supere el 30% de tus ingresos y que mantengas fondo de emergencia separado. Comprar cuando los precios suben puede ser ventajoso.',
-          effectMoney: -8000, effectIncome: 0, effectExpenses: 590, effectDebt: 70000, effectScore: 10,
-          effectSavings: -5000, effectAssets: 78000, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Esperar y ahorrar durante 18 meses para un pie mayor',
-          explanation: 'Un pie mas grande reduce la deuda hipotecaria, baja la cuota mensual y reduce los intereses totales pagados en 20 anos. El costo es el tiempo sin construir patrimonio propio y el riesgo de que los precios suban antes de comprar.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: 400, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Modo ahorro vivienda: +$400 adicionales mensuales al fondo de pie'
-        },
-        {
-          text: 'Seguir arrendando e invertir el dinero del pie en bolsa',
-          explanation: 'Arrendar vs comprar no tiene respuesta universal. Invertir el capital del pie puede generar retornos superiores a la apreciacion del inmueble en ciertos mercados. Depende del ratio precio-alquiler local, tasa hipotecaria disponible y alternativas de inversion.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 500,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ VEHICULOS ══════════════════════════════
-
-    {
-      name: 'Falla mecanica del vehiculo',
-      description: 'Tu vehiculo sufrio una falla en el motor. La reparacion cuesta $950. Sin el auto tu movilidad hacia el trabajo se complica significativamente.',
-      category: 'RISK',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Pagar la reparacion con el fondo de emergencia',
-          explanation: 'Este es exactamente el caso de uso del fondo de emergencia: un gasto inesperado y necesario. Cubrir $950 sin deuda demuestra que la planificacion funciona. La prioridad inmediata siguiente es reconstruir ese fondo.',
-          effectMoney: -950, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: -950, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Financiar la reparacion con tarjeta de credito',
-          explanation: 'La tarjeta es una opcion real cuando no hay fondos disponibles. El costo real depende de cuanto tiempo tardas en pagar. Saldado en el mismo mes: costo cero. Financiado a 6 meses al 24% APR: esa reparacion cuesta mas de $1,100.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 950, effectScore: -10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Cuota tarjeta reparacion vehiculo: -$200 mensuales por 2 meses'
-        },
-        {
-          text: 'Vender el vehiculo y adaptarte a transporte publico',
-          explanation: 'Eliminar el vehiculo reduce gastos fijos considerablemente: seguro, combustible, mantenimiento, depreciacion. El impacto en calidad de vida depende de la ciudad y la calidad del transporte publico disponible.',
-          effectMoney: 1800, effectIncome: 0, effectExpenses: -180, effectDebt: 0, effectScore: 5,
-          effectSavings: 1500, effectAssets: -2500, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    {
-      name: 'Oportunidad de vehiculo de segunda mano',
-      description: 'Un colega vende su auto en buen estado por $5,800. Un mecanico independiente lo reviso y confirma que esta en buenas condiciones. Te da 3 dias para decidir.',
-      category: 'OPPORTUNITY',
-      probability: 0.15,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Comprarlo al contado con los ahorros disponibles',
-          explanation: 'Pagar al contado elimina el costo de intereses y la presion de cuotas mensuales. El impacto es una reduccion significativa de liquidez y del fondo de emergencia que tarda meses en reconstruirse.',
-          effectMoney: -5800, effectIncome: 0, effectExpenses: 150, effectDebt: 0, effectScore: 10,
-          effectSavings: -5800, effectAssets: 5800, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Financiarlo a 3 anos con credito vehicular al 11%',
-          explanation: 'El credito vehicular permite adquirir el activo sin agotar los ahorros. A 11% en 3 anos pagaras aproximadamente $7,000 en total por un auto de $5,800. La conveniencia tiene un precio real en intereses.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 150, effectDebt: 5800, effectScore: -5,
-          effectSavings: 0, effectAssets: 5800, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota credito vehicular: -$210 mensuales por 3 meses'
-        },
-        {
-          text: 'No comprar y continuar sin vehiculo propio',
-          explanation: 'Un vehiculo es un activo que se deprecia: pierde valor desde el momento de la compra. Decidir no comprarlo cuando no es estrictamente necesario libera capital para metas con mejor retorno financiero.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ EMERGENCIAS ══════════════════════════════
-
-    {
-      name: 'Emergencia medica con cobertura parcial',
-      description: 'Una lesion requiere cirugia ambulatoria urgente con costo total de $2,600. Tu seguro medico cubre el 50%. Debes resolver la diferencia antes de la cirugia.',
-      category: 'RISK',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Pagar los $1,300 de diferencia con el fondo de emergencia',
-          explanation: 'El fondo de emergencia existe exactamente para esto. Cubrir una emergencia medica sin deuda es el resultado que justifica los meses de ahorro constante. La prioridad es recuperar ese fondo lo antes posible.',
-          effectMoney: -1300, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 30,
-          effectSavings: -1300, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Negociar un plan de pago directo con el centro medico',
-          explanation: 'Muchas instituciones de salud ofrecen planes de pago en cuotas sin interes. Esta opcion requiere proactividad pero puede ser financieramente superior al credito bancario. Preservas el fondo de emergencia para otra situacion.',
-          effectMoney: -200, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Plan de pago medico sin interes: -$550 mensuales por 2 meses'
-        },
-        {
-          text: 'Cargar el gasto a la tarjeta de credito y pagar en cuotas',
-          explanation: 'La tarjeta en emergencias medicas tiene costo alto si no se paga rapido. Al 24% APR, $1,300 financiados 6 meses suman mas de $1,500. Es una opcion valida cuando no hay alternativa, pero no la primera a elegir.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 1300, effectScore: -15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota medica en tarjeta de credito: -$150 mensuales por 3 meses'
-        }
-      ]
-    },
-
-    {
-      name: 'Robo de equipo de trabajo',
-      description: 'Te robaron la laptop y equipos que usas para trabajar, valorados en $1,600. Necesitas al menos una laptop operativa para continuar con tus actividades laborales.',
-      category: 'RISK',
-      probability: 0.12,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Reclamar el seguro del hogar y pagar solo el deducible',
-          explanation: 'Si tienes seguro de contenido del hogar, este es exactamente el caso de uso. Pagar el deducible y recibir la cobertura demuestra el valor real de los seguros. Sin seguro, este momento es la senal mas clara para contratarlo.',
-          effectMoney: -250, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: -250, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Comprar equipo reacondicionado de segunda mano para reducir el costo',
-          explanation: 'Adquirir lo esencial al menor costo posible cuando se trata de un bien de trabajo es prudente. Un equipo de segunda mano funcional puede costar la mitad que uno nuevo y cumplir perfectamente la funcion requerida.',
-          effectMoney: -550, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: -550, effectAssets: 300, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Financiar equipos nuevos de alta gama con credito bancario',
-          explanation: 'Equipos nuevos y de calidad pueden justificarse si son herramientas de trabajo que generan ingresos. La pregunta es si el incremento de productividad supera el costo del credito. Financiar herramientas de trabajo es diferente a financiar consumo.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 1800, effectScore: -15,
-          effectSavings: 0, effectAssets: 1800, effectInvestments: 0,
-          consequenceRounds: 3, consequenceDesc: 'Cuota credito equipos de trabajo: -$170 mensuales por 3 meses'
-        }
-      ]
-    },
-
-    // ══════════════════════════════ MACROECONOMIA ══════════════════════════════
-
-    {
-      name: 'Inflacion acelerada',
-      description: 'La inflacion subio al 11% anual. El costo de alimentos, transporte y servicios basicos aumento considerablemente. Tu salario no ha recibido ajuste alguno.',
-      category: 'CRISIS',
-      probability: 0.20,
-      isGlobal: true,
-      options: [
-        {
-          text: 'Revisar el presupuesto y recortar gastos no esenciales',
-          explanation: 'Ajustar el presupuesto ante la inflacion es la respuesta mas directa y sin costo. Identificar y eliminar gastos prescindibles preserva el poder adquisitivo sin necesidad de mas ingresos.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: -150, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Negociar un ajuste salarial por inflacion con tu empleador',
-          explanation: 'Sin ajuste salarial, cada punto de inflacion es una reduccion real de ingresos. Negociar activamente es una habilidad financiero-laboral que la mayoria no ejerce. El momento de pedirlo es cuando la inflacion es un tema publico y documentado.',
-          effectMoney: 0, effectIncome: 200, effectExpenses: 120, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Mantener el mismo nivel de gasto usando credito para compensar el alza',
-          explanation: 'Usar deuda para mantener el nivel de vida ante inflacion es una de las decisiones mas costosas. La inflacion ya reduce el poder real de los ingresos; agregar intereses sobre eso profundiza considerablemente el deterioro financiero.',
-          effectMoney: 500, effectIncome: 0, effectExpenses: 120, effectDebt: 800, effectScore: -25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Deuda de consumo por inflacion: -$150 mensuales por 2 meses'
-        }
-      ]
-    },
-
-    {
-      name: 'Recesion economica',
-      description: 'El pais entro en recesion. El desempleo subio al 14%, las inversiones cayeron 30% y la incertidumbre es alta. Tu empleo no esta en riesgo inmediato pero el ambiente es tenso.',
-      category: 'CRISIS',
-      probability: 0.10,
-      isGlobal: true,
-      options: [
-        {
-          text: 'Aumentar agresivamente el fondo de emergencia y reducir exposicion al riesgo',
-          explanation: 'En recesion la liquidez es el activo mas valioso. Tener 6 meses de gastos cubiertos reduce drasticamente el impacto de un eventual desempleo. Reducir riesgo en inversiones en recesion profunda prioriza conservar capital sobre rentabilidad.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: -100, effectDebt: 0, effectScore: 20,
-          effectSavings: 300, effectAssets: 0, effectInvestments: -300,
-          consequenceRounds: 2, consequenceDesc: 'Modo defensa: +$300 adicionales mensuales al fondo de emergencia'
-        },
-        {
-          text: 'Invertir en activos que cayeron de precio aprovechando la recesion',
-          explanation: 'Las recesiones crean oportunidades de compra en activos de calidad a precios reducidos. El riesgo es que la caida continue. Esta estrategia requiere horizonte de inversion de largo plazo, estabilidad laboral y sin necesidad de liquidar antes del tiempo.',
-          effectMoney: -800, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 10,
-          effectSavings: -800, effectAssets: 0, effectInvestments: 800,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Continuar con el comportamiento financiero habitual sin cambios',
-          explanation: 'Si la situacion financiera personal es solida, mantener el rumbo puede ser correcto. Si existen vulnerabilidades como poco fondo de emergencia o deudas altas, ignorar el contexto macroeconomico puede agravar la situacion si la recesion se profundiza.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: -10,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ OPORTUNIDADES INESPERADAS ══════════════════════════════
-
-    {
-      name: 'Herencia familiar inesperada',
-      description: 'Un familiar fallecido te dejo $4,500 en herencia. Es un ingreso completamente inesperado que no tenias contemplado en ninguna planificacion.',
-      category: 'OPPORTUNITY',
-      probability: 0.08,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Destinar todo al pago de deudas pendientes',
-          explanation: 'Eliminar deuda de alto interes con dinero inesperado es matematicamente optimo. Cada deuda pagada genera un retorno garantizado equivalente a la tasa de esa deuda. Sin deudas, el dinero fluye mas libremente hacia metas de largo plazo.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: -4500, effectScore: 40,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Invertir el total en un portafolio diversificado',
-          explanation: 'Invertir un monto en un solo momento en lugar de gradualmente se llama lump-sum investing. Historicamente supera a la inversion gradual en la mayoria de escenarios. El unico riesgo es el momento de entrada si el mercado cae inmediatamente.',
-          effectMoney: -4500, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 4500,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Distribuirlo entre fondo de emergencia, inversiones y un gasto personal significativo',
-          explanation: 'La regla de los ingresos inesperados: primero deuda costosa, luego fondo de emergencia, luego inversion, luego algo para ti. Esta distribucion avanza varias metas simultaneamente y reconoce que el dinero tiene multiples funciones en la vida.',
-          effectMoney: -500, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 30,
-          effectSavings: 1500, effectAssets: 0, effectInvestments: 2500,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    {
-      name: 'Bono de desempeno anual',
-      description: 'La empresa tuvo un excelente ano y recibes un bono de desempeno de $1,800. Es un ingreso extraordinario no recurrente y no estaba en tus planes financieros del mes.',
-      category: 'OPPORTUNITY',
-      probability: 0.18,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Invertirlo completamente en instrumentos de largo plazo',
-          explanation: 'Los bonos e ingresos no recurrentes son oportunidades ideales para acelerar la inversion porque no afectan el presupuesto mensual. El efecto de ese capital invertido temprano se amplifica significativamente con el tiempo gracias al interes compuesto.',
-          effectMoney: -1800, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 30,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 1800,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Usarlo para una experiencia o viaje que tenias planeado',
-          explanation: 'Usar ingresos extraordinarios para experiencias sin afectar el presupuesto mensual es financieramente responsable si las finanzas base estan solidas. Las experiencias tienen valor real en calidad de vida que no siempre se captura en numeros.',
-          effectMoney: -1800, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Distribuirlo entre pago de deuda, ahorro e inversion en partes iguales',
-          explanation: 'La distribucion equilibrada de ingresos extraordinarios avanza multiples metas simultaneamente. Reduce deuda, fortalece el colchon de seguridad y hace crecer el patrimonio a largo plazo en una sola decision.',
-          effectMoney: -300, effectIncome: 0, effectExpenses: 0, effectDebt: -600, effectScore: 25,
-          effectSavings: 600, effectAssets: 0, effectInvestments: 300,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ SEGUROS ══════════════════════════════
-
-    {
-      name: 'Propuesta de seguro integral',
-      description: 'Una aseguradora te ofrece un paquete de seguro de vida, invalidez y contenido del hogar por $85 mensuales. Actualmente no tienes ningun tipo de seguro contratado.',
-      category: 'INSURANCE',
-      probability: 0.20,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Contratar el paquete completo de cobertura',
-          explanation: 'Los seguros transfieren el riesgo de eventos de alta magnitud y baja probabilidad. Ochenta y cinco dolares mensuales pueden evitar una perdida de miles. La pregunta clave es si ese costo cabe en el presupuesto sin comprometer metas mas urgentes.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 85, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Contratar solo el seguro de vida por ahora y diferir el resto',
-          explanation: 'Priorizar el seguro de vida cuando hay personas que dependen economicamente de ti es lo correcto. Los demas seguros pueden agregarse gradualmente segun el presupuesto lo permita. Proteger lo mas critico primero es una estrategia valida.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 30, effectDebt: 0, effectScore: 15,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'No contratar ningun seguro y reforzar el fondo de emergencia en su lugar',
-          explanation: 'El fondo de emergencia cubre eventos de magnitud media. Los seguros protegen contra eventos catastroficos que el fondo no podria absorber. Son complementarios, no equivalentes. Sin seguro, una sola emergencia de gran escala puede destruir anos de ahorro.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: -5,
-          effectSavings: 85, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ RIESGO Y FRAUDE ══════════════════════════════
-
-    {
-      name: 'Esquema de inversion con retornos garantizados',
-      description: 'Te contactan via redes sociales con una plataforma que promete retornos garantizados del 25% mensual. Varios contactos conocidos dicen haber recibido pagos.',
-      category: 'RISK',
-      probability: 0.12,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Invertir $500 para probar si realmente funciona',
-          explanation: 'Los retornos garantizados del 25% mensual son economicamente imposibles de sostener de forma legitima. Los primeros inversores en esquemas fraudulentos reciben pagos reales que provienen del dinero de nuevos inversores. La mayoria pierde todo cuando el esquema colapsa.',
-          effectMoney: -500, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: -30,
-          effectSavings: -500, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Verificar la licencia de la empresa ante reguladores financieros antes de cualquier decision',
-          explanation: 'Comprobar si una empresa de inversiones esta registrada ante la Superintendencia de Bancos o entidad reguladora equivalente es el primer paso obligatorio. Las senales de alerta incluyen: retornos garantizados altos, urgencia para invertir y estructura de referidos.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Rechazar de inmediato y reportar la oferta ante autoridades financieras',
-          explanation: 'Denunciar posibles fraudes financieros protege a otras personas de perder su dinero. Las autoridades financieras tienen canales especificos para recibir denuncias. Actuar contribuye a un sistema financiero mas sano para todos.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ AHORRO ══════════════════════════════
-
-    {
-      name: 'Desafio de ahorro comunitario',
-      description: 'Un grupo de ahorro te invita a un desafio de 3 meses donde cada participante se compromete a ahorrar $300 mensuales con seguimiento y responsabilidad mutua.',
-      category: 'SAVINGS',
-      probability: 0.22,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Unirte al desafio con el compromiso de los $300 mensuales',
-          explanation: 'Los compromisos publicos aumentan significativamente la probabilidad de cumplimiento por el efecto de responsabilidad social. Novecientos dolares ahorrados en 3 meses puede ser el avance concreto para completar el fondo de emergencia o iniciar una inversion.',
-          effectMoney: -300, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 25,
-          effectSavings: 300, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Desafio de ahorro activo: +$300 mensuales al fondo durante 2 meses adicionales'
-        },
-        {
-          text: 'Participar con un monto menor adaptado a tu capacidad real',
-          explanation: 'Comprometerse a un monto sostenible es mas efectivo que un objetivo ambicioso que se abandona. Un habito de ahorro de $150 mensuales constante durante anos supera a un esfuerzo de $300 que se interrumpe a los 2 meses.',
-          effectMoney: -150, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: 150, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 2, consequenceDesc: 'Habito de ahorro sostenido: +$150 mensuales por 2 meses adicionales'
-        },
-        {
-          text: 'No participar y continuar con tu estrategia de ahorro individual',
-          explanation: 'Los grupos de ahorro son herramientas utiles pero no necesarias si ya tienes una estrategia propia funcionando. Lo que importa es la constancia del habito independientemente del formato. Un plan propio bien ejecutado es suficiente.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 0,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        }
-      ]
-    },
-
-    // ══════════════════════════════ GASTOS DEL HOGAR ══════════════════════════════
-
-    {
-      name: 'Dano en el lugar de residencia',
-      description: 'Una fuga de agua dano el techo y piso de tu departamento. El costo de reparacion urgente es de $750. Tu arrendador dice que primero debes pagar tu y el gestionara el seguro del edificio.',
-      category: 'RISK',
-      probability: 0.18,
-      isGlobal: false,
-      options: [
-        {
-          text: 'Pagar la reparacion con el fondo de emergencia y recuperar despues',
-          explanation: 'El fondo de emergencia absorbe este tipo de gasto sin generar deuda. Pagar rapido evita que el dano se extienda. Si el arrendador tramita correctamente el seguro podrias recuperar parte o todo el desembolso.',
-          effectMoney: -750, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 20,
-          effectSavings: -750, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Revisar el contrato de arrendamiento y consultar asesoria legal antes de pagar',
-          explanation: 'Los contratos de arrendamiento generalmente definen quien responde por danos estructurales vs danos por uso. Pagar algo que legalmente corresponde al arrendador es un error costoso. Conocer tus derechos antes de actuar puede evitar el gasto.',
-          effectMoney: -80, effectIncome: 0, effectExpenses: 0, effectDebt: 0, effectScore: 15,
-          effectSavings: -80, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 0, consequenceDesc: null
-        },
-        {
-          text: 'Financiar la reparacion con tarjeta de credito y pagar en el siguiente ciclo',
-          explanation: 'Si tienes certeza de pagar el saldo completo en el proximo corte, la tarjeta no genera interes. Si no puedes, $750 al 24% APR financiados 3 meses suman aproximadamente $840. Evaluar la capacidad de pago del ciclo siguiente es critico antes de usarla.',
-          effectMoney: 0, effectIncome: 0, effectExpenses: 0, effectDebt: 750, effectScore: -5,
-          effectSavings: 0, effectAssets: 0, effectInvestments: 0,
-          consequenceRounds: 1, consequenceDesc: 'Cuota reparacion en tarjeta: -$375 en los proximos 2 meses'
-        }
-      ]
-    }
-  ];
-
-  for (const event of events) {
-    await prisma.simulatorEvent.create({
-      data: {
-        name: event.name,
-        description: event.description,
-        category: event.category as any,
-        probability: event.probability,
-        isGlobal: event.isGlobal,
-        options: { create: event.options },
-      },
-    });
-  }
-  console.log(`OK Eventos del simulador creados: ${events.length} eventos, ${events.reduce((acc, e) => acc + e.options.length, 0)} opciones`);
 
   const achievements = [
     { key: 'first_lesson', name: 'Primer Paso', description: 'Completa tu primera lección.', icon: '📘', category: 'LEARNING', xpReward: 30, condition: { metric: 'lessons_completed', threshold: 1 } },
@@ -1291,17 +475,31 @@ async function main() {
     { key: 'unstoppable', name: 'Imparable', description: 'Alcanza una racha máxima de 30 días.', icon: '⚡', category: 'STREAK', xpReward: 300, condition: { metric: 'longest_streak', threshold: 30 } },
     { key: 'accumulator', name: 'Acumulador', description: 'Gana 500 XP en total.', icon: '⭐', category: 'GENERAL', xpReward: 50, condition: { metric: 'total_xp', threshold: 500 } },
     { key: 'knowledge_investor', name: 'Inversor de Conocimiento', description: 'Gana 2000 XP en total.', icon: '👑', category: 'GENERAL', xpReward: 200, condition: { metric: 'total_xp', threshold: 2000 } },
+    { key: 'quiz_master', name: 'Quiz Master', description: 'Aprueba los 7 quizzes.', icon: '🏅', category: 'LEARNING', xpReward: 150, condition: { metric: 'quizzes_passed', threshold: 7 } },
   ];
 
+  const knownKeys = new Set(achievements.map(a => a.key));
+  await prisma.achievement.updateMany({
+    where: { key: { notIn: Array.from(knownKeys) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const achievement of achievements) {
-    const exists = await prisma.achievement.findUnique({ where: { key: achievement.key } });
-    if (!exists) {
-      await prisma.achievement.create({
-        data: { ...achievement, category: achievement.category as any },
-      });
-    }
+    await prisma.achievement.upsert({
+      where: { key: achievement.key },
+      update: {
+        name: achievement.name,
+        description: achievement.description,
+        icon: achievement.icon,
+        category: achievement.category as any,
+        xpReward: achievement.xpReward,
+        condition: achievement.condition,
+        isActive: true,
+      },
+      create: { ...achievement, category: achievement.category as any, isActive: true },
+    });
   }
-  console.log('✅ Logros creados');
+  console.log('✅ Logros sincronizados');
 
   const rewards = [
     { name: 'Novato Financiero', description: 'Título inicial de bienvenida.', icon: '🌱', type: 'TITLE', unlockType: 'LEVEL', unlockValue: '2' },
@@ -1326,15 +524,129 @@ async function main() {
     { name: 'Insignia Campeón', description: 'Insignia por ganar 5 partidas.', icon: '⚔️', type: 'BADGE', unlockType: 'ACHIEVEMENT', unlockValue: 'champion' },
   ];
 
+  const knownRewardNames = new Set(rewards.map(r => r.name));
+  await prisma.reward.updateMany({
+    where: { name: { notIn: Array.from(knownRewardNames) }, isActive: true },
+    data: { isActive: false },
+  });
+
   for (const reward of rewards) {
-    const exists = await prisma.reward.findFirst({ where: { name: reward.name } });
-    if (!exists) {
+    const achievement = reward.unlockType === 'ACHIEVEMENT'
+      ? await prisma.achievement.findUnique({ where: { key: reward.unlockValue } })
+      : null;
+    const existing = await prisma.reward.findFirst({ where: { name: reward.name } });
+    if (existing) {
+      await prisma.reward.update({
+        where: { id: existing.id },
+        data: {
+          description: reward.description,
+          icon: reward.icon,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          unlockValue: reward.unlockValue,
+          achievementId: achievement?.id ?? null,
+          isActive: true,
+        },
+      });
+    } else {
       await prisma.reward.create({
-        data: { ...reward, type: reward.type as any, unlockType: reward.unlockType as any },
+        data: {
+          ...reward,
+          type: reward.type as any,
+          unlockType: reward.unlockType as any,
+          achievementId: achievement?.id ?? null,
+        },
       });
     }
   }
-  console.log('✅ Recompensas creadas');
+  console.log('✅ Recompensas sincronizadas');
+
+  await seedLessons(prisma);
+
+  // ── Board cells ──────────────────────────────────────────────
+  await prisma.boardCell.deleteMany();
+
+  const cells: {
+    position: number; name: string; type: any;
+    group: string | null; price: number | null;
+    rent: number | null; amount: number | null;
+    description: string;
+  }[] = [
+    { position: 0,  name: 'INICIO',               type: 'INICIO',          group: null,     price: null, rent: null, amount: null, description: 'Punto de partida. Cada vez que completes una vuelta demuestras disciplina financiera.' },
+    { position: 10, name: 'Carcel - Visita',       type: 'JAIL',            group: null,     price: null, rent: null, amount: null, description: 'Solo de visita hoy. Los malos habitos financieros pueden traerte aqui en el futuro.' },
+    { position: 20, name: 'Salario y Rendimientos',type: 'PENSION_ESPECIAL', group: null,     price: null, rent: null, amount: 300,  description: 'Tu salario mensual mas rendimientos de inversiones. El ingreso pasivo es la meta.' },
+    { position: 30, name: 'Ir a Carcel',           type: 'GO_TO_JAIL',      group: null,     price: null, rent: null, amount: null, description: 'Decisiones financieras impulsivas tienen consecuencias. Pierdes tu proximo turno.' },
+    { position: 1,  name: 'Cuenta de Ahorros',     type: 'PROPERTY', group: 'purple', price: 80,  rent: 15,  amount: null, description: 'Una cuenta de ahorros basica. Bajo riesgo, retorno minimo pero seguro.' },
+    { position: 2,  name: 'Dividendos',             type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 150,  description: 'Recibiste dividendos de tus inversiones. El mercado recompensa la paciencia.' },
+    { position: 3,  name: 'Fondo Mutuo',            type: 'PROPERTY', group: 'purple', price: 80,  rent: 15,  amount: null, description: 'Un fondo diversificado de inversion. Riesgo moderado, retorno predecible.' },
+    { position: 4,  name: 'Impuesto al Consumo',    type: 'TAX',      group: null,     price: null,rent: null,amount: 200,  description: 'Impuesto al consumo. El estado cobra el 12% de tus compras. Afecta tu flujo mensual.' },
+    { position: 5,  name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'Un evento inesperado que puede cambiar tu situacion financiera en segundos.' },
+    { position: 6,  name: 'Startup Digital',        type: 'PROPERTY', group: 'blue',   price: 120, rent: 25,  amount: null, description: 'Una empresa tecnologica en etapa temprana. Alto riesgo, alto potencial de retorno.' },
+    { position: 7,  name: 'App Fintech',            type: 'PROPERTY', group: 'blue',   price: 120, rent: 25,  amount: null, description: 'Aplicacion de servicios financieros digitales. El futuro del dinero es tecnologico.' },
+    { position: 8,  name: 'Ingreso Freelance',      type: 'PENSION',  group: null,     price: null,rent: null,amount: 200,  description: 'Cobras por un proyecto freelance. Los ingresos variables bien gestionados suman.' },
+    { position: 9,  name: 'Negocio Online',         type: 'PROPERTY', group: 'blue',   price: 150, rent: 35,  amount: null, description: 'Un negocio digital con bajo costo fijo pero alta competencia de mercado.' },
+    { position: 11, name: 'Food Truck',             type: 'PROPERTY', group: 'pink',   price: 200, rent: 50,  amount: null, description: 'Negocio movil de comida. Requiere permisos municipales y tiene alta rotacion de clientes.' },
+    { position: 12, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'El mercado es impredecible. Este evento puede beneficiarte o perjudicarte.' },
+    { position: 13, name: 'Cafe Boutique',          type: 'PROPERTY', group: 'pink',   price: 200, rent: 50,  amount: null, description: 'Cafe de especialidad con clientela fidelizada. Margen moderado, alta repeticion.' },
+    { position: 14, name: 'Tasa Municipal',         type: 'TAX',      group: null,     price: null,rent: null,amount: 250,  description: 'Impuesto municipal obligatorio. El costo de vivir y operar en una ciudad.' },
+    { position: 15, name: 'Restaurante',            type: 'PROPERTY', group: 'pink',   price: 250, rent: 65,  amount: null, description: 'Restaurante con clientela fija. Alto potencial pero costos operativos elevados.' },
+    { position: 16, name: 'Herencia Familiar',      type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 300,  description: 'Herencia inesperada. La suerte financiera existe, pero no se debe depender de ella.' },
+    { position: 17, name: 'Plaza Comercial',        type: 'PROPERTY', group: 'orange', price: 300, rent: 80,  amount: null, description: 'Local en centro comercial. Alta visibilidad garantiza flujo de clientes constante.' },
+    { position: 18, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'La economia global afecta tu situacion local. Preparate para lo inesperado.' },
+    { position: 19, name: 'Tienda Ancla',           type: 'PROPERTY', group: 'orange', price: 300, rent: 80,  amount: null, description: 'Tienda principal que atrae clientes al centro comercial. Posicion privilegiada.' },
+    { position: 21, name: 'Centro Comercial',       type: 'PROPERTY', group: 'orange', price: 350, rent: 95,  amount: null, description: 'Centro comercial completo. Multiples negocios ancla generan ingresos diversificados.' },
+    { position: 22, name: 'Esquema Ponzi',          type: 'SCAM',     group: null,     price: null,rent: null,amount: 400,  description: 'Invertiste en un fraude piramidal. El fraude financiero destruye patrimonios. Investiga antes de invertir.' },
+    { position: 23, name: 'Oficinas Clase A',       type: 'PROPERTY', group: 'red',    price: 400, rent: 110, amount: null, description: 'Oficinas de lujo en zona prime. Alta demanda corporativa, arrendatarios solventes.' },
+    { position: 24, name: 'Impuesto Predial',       type: 'TAX',      group: null,     price: null,rent: null,amount: 300,  description: 'Impuesto anual sobre propiedades. Las inversiones inmobiliarias tienen costos recurrentes.' },
+    { position: 25, name: 'Residencial Premium',    type: 'PROPERTY', group: 'red',    price: 400, rent: 110, amount: null, description: 'Conjunto residencial de lujo. Valoracion alta respaldada por la ubicacion.' },
+    { position: 26, name: 'Evento Financiero',      type: 'WILDCARD', group: null,     price: null,rent: null,amount: null, description: 'La volatilidad del mercado es permanente. Tu estrategia define si ganas o pierdes.' },
+    { position: 27, name: 'Torre Empresarial',      type: 'PROPERTY', group: 'red',    price: 450, rent: 125, amount: null, description: 'Torre de oficinas premium en el distrito financiero. El activo mas cotizado de la zona.' },
+    { position: 28, name: 'IPO Exitosa',            type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 450,  description: 'Tu empresa salio a bolsa exitosamente. El mercado recompensa la innovacion y el riesgo calculado.' },
+    { position: 29, name: 'ETF Dividendos',         type: 'PROPERTY', group: 'yellow', price: 480, rent: 130, amount: null, description: 'Fondo que replica indices y paga dividendos trimestrales. El camino inteligente al mercado.' },
+    { position: 31, name: 'Fondo Indexado',         type: 'PROPERTY', group: 'yellow', price: 480, rent: 130, amount: null, description: 'Replica el mercado global a bajo costo. La estrategia favorita de los grandes inversores.' },
+    { position: 32, name: 'Fraude Financiero',      type: 'SCAM',     group: null,     price: null,rent: null,amount: 500,  description: 'Fraude sofisticado. Antes de invertir: verifica licencias, rastrea el dinero, desconfia de retornos garantizados.' },
+    { position: 33, name: 'Portafolio Bonos',       type: 'PROPERTY', group: 'yellow', price: 520, rent: 140, amount: null, description: 'Cartera de bonos gubernamentales y corporativos. Ingreso fijo y predecible.' },
+    { position: 34, name: 'Retencion Fiscal',       type: 'TAX',      group: null,     price: null,rent: null,amount: 380,  description: 'El fisco retiene un porcentaje de tus ingresos por inversiones. La planificacion fiscal es legal y necesaria.' },
+    { position: 35, name: 'Fondo Diversificado',    type: 'PROPERTY', group: 'green',  price: 560, rent: 155, amount: null, description: 'Portafolio global en multiples activos y paises. La diversificacion real reduce el riesgo sistematico.' },
+    { position: 36, name: 'Bono Extraordinario',    type: 'LOTTERY',  group: null,     price: null,rent: null,amount: 400,  description: 'Tu desempeno excepcional es recompensado. La carrera profesional impacta directamente el patrimonio.' },
+    { position: 37, name: 'Venture Capital',        type: 'PROPERTY', group: 'green',  price: 600, rent: 170, amount: null, description: 'Capital de riesgo en startups de alto crecimiento. La inversion mas volatile y con mayor upside.' },
+    { position: 38, name: 'Renta Pasiva',           type: 'PENSION',  group: null,     price: null,rent: null,amount: 300,  description: 'Tus activos trabajan mientras duermes. La renta pasiva es el objetivo final de la educacion financiera.' },
+    { position: 39, name: 'Fondo Soberano',         type: 'PROPERTY', group: 'green',  price: 650, rent: 190, amount: null, description: 'El activo mas exclusivo del tablero. Solo los inversores mas disciplinados llegan hasta aqui.' },
+  ];
+
+  for (const cell of cells) {
+    await prisma.boardCell.create({ data: cell });
+  }
+  console.log('OK Casillas del tablero creadas: 40 casillas');
+
+  // ── Board wildcards ──────────────────────────────────────────
+  await prisma.boardWildcard.deleteMany({});
+
+  const wildcards = [
+    { text: 'Tus acciones subieron 15% este mes. El mercado te favorece.', type: 'POSITIVE' as const, effectAmount: 280, explanation: 'El mercado recompensa a quienes invierten con horizonte de largo plazo y no venden en el panico.' },
+    { text: 'Tu empresa te otorgo un bono por cumplimiento de objetivos.', type: 'POSITIVE' as const, effectAmount: 350, explanation: 'Negociar beneficios variables es tan importante como el salario base. Define bien tus objetivos al inicio.' },
+    { text: 'Vendiste activos innecesarios y recuperaste capital liquido.', type: 'POSITIVE' as const, effectAmount: 200, explanation: 'Liberar capital inmovilizado en activos que no generan retorno es una decision financiera inteligente.' },
+    { text: 'Encontraste una cuenta inactiva con fondos olvidados.', type: 'POSITIVE' as const, effectAmount: 175, explanation: 'Revisa periodicamente todas tus cuentas. El dinero olvidado pierde valor por la inflacion.' },
+    { text: 'Tu propiedad se revalorizo por obras en el barrio.', type: 'POSITIVE' as const, effectAmount: 250, explanation: 'La ubicacion y el desarrollo urbano impactan directamente el valor de los inmuebles a largo plazo.' },
+    { text: 'Un cliente te pago una deuda pendiente de hace meses.', type: 'POSITIVE' as const, effectAmount: 220, explanation: 'La gestion activa de cuentas por cobrar es fundamental. El dinero que no cobras es capital que no trabaja.' },
+    { text: 'Tu startup recibio inversion angel de un contacto.', type: 'POSITIVE' as const, effectAmount: 400, explanation: 'Las redes de contacto son uno de los activos mas valiosos de un emprendedor. Cuidalas.' },
+    { text: 'Tu vehiculo sufrio una averia grave. Reparacion urgente.', type: 'NEGATIVE' as const, effectAmount: 350, explanation: 'El fondo de emergencias debe cubrir al menos 3-6 meses de gastos, incluyendo imprevistos mecanicos.' },
+    { text: 'Gastos medicos inesperados no cubiertos por el seguro.', type: 'NEGATIVE' as const, effectAmount: 450, explanation: 'Un seguro medico completo y un fondo de emergencia son las dos defensas esenciales ante la salud.' },
+    { text: 'Multa por incumplimiento de obligaciones tributarias.', type: 'NEGATIVE' as const, effectAmount: 300, explanation: 'El incumplimiento fiscal genera multas e intereses acumulados. La prevencion siempre es menos costosa.' },
+    { text: 'Tu proveedor fallo y perdiste un contrato importante.', type: 'NEGATIVE' as const, effectAmount: 400, explanation: 'Diversificar proveedores y tener contratos con penalizaciones protege tu negocio de interrupciones costosas.' },
+    { text: 'Caida del mercado afecta temporalmente tu portafolio.', type: 'NEGATIVE' as const, effectAmount: 250, explanation: 'La volatilidad es normal e inevitable. Los inversores que venden en panico consolidan las perdidas.' },
+    { text: 'Reparaciones urgentes en tu inmueble de inversion.', type: 'NEGATIVE' as const, effectAmount: 320, explanation: 'Las propiedades requieren reserva de mantenimiento. Calcula entre 1-2% del valor anual para imprevistos.' },
+    { text: 'Inflacion acelerada reduce el valor real de tu efectivo.', type: 'NEGATIVE' as const, effectAmount: 200, explanation: 'La inflacion es un impuesto invisible al ahorro. Mantener dinero invertido es la defensa principal.' },
+    { text: 'Compraste en impulso algo que no necesitabas.', type: 'NEGATIVE' as const, effectAmount: 280, explanation: 'El gasto impulsivo es el mayor enemigo del ahorro. Aplicar la regla de las 72 horas antes de comprar ayuda.' },
+    { text: 'Decisiones financieras impulsivas te mandan directo a la carcel financiera.', type: 'GO_TO_JAIL' as const, effectAmount: 0, explanation: 'Actuar sin planificar tiene consecuencias. La disciplina financiera se construye con cada decision correcta.' },
+    { text: 'La comunidad te reconoce como referente financiero. Cada jugador te paga $100.', type: 'COLLECT_FROM_ALL' as const, effectAmount: 100, explanation: 'La educacion financiera abre puertas y genera confianza. Ser percibido como experto tiene valor economico real.' },
+    { text: 'Organizaste un evento financiado con deuda. Pagas $120 a cada participante.', type: 'PAY_TO_ALL' as const, effectAmount: 120, explanation: 'Gastar mas de lo que tienes y a credito es una trampa comun. El costo real incluye los intereses futuros.' },
+  ];
+
+  for (const wc of wildcards) {
+    await prisma.boardWildcard.create({ data: wc });
+  }
+  console.log(`OK Cartas comodin creadas: ${wildcards.length} cartas`);
 }
 
 main()

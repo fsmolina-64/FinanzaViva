@@ -1,15 +1,15 @@
-<div class="space-y-5 animate-slide-up">
+<div class="space-y-5 animate-fade-in-up">
 
   <div>
-    <h1 class="text-2xl font-bold text-white">Mi Perfil</h1>
-    <p class="text-slate-400 text-sm mt-0.5">Tu progreso y configuración</p>
+    <h1 class="text-2xl font-bold text-primary">Mi Perfil</h1>
+    <p class="text-muted text-sm mt-0.5">Tu progreso y configuración</p>
   </div>
 
   @if (loading()) {
   <div class="space-y-4">
-    <div class="bg-slate-800 rounded-2xl h-40 animate-pulse border border-slate-700/50"></div>
-    <div class="bg-slate-800 rounded-2xl h-12 animate-pulse border border-slate-700/50"></div>
-    <div class="bg-slate-800 rounded-2xl h-52 animate-pulse border border-slate-700/50"></div>
+    <div class="bg-card rounded-2xl h-40 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 80ms"></div>
+    <div class="bg-card rounded-2xl h-12 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 160ms"></div>
+    <div class="bg-card rounded-2xl h-52 animate-pulse border border-default/50 card-hover shadow-sm" style="animation-delay: 240ms"></div>
   </div>
   }
 
@@ -34,14 +34,14 @@
           <div
             class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center border-2"
             [ngClass]="[getFrameClass(), getAuraClass()]">
-            <span class="text-white font-bold text-2xl">{{ getInitials(user()!.profile.displayName) }}</span>
+            <span class="text-primary font-bold text-2xl">{{ getInitials(user()!.profile.displayName) }}</span>
           </div>
           }
         </div>
 
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <h2 class="text-white font-bold text-xl">{{ user()!.profile.displayName }}</h2>
+            <h2 class="text-primary font-bold text-xl">{{ user()!.profile.displayName }}</h2>
             @if (equippedTitle()) {
             <span
               class="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
@@ -56,33 +56,33 @@
               {{ getRankLabel(user()!.gameStats.rank) }}
             </span>
           </div>
-          <p class="text-slate-400 text-sm mt-0.5">{{ user()!.email }}</p>
+          <p class="text-muted text-sm mt-0.5">{{ user()!.email }}</p>
           @if (user()!.profile.bio) {
-          <p class="text-slate-300 text-sm mt-2 leading-relaxed">{{ user()!.profile.bio }}</p>
+          <p class="text-muted text-sm mt-2 leading-relaxed">{{ user()!.profile.bio }}</p>
           }
 
           <div class="mt-3 space-y-1.5">
-            <div class="flex justify-between text-xs text-slate-400">
+            <div class="flex justify-between text-xs text-muted">
               <span>Nivel {{ user()!.gameStats.level }}</span>
               <span>{{ getXpProgress() }}/100 XP</span>
             </div>
-            <div class="h-2 bg-slate-700/80 rounded-full overflow-hidden">
+            <div class="h-2 bg-elevated/80 rounded-full overflow-hidden">
               <div
                 class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-1000 xp-bar-glow"
                 [style.width.%]="getXpProgress()"></div>
             </div>
-            <p class="text-slate-500 text-xs">{{ user()!.gameStats.xp }} XP total acumulado</p>
+            <p class="text-subtle text-xs">{{ user()!.gameStats.xp }} XP total acumulado</p>
           </div>
         </div>
       </div>
 
       <div class="relative z-10 flex gap-2 mt-4">
         <button (click)="startEdit()"
-          class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25">
+          class="flex-1 bg-blue-600 hover:bg-blue-500 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 btn-press">
           Editar perfil
         </button>
         <button (click)="logout()"
-          class="px-4 py-2.5 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-semibold transition-all duration-200">
+          class="px-4 py-2.5 rounded-xl border border-danger/30 text-danger hover:bg-danger/10 text-sm font-semibold transition-all duration-200 btn-press">
           Salir
         </button>
       </div>
@@ -90,7 +90,7 @@
 
     <div class="profile-tabs">
       @for (tab of tabs; track tab.key) {
-      <button (click)="setTab(tab.key)" [class.tab-active]="activeTab() === tab.key" class="profile-tab-btn">
+      <button (click)="setTab(tab.key)" [class.tab-active]="activeTab() === tab.key" class="profile-tab-btn btn-press">
         <span>{{ tab.icon }}</span>
         <span>{{ tab.label }}</span>
       </button>
@@ -101,37 +101,37 @@
     <div class="animate-tab-in space-y-4">
 
       @if (editing()) {
-      <div class="form-slide bg-[#1E293B] rounded-2xl p-5 border border-blue-500/30 space-y-4">
-        <h3 class="text-white font-semibold">Editar perfil</h3>
+      <div class="form-slide bg-card rounded-2xl p-5 border border-blue-500/30 space-y-4 card-hover shadow-sm" style="animation-delay: 80ms">
+        <h3 class="text-primary font-semibold">Editar perfil</h3>
         <div>
-          <label class="text-slate-400 text-xs mb-1 block">Nombre de usuario</label>
+          <label class="text-muted text-xs mb-1 block">Nombre de usuario</label>
           <input [(ngModel)]="form.displayName" type="text"
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
         <div>
-          <label class="text-slate-400 text-xs mb-1 block">Bio</label>
+          <label class="text-muted text-xs mb-1 block">Bio</label>
           <textarea [(ngModel)]="form.bio" rows="3" placeholder="Cuéntanos sobre ti..."
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
+            class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors resize-none"></textarea>
         </div>
         <div>
-          <label class="text-slate-400 text-xs mb-1 block">URL de avatar</label>
+          <label class="text-muted text-xs mb-1 block">URL de avatar</label>
           <input [(ngModel)]="form.avatarUrl" type="url" placeholder="https://..."
-            class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
+            class="w-full bg-elevated border border-strong text-primary text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors" />
           @if (form.avatarUrl) {
           <div class="mt-2 flex items-center gap-2">
             <img [src]="form.avatarUrl" alt="preview"
-              class="w-10 h-10 rounded-xl object-cover border border-slate-600" />
-            <span class="text-slate-400 text-xs">Preview</span>
+              class="w-10 h-10 rounded-xl object-cover border border-strong" />
+            <span class="text-muted text-xs">Preview</span>
           </div>
           }
         </div>
         <div class="flex gap-2">
           <button (click)="saveProfile()" [disabled]="saving()"
-            class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+            class="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 btn-press">
             {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
           </button>
           <button (click)="cancelEdit()"
-            class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-400 hover:text-white text-sm font-semibold transition-all duration-200">
+            class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary text-sm font-semibold transition-all duration-200 btn-press">
             Cancelar
           </button>
         </div>
@@ -140,19 +140,19 @@
 
       <div class="grid grid-cols-3 gap-3">
         <div class="stat-card text-center">
-          <p class="text-slate-400 text-xs mb-1">Racha actual</p>
-          <p class="text-white font-bold text-2xl">{{ user()!.gameStats.currentStreak }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">días</p>
+          <p class="text-muted text-xs mb-1">Racha actual</p>
+          <p class="text-primary font-bold text-2xl">{{ user()!.gameStats.currentStreak }}</p>
+          <p class="text-subtle text-xs mt-0.5">días</p>
         </div>
         <div class="stat-card text-center">
-          <p class="text-slate-400 text-xs mb-1">Racha máxima</p>
+          <p class="text-muted text-xs mb-1">Racha máxima</p>
           <p class="text-amber-400 font-bold text-2xl">{{ user()!.gameStats.longestStreak }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">días</p>
+          <p class="text-subtle text-xs mt-0.5">días</p>
         </div>
         <div class="stat-card text-center">
-          <p class="text-slate-400 text-xs mb-1">Logros</p>
+          <p class="text-muted text-xs mb-1">Logros</p>
           <p class="text-emerald-400 font-bold text-2xl">{{ user()!.statistics.achievementsCount }}</p>
-          <p class="text-slate-500 text-xs mt-0.5">ganados</p>
+          <p class="text-subtle text-xs mt-0.5">ganados</p>
         </div>
       </div>
     </div>
@@ -165,19 +165,19 @@
         <h3 class="section-title">Academia</h3>
         <div class="grid grid-cols-2 gap-3">
           <div class="stat-card">
-            <p class="text-slate-400 text-xs">Módulos completados</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.modulesCompleted }}</p>
+            <p class="text-muted text-xs">Módulos completados</p>
+            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.modulesCompleted }}</p>
           </div>
           <div class="stat-card">
-            <p class="text-slate-400 text-xs">Lecciones completadas</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.lessonsCompleted }}</p>
+            <p class="text-muted text-xs">Lecciones completadas</p>
+            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.lessonsCompleted }}</p>
           </div>
           <div class="stat-card">
-            <p class="text-slate-400 text-xs">Quizzes completados</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.quizzesCompleted }}</p>
+            <p class="text-muted text-xs">Quizzes completados</p>
+            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.quizzesCompleted }}</p>
           </div>
           <div class="stat-card">
-            <p class="text-slate-400 text-xs">Tasa de aprobación</p>
+            <p class="text-muted text-xs">Tasa de aprobación</p>
             <p class="font-bold text-xl mt-1" [ngClass]="getPassRate() >= 70 ? 'text-emerald-400' : 'text-amber-400'">
               {{ getPassRate() }}%
             </p>
@@ -189,16 +189,16 @@
         <h3 class="section-title">Simulador</h3>
         <div class="grid grid-cols-3 gap-3">
           <div class="stat-card text-center">
-            <p class="text-slate-400 text-xs">Partidas</p>
-            <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.gamesPlayed }}</p>
+            <p class="text-muted text-xs">Partidas</p>
+            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.gamesPlayed }}</p>
           </div>
           <div class="stat-card text-center">
-            <p class="text-slate-400 text-xs">Ganadas</p>
+            <p class="text-muted text-xs">Ganadas</p>
             <p class="text-emerald-400 font-bold text-xl mt-1">{{ user()!.statistics.gamesWon }}</p>
           </div>
           <div class="stat-card text-center">
-            <p class="text-slate-400 text-xs">Tasa victoria</p>
-            <p class="font-bold text-xl mt-1" [ngClass]="getWinRate() >= 50 ? 'text-emerald-400' : 'text-red-400'">
+            <p class="text-muted text-xs">Tasa victoria</p>
+            <p class="font-bold text-xl mt-1" [ngClass]="getWinRate() >= 50 ? 'text-emerald-400' : 'text-danger'">
               {{ getWinRate() }}%
             </p>
           </div>
@@ -208,8 +208,8 @@
       <div class="section-card">
         <h3 class="section-title">Finanzas</h3>
         <div class="stat-card">
-          <p class="text-slate-400 text-xs">Total transacciones registradas</p>
-          <p class="text-white font-bold text-xl mt-1">{{ user()!.statistics.totalTransactions }}</p>
+          <p class="text-muted text-xs">Total transacciones registradas</p>
+          <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.totalTransactions }}</p>
         </div>
       </div>
     </div>
@@ -221,26 +221,26 @@
       <div class="section-card">
         <h3 class="section-title">Información de cuenta</h3>
         <div class="space-y-0 text-sm">
-          <div class="flex justify-between items-center py-3 border-b border-slate-700/40">
-            <span class="text-slate-400">Email</span>
-            <span class="text-white font-medium">{{ user()!.email }}</span>
+          <div class="flex justify-between items-center py-3 border-b border-default/40">
+            <span class="text-muted">Email</span>
+            <span class="text-primary font-medium">{{ user()!.email }}</span>
           </div>
-          <div class="flex justify-between items-center py-3 border-b border-slate-700/40">
-            <span class="text-slate-400">Verificado</span>
+          <div class="flex justify-between items-center py-3 border-b border-default/40">
+            <span class="text-muted">Verificado</span>
             <span class="font-medium" [ngClass]="user()!.isVerified ? 'text-emerald-400' : 'text-amber-400'">
               {{ user()!.isVerified ? '✓ Verificado' : '⚠ Sin verificar' }}
             </span>
           </div>
           <div class="flex justify-between items-center py-3">
-            <span class="text-slate-400">Miembro desde</span>
-            <span class="text-white font-medium">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
+            <span class="text-muted">Miembro desde</span>
+            <span class="text-primary font-medium">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
       </div>
       <div class="section-card">
-        <button (click)="togglePasswordSection()" class="w-full flex items-center justify-between text-left">
+        <button (click)="togglePasswordSection()" class="w-full flex items-center justify-between text-left btn-press">
           <h3 class="section-title mb-0">Cambiar contraseña</h3>
-          <span class="text-slate-400 text-lg transition-transform duration-200"
+          <span class="text-muted text-lg transition-transform duration-200"
             [class.rotate-180]="showPasswordSection()">▾</span>
         </button>
 
@@ -248,55 +248,55 @@
         <div class="form-slide mt-4 space-y-3">
 
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Contraseña actual</label>
+            <label class="text-muted text-xs mb-1 block">Contraseña actual</label>
             <div class="relative">
               <input [(ngModel)]="passwordForm.currentPassword" [type]="showCurrentPwd() ? 'text' : 'password'"
-                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
-                [ngClass]="passwordErrors().current ? 'border-red-500' : 'border-slate-600'" />
+                class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().current ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showCurrentPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showCurrentPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
             @if (passwordErrors().current) {
-            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().current }}</p>
+            <p class="text-danger text-xs mt-1">{{ passwordErrors().current }}</p>
             }
           </div>
 
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Nueva contraseña</label>
+            <label class="text-muted text-xs mb-1 block">Nueva contraseña</label>
             <div class="relative">
               <input [(ngModel)]="passwordForm.newPassword" [type]="showNewPwd() ? 'text' : 'password'"
-                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
-                [ngClass]="passwordErrors().new ? 'border-red-500' : 'border-slate-600'" />
+                class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().new ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showNewPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showNewPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
             @if (passwordErrors().new) {
-            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().new }}</p>
+            <p class="text-danger text-xs mt-1">{{ passwordErrors().new }}</p>
             }
           </div>
 
           <div>
-            <label class="text-slate-400 text-xs mb-1 block">Confirmar nueva contraseña</label>
+            <label class="text-muted text-xs mb-1 block">Confirmar nueva contraseña</label>
             <div class="relative">
               <input [(ngModel)]="passwordForm.confirmPassword" [type]="showConfirmPwd() ? 'text' : 'password'"
-                class="w-full bg-slate-700 border text-white text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
-                [ngClass]="passwordErrors().confirm ? 'border-red-500' : 'border-slate-600'" />
+                class="w-full bg-elevated border text-primary text-sm rounded-lg px-3 py-2 pr-10 focus:outline-none focus:border-blue-500 transition-colors"
+                [ngClass]="passwordErrors().confirm ? 'border-red-500' : 'border-strong'" />
               <button type="button" (click)="showConfirmPwd.update(v => !v)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm transition-colors">
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
                 {{ showConfirmPwd() ? '🙈' : '👁️' }}
               </button>
             </div>
             @if (passwordErrors().confirm) {
-            <p class="text-red-400 text-xs mt-1">{{ passwordErrors().confirm }}</p>
+            <p class="text-danger text-xs mt-1">{{ passwordErrors().confirm }}</p>
             }
           </div>
 
           <button (click)="changePassword()" [disabled]="changingPassword()"
-            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-all duration-200">
+            class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-primary text-sm font-semibold py-2.5 rounded-xl transition-all duration-200 btn-press">
             {{ changingPassword() ? 'Guardando...' : 'Actualizar contraseña' }}
           </button>
 
@@ -306,18 +306,18 @@
       <div class="danger-zone">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-base">⚠️</span>
-          <h3 class="text-red-400 font-semibold text-sm">Zona de peligro</h3>
+          <h3 class="text-danger font-semibold text-sm">Zona de peligro</h3>
         </div>
-        <p class="text-slate-500 text-xs mb-4 leading-relaxed">
+        <p class="text-subtle text-xs mb-4 leading-relaxed">
           Las acciones en esta sección son permanentes e irreversibles. Procede con cuidado.
         </p>
         <div class="danger-zone-item">
           <div>
-            <p class="text-white text-sm font-medium">Eliminar cuenta</p>
-            <p class="text-slate-500 text-xs mt-0.5">Borra todos tus datos de forma permanente</p>
+            <p class="text-primary text-sm font-medium">Eliminar cuenta</p>
+            <p class="text-subtle text-xs mt-0.5">Borra todos tus datos de forma permanente</p>
           </div>
           <button (click)="openDeleteModal()"
-            class="flex-shrink-0 px-4 py-2 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer">
+            class="flex-shrink-0 px-4 py-2 rounded-xl border border-danger/40 text-danger hover:bg-danger/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer btn-press">
             Eliminar
           </button>
         </div>
@@ -334,15 +334,15 @@
 
 @if (showDeleteModal()) {
 <div class="modal-backdrop" (click)="closeDeleteModal()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card group" (click)="$event.stopPropagation()" style="animation-delay: 80ms">
 
     <div class="flex items-start gap-3 mb-5">
       <div
         class="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center text-lg flex-shrink-0">
         ⚠️</div>
       <div>
-        <h3 class="text-white font-bold text-lg">Eliminar cuenta</h3>
-        <p class="text-slate-400 text-xs mt-0.5">Esta acción no se puede deshacer</p>
+        <h3 class="text-primary font-bold text-lg">Eliminar cuenta</h3>
+        <p class="text-muted text-xs mt-0.5">Esta acción no se puede deshacer</p>
       </div>
     </div>
 
@@ -353,21 +353,21 @@
     </div>
 
     <div class="mb-5">
-      <label class="text-slate-400 text-xs mb-2 block">
-        Escribe <span class="text-red-400 font-mono font-bold tracking-wider">ELIMINAR</span> para confirmar
+      <label class="text-muted text-xs mb-2 block">
+        Escribe <span class="text-danger font-mono font-bold tracking-wider">ELIMINAR</span> para confirmar
       </label>
       <input [value]="deleteConfirmText()" (input)="deleteConfirmText.set($any($event.target).value)" type="text"
         placeholder="ELIMINAR" autocomplete="off"
-        class="w-full bg-slate-700/80 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-red-500/70 transition-colors font-mono tracking-wider" />
+        class="w-full bg-elevated/80 border border-strong text-primary text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-red-500/70 transition-colors font-mono tracking-wider" />
     </div>
 
     <div class="flex gap-2">
       <button (click)="confirmDelete()" [disabled]="deleteConfirmText() !== 'ELIMINAR' || deleting()"
-        class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-35 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200">
+        class="flex-1 py-2.5 rounded-xl bg-danger hover:bg-danger/90 disabled:opacity-35 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 btn-press">
         {{ deleting() ? 'Eliminando...' : 'Eliminar cuenta' }}
       </button>
       <button (click)="closeDeleteModal()" [disabled]="deleting()"
-        class="px-4 py-2.5 rounded-xl border border-slate-600 text-slate-400 hover:text-white disabled:opacity-50 text-sm font-semibold transition-all duration-200">
+        class="px-4 py-2.5 rounded-xl border border-strong text-muted hover:text-primary disabled:opacity-50 text-sm font-semibold transition-all duration-200 btn-press">
         Cancelar
       </button>
     </div>

@@ -1,16 +1,18 @@
-export type GameStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
-export type GameMode = 'MULTIPLAYER' | 'SOLO' | 'SIMULATION' | 'MIXED';
+export type GameStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED';
+export type GamePhase =
+  | 'WAITING' | 'ROLLING' | 'MOVING' | 'ACTION'
+  | 'BUYING' | 'WILDCARD_REVEAL' | 'BETWEEN_TURNS'
+  | 'FINISHED' | 'ABANDONED';
+export type GameMode = 'SOLO' | 'MULTIPLAYER' | 'MIXED' | 'SIMULATION';
 export type BotPersonality = 'CONSERVATIVE' | 'RISKY' | 'IMPULSIVE' | 'INVESTOR' | 'SAVER';
+export type CellType =
+  | 'INICIO' | 'PROPERTY' | 'TAX' | 'LOTTERY'
+  | 'WILDCARD' | 'SCAM' | 'PENSION' | 'PENSION_ESPECIAL'
+  | 'JAIL' | 'GO_TO_JAIL';
 
-export interface BackendConsequence {
+export interface PlayerProperty {
   id: string;
-  playerId: string;
-  description: string;
-  effectMoney: number;
-  effectIncome: number;
-  effectExpenses: number;
-  effectScore: number;
-  roundsRemaining: number;
+  cellPosition: number;
 }
 
 export interface BackendPlayer {
@@ -21,103 +23,115 @@ export interface BackendPlayer {
   isBot: boolean;
   botPersonality: BotPersonality | null;
   turnOrder: number;
-  hasActed: boolean;
-  currentEventId: string | null;
+  hasRolled: boolean;
+  position: number;
   money: number;
-  income: number;
-  expenses: number;
-  debt: number;
-  savings: number;
-  investments: number;
-  assets: number;
-  financialScore: number;
+  isInJail: boolean;
+  jailTurnsLeft: number;
   isEliminated: boolean;
   finalRank: number | null;
-  consequences?: BackendConsequence[];
+  lapsCompleted: number;
+  properties?: PlayerProperty[];
 }
 
-export interface BackendEventOption {
-  id: string;
-  eventId: string;
-  text: string;
-  explanation: string;
-  effectMoney: number;
-  effectDebt: number;
-  effectScore: number;
-  effectIncome: number;
-  effectExpenses: number;
-  effectSavings: number;
-  effectAssets: number;
-  effectInvestments: number;
-  consequenceRounds: number;
-  consequenceDesc: string | null;
-}
-
-export interface BackendEvent {
-  id: string;
+export interface BoardCell {
+  position: number;
   name: string;
+  type: CellType;
+  group: string | null;
+  price: number | null;
+  rent: number | null;
+  amount: number | null;
   description: string;
-  category: string;
-  options: BackendEventOption[];
 }
 
 export interface BackendGame {
   id: string;
   createdByUserId: string;
   status: GameStatus;
+  gamePhase: GamePhase;
   mode: GameMode;
   currentRound: number;
   maxRounds: number;
-  currentPlayerId: string | null;
+  currentPlayerIdx: number;
+  currentDice1: number | null;
+  currentDice2: number | null;
   xpRecipientId: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
   players?: BackendPlayer[];
-  currentEvent?: BackendEvent | null;
 }
 
-export interface DecisionResult {
-  explanation: string;
-  moneyBefore: number;
-  moneyAfter: number;
-  moneyChange: number;
-  debtBefore: number;
-  debtAfter: number;
-  debtChange: number;
-  scoreBefore: number;
-  scoreAfter: number;
-  scoreChange: number;
-  savingsBefore: number;
-  savingsAfter: number;
-  investmentsBefore: number;
-  investmentsAfter: number;
-  incomeAfter: number;
-  expensesAfter: number;
-  hasConsequence: boolean;
-  consequenceDesc: string | null;
-  consequenceRounds: number;
+export interface GameStateResponse {
+  game: BackendGame;
+  players: BackendPlayer[];
+  boardCells: BoardCell[];
+  currentPlayer: BackendPlayer | null;
 }
 
-export interface SubmitDecisionResponse {
-  result: DecisionResult;
-  gameState: BackendGame;
+export interface RollDiceResponse {
+  dice1: number;
+  dice2: number;
+  newPosition: number;
+  passedGo: boolean;
+  action: string;
+  actionDetails: {
+    rent?: number;
+    ownerName?: string;
+    amount?: number;
+    text?: string;
+    explanation?: string;
+  } | null;
+  gameState: GameStateResponse;
+}
+
+export interface DecideBuyResponse {
+  bought: boolean;
+  gameState: GameStateResponse;
+}
+
+export interface DismissWildcardResponse {
+  wildcardType: string;
+  effectAmount: number;
+  gameState: GameStateResponse;
+}
+
+export interface BotMove {
+  playerName: string;
+  dice1: number;
+  dice2: number;
+  diceSum: number;
+  fromPosition: number;
+  toPosition: number;
+  passedGo: boolean;
+  action: string;
+  actionDetail: string;
+}
+
+export interface EndTurnResponse {
+  gameState: GameStateResponse;
+  botMoves: BotMove[];
 }
 
 export interface CreateGamePayload {
   maxRounds: number;
   mode: GameMode;
-  humanPlayers: { displayName: string; userId?: string }[];
-  botPlayers?: { displayName: string; personality: BotPersonality }[];
+  humanPlayers: { displayName: string; tokenSymbol?: string }[];
+  botPlayers?: { displayName: string; personality: BotPersonality; tokenSymbol?: string }[];
   xpRecipientId?: string;
+}
+
+export interface BackendPlayerExtended extends BackendPlayer {
+  tokenSymbol?: string;
 }
 
 export interface HistoryEntry {
   id: string;
   rounds: number;
   mode: GameMode;
-  playerCount: number;
-  finalBalance: number;
-  score: number;
-  completedAt: string;
+  status: string;
+  humanPlayerCount: number;
+  winner: string;
+  finishedAt: string;
 }

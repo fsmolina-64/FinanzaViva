@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Delete, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { FinancesService } from './finances.service';
+import { AccountsService } from './accounts.service';
+import { TransactionsService } from './transactions.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -11,11 +13,16 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransferDto } from './dto/create-transfer.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @UseGuards(JwtGuard)
 @Controller('finances')
 export class FinancesController {
-  constructor(private financesService: FinancesService) { }
+  constructor(
+    private financesService: FinancesService,
+    private accountsService: AccountsService,
+    private transactionsService: TransactionsService,
+  ) {}
 
   @Get('summary')
   getSummary(@Request() req: any) { return this.financesService.getSummary(req.user.id); }
@@ -23,30 +30,30 @@ export class FinancesController {
   @Get('budget-health')
   getBudgetHealth(@Request() req: any) { return this.financesService.getBudgetHealth(req.user.id); }
 
-  // ACCOUNTS
   @Post('accounts')
-  createAccount(@Request() req: any, @Body() dto: CreateAccountDto) { return this.financesService.createAccount(req.user.id, dto); }
+  createAccount(@Request() req: any, @Body() dto: CreateAccountDto) { return this.accountsService.createAccount(req.user.id, dto); }
 
   @Get('accounts')
-  getAccounts(@Request() req: any) { return this.financesService.getAccounts(req.user.id); }
+  getAccounts(@Request() req: any) { return this.accountsService.getAccounts(req.user.id); }
+
+  @Patch('accounts/:id')
+  updateAccount(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateAccountDto) { return this.accountsService.updateAccount(req.user.id, id, dto); }
 
   @Delete('accounts/:id')
-  deleteAccount(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteAccount(req.user.id, id); }
+  deleteAccount(@Request() req: any, @Param('id') id: string) { return this.accountsService.deleteAccount(req.user.id, id); }
 
-  // TRANSACTIONS
   @Post('transactions')
-  createTransaction(@Request() req: any, @Body() dto: CreateTransactionDto) { return this.financesService.createTransaction(req.user.id, dto); }
+  createTransaction(@Request() req: any, @Body() dto: CreateTransactionDto) { return this.transactionsService.createTransaction(req.user.id, dto); }
 
   @Get('transactions')
-  getTransactions(@Request() req: any) { return this.financesService.getTransactions(req.user.id); }
+  getTransactions(@Request() req: any) { return this.transactionsService.getTransactions(req.user.id); }
 
   @Patch('transactions/:id')
-  updateTransaction(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateTransactionDto) { return this.financesService.updateTransaction(req.user.id, id, dto); }
+  updateTransaction(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateTransactionDto) { return this.transactionsService.updateTransaction(req.user.id, id, dto); }
 
   @Delete('transactions/:id')
-  deleteTransaction(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteTransaction(req.user.id, id); }
+  deleteTransaction(@Request() req: any, @Param('id') id: string) { return this.transactionsService.deleteTransaction(req.user.id, id); }
 
-  // CATEGORIES — los 3 que faltaban
   @Get('categories')
   getCategories(@Request() req: any) { return this.financesService.getCategories(req.user.id); }
 
@@ -57,9 +64,8 @@ export class FinancesController {
   updateCategory(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateCategoryDto) { return this.financesService.updateCategory(req.user.id, id, dto); }
 
   @Delete('categories/:id')
-  deleteCategory(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteCategory(req.user.id, id); }
+  deleteCategory(@Request() req: any, @Param('id') id: string, @Query('reassignToId') reassignToId?: string) { return this.financesService.deleteCategory(req.user.id, id, reassignToId); }
 
-  // BUDGETS
   @Post('budgets')
   createBudget(@Request() req: any, @Body() dto: CreateBudgetDto) { return this.financesService.createBudget(req.user.id, dto); }
 
@@ -72,7 +78,6 @@ export class FinancesController {
   @Delete('budgets/:id')
   deleteBudget(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteBudget(req.user.id, id); }
 
-  // GOALS
   @Post('goals')
   createGoal(@Request() req: any, @Body() dto: CreateGoalDto) { return this.financesService.createGoal(req.user.id, dto); }
 
@@ -85,7 +90,12 @@ export class FinancesController {
   @Delete('goals/:id')
   deleteGoal(@Request() req: any, @Param('id') id: string) { return this.financesService.deleteGoal(req.user.id, id); }
 
-  // TRANSFERS
   @Post('transfers')
-  createTransfer(@Request() req: any, @Body() dto: CreateTransferDto) { return this.financesService.createTransfer(req.user.id, dto); }
+  createTransfer(@Request() req: any, @Body() dto: CreateTransferDto) { return this.transactionsService.createTransfer(req.user.id, dto); }
+
+  @Patch('transfers/:groupId')
+  updateTransfer(@Request() req: any, @Param('groupId') groupId: string, @Body() dto: any) { return this.transactionsService.updateTransfer(req.user.id, groupId, dto); }
+
+  @Delete('transfers/:groupId')
+  deleteTransfer(@Request() req: any, @Param('groupId') groupId: string) { return this.transactionsService.deleteTransferByGroup(req.user.id, groupId); }
 }

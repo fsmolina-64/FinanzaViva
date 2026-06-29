@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -15,7 +16,24 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     const { passwordHash, ...safeUser } = user;
-    return safeUser;
+    const actualCount = await this.prisma.userAchievement.count({ where: { userId } });
+    if (safeUser.statistics) safeUser.statistics.achievementsCount = actualCount;
+
+    const totalQuizzes = await this.prisma.quiz.count();
+    const distinctPassed = await this.prisma.quizAttempt.groupBy({
+      by: ['quizId'],
+      where: { userId, passed: true },
+    });
+
+    return {
+      ...safeUser,
+      statistics: {
+        ...(safeUser.statistics ?? {}),
+        achievementsCount: actualCount,
+        totalQuizzes,
+        distinctPassedQuizzes: distinctPassed.length,
+      },
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -38,7 +56,39 @@ export class UsersService {
     return { message: 'Contraseña actualizada correctamente' };
   }
 
+  async updateOnboarding(userId: string, dto: UpdateOnboardingDto) {
+    return this.prisma.profile.update({
+      where: { userId },
+      data: {
+        ...(dto.onboardingCompleted !== undefined && {
+          onboardingCompleted: dto.onboardingCompleted,
+        }),
+        ...(dto.onboardingStep !== undefined && {
+          onboardingStep: dto.onboardingStep,
+        }),
+      },
+    });
+  }
+
   async deleteAccount(userId: string) {
+    const playerIds = (
+      await this.prisma.simulatorPlayer.findMany({
+        where: { OR: [{ userId }, { game: { createdByUserId: userId } }] },
+        select: { id: true },
+      })
+    ).map(p => p.id);
+    if (playerIds.length) {
+      await this.prisma.playerProperty.deleteMany({ where: { playerId: { in: playerIds } } });
+      await this.prisma.simulatorPlayer.deleteMany({ where: { id: { in: playerIds } } });
+    }
+    const gameIds = (await this.prisma.simulatorGame.findMany({
+      where: { createdByUserId: userId },
+      select: { id: true },
+    })).map(g => g.id);
+    if (gameIds.length) {
+      await this.prisma.playerProperty.deleteMany({ where: { gameId: { in: gameIds } } });
+      await this.prisma.simulatorGame.deleteMany({ where: { id: { in: gameIds } } });
+    }
     await this.prisma.user.delete({ where: { id: userId } });
     return { message: 'Cuenta eliminada correctamente' };
   }

@@ -34,12 +34,13 @@ export class AchievementsService {
     });
     if (existing) return;
 
-    await this.prisma.userAchievement.create({ data: { userId, achievementId } });
-
-    await this.prisma.userStatistics.update({
-      where: { userId },
-      data: { achievementsCount: { increment: 1 } },
-    });
+    await this.prisma.$transaction([
+      this.prisma.userAchievement.create({ data: { userId, achievementId } }),
+      this.prisma.userStatistics.update({
+        where: { userId },
+        data: { achievementsCount: { increment: 1 } },
+      }),
+    ]);
 
     if (xpReward > 0) {
       await this.gamification.addXp(userId, {
@@ -116,11 +117,21 @@ export class AchievementsService {
   async equipReward(userId: string, rewardId: string) {
     const reward = await this.prisma.reward.findUniqueOrThrow({ where: { id: rewardId } });
 
-    const sameType = await this.prisma.reward.findMany({
-      where: { type: reward.type, isActive: true },
-      select: { id: true }
+    const current = await this.prisma.userReward.findUnique({
+      where: { userId_rewardId: { userId, rewardId } },
     });
-    const sameTypeIds = sameType.map(r => r.id);
+
+    if (current?.isEquipped) {
+      return this.prisma.userReward.update({
+        where: { userId_rewardId: { userId, rewardId } },
+        data: { isEquipped: false },
+      });
+    }
+
+    const sameTypeIds = (await this.prisma.reward.findMany({
+      where: { type: reward.type, isActive: true },
+      select: { id: true },
+    })).map(r => r.id);
 
     await this.prisma.userReward.updateMany({
       where: { userId, rewardId: { in: sameTypeIds }, isEquipped: true },

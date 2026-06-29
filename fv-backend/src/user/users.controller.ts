@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Delete, Body, UseGuards, Request } from '@nestj
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateOnboardingDto } from './dto/update-onboarding.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 
 @UseGuards(JwtGuard)
@@ -17,6 +18,11 @@ export class UsersController {
   @Patch('profile')
   updateProfile(@Request() req: any, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(req.user.id, dto);
+  }
+
+  @Patch('onboarding')
+  updateOnboarding(@Request() req: any, @Body() dto: UpdateOnboardingDto) {
+    return this.usersService.updateOnboarding(req.user.id, dto);
   }
 
   @Patch('password')

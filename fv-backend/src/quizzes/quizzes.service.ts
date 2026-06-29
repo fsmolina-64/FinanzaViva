@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
@@ -36,9 +36,19 @@ export class QuizzesService {
     const attemptAnswers: { questionId: string; answerId: string; isCorrect: boolean; timeTaken?: number }[] = [];
     const results: { questionId: string; correct: boolean; correctAnswerId: string; selectedAnswerId: string; explanation: string }[] = [];
 
+    const quizQuestions = quiz.questions;
     for (const submitted of dto.answers) {
-      const answer = await this.prisma.answer.findUnique({ where: { id: submitted.answerId } });
-      const isCorrect = answer?.isCorrect ?? false;
+      const question = quizQuestions.find(q => q.id === submitted.questionId);
+      if (!question) {
+        throw new BadRequestException(`La pregunta ${submitted.questionId} no pertenece a este quiz`);
+      }
+
+      const answer = question.answers.find(a => a.id === submitted.answerId);
+      if (!answer) {
+        throw new BadRequestException(`La respuesta ${submitted.answerId} no pertenece a la pregunta ${submitted.questionId}`);
+      }
+
+      const isCorrect = answer.isCorrect;
       if (isCorrect) correct++;
 
       attemptAnswers.push({
@@ -48,8 +58,7 @@ export class QuizzesService {
         timeTaken: submitted.timeTaken,
       });
 
-      const question = quiz.questions.find(q => q.id === submitted.questionId);
-      const correctAnswer = question?.answers.find(a => a.isCorrect);
+      const correctAnswer = question.answers.find(a => a.isCorrect);
       results.push({
         questionId: submitted.questionId,
         correct: isCorrect,
@@ -114,8 +123,11 @@ export class QuizzesService {
         return {
           questionId: a.questionId,
           questionText: a.question.text,
+          selectedAnswerId: a.answerId,
+          correctAnswerId: correctAnswer?.id ?? '',
           selectedAnswerText: a.answer.text,
           correctAnswerText: correctAnswer?.text ?? '',
+          allOptions: question?.answers.map(ans => ({ id: ans.id, text: ans.text })) ?? [],
           isCorrect: a.isCorrect,
           explanation: correctAnswer?.explanation ?? '',
         };

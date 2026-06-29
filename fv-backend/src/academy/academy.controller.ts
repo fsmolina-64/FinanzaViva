@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { AcademyService } from './academy.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 
@@ -30,5 +30,10 @@ export class AcademyController {
   @Post('lessons/:id/reset')
   resetLesson(@Request() req: any, @Param('id') id: string) {
     return this.academyService.resetLesson(req.user.id, id);
+  }
+
+  @Get('modules/:id/reading-progress')
+  getReadingProgress(@Request() req: any, @Param('id') id: string) {
+    return this.academyService.getReadingProgress(req.user.id, id);
   }
 }

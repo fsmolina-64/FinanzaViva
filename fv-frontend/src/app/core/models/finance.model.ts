@@ -35,9 +35,25 @@ export interface Transaction {
   type: TransactionType;
   description: string | null;
   date: string;
+  transferGroupId?: string | null;
+  isInitialBalance?: boolean;
   createdAt: string;
   category?: Category;
   account?: Account;
+}
+
+export interface TransferDisplay {
+  groupId: string;
+  type: 'TRANSFER';
+  fromAccountId: string;
+  toAccountId: string;
+  fromAccountName: string;
+  toAccountName: string;
+  amount: number;
+  description: string | null;
+  date: string;
+  fromTxId: string;
+  toTxId: string;
 }
 
 export interface TransactionAlert {
@@ -104,6 +120,7 @@ export interface CreateAccountPayload {
   name: string;
   type: AccountType;
   initialBalance?: number;
+  countAsIncome?: boolean;
 }
 
 export interface CreateTransactionPayload {
@@ -117,7 +134,7 @@ export interface CreateTransactionPayload {
 }
 
 export interface CreateBudgetPayload {
-  categoryId: string;
+  categoryId?: string;
   amount: number;
   period: BudgetPeriod;
   startDate: string;
@@ -141,6 +158,8 @@ export interface UpdateTransactionPayload {
 }
 
 export interface UpdateBudgetPayload {
+  categoryId?: string;
+  startDate?: string | null;
   amount?: number;
   period?: BudgetPeriod;
   endDate?: string | null;
@@ -179,4 +198,9 @@ export interface UpdateCategoryPayload {
   icon?: string;
   color?: string;
   endDate?: string;
+}
+
+export interface UpdateAccountPayload {
+  name?: string;
+  balance?: number;
 }

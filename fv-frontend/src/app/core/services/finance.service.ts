@@ -8,7 +8,8 @@ import {
   CreateBudgetPayload, CreateGoalPayload,
   UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload,
    CreateTransferPayload, TransferResponse,
-   CreateCategoryPayload, UpdateCategoryPayload
+   CreateCategoryPayload, UpdateCategoryPayload,
+   UpdateAccountPayload
 } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,10 @@ export class FinanceService {
 
   deleteAccount(id: string): Observable<void> {
     return this.api.delete<void>(`/finances/accounts/${id}`);
+  }
+
+  updateAccount(id: string, data: UpdateAccountPayload): Observable<Account> {
+    return this.api.patch<Account>(`/finances/accounts/${id}`, data);
   }
 
   getTransactions(): Observable<Transaction[]> {
@@ -99,7 +104,16 @@ export class FinanceService {
     return this.api.patch<Category>(`/finances/categories/${id}`, data);
   }
 
-  deleteCategory(id: string): Observable<void> {
-    return this.api.delete<void>(`/finances/categories/${id}`);
+  deleteCategory(id: string, reassignToId?: string): Observable<void> {
+    const params = reassignToId ? `?reassignToId=${reassignToId}` : '';
+    return this.api.delete<void>(`/finances/categories/${id}${params}`);
+  }
+
+  updateTransfer(groupId: string, data: any): Observable<any> {
+    return this.api.patch<any>(`/finances/transfers/${groupId}`, data);
+  }
+
+  deleteTransfer(groupId: string): Observable<void> {
+    return this.api.delete<void>(`/finances/transfers/${groupId}`);
   }
 }

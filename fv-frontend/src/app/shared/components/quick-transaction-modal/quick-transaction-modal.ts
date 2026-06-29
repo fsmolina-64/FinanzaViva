@@ -1,22 +1,27 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../../core/services/finance.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { fadeIn } from '../../../core/animations/animations';
 import {
     Account, Category, Transaction, TransactionAlert,
-    CreateTransactionPayload, CreateTransferPayload, TransferResponse
+    CreateTransactionPayload, CreateTransferPayload
 } from '../../../core/models/finance.model';
+import { NumpadComponent } from '../numpad/numpad.component';
+import { formatCurrency } from '../../utils/amount.utils';
 
 type ModalType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
 @Component({
     selector: 'app-quick-transaction-modal',
     standalone: true,
-    imports: [CommonModule, FormsModule],
-    templateUrl: './quick-transaction-modal.html'
+    imports: [CommonModule, FormsModule, NumpadComponent],
+    templateUrl: './quick-transaction-modal.html',
+    animations: [fadeIn]
 })
 export class QuickTransactionModal implements OnInit {
+    @ViewChild('numpad') numpad!: NumpadComponent;
     @Input() initialType: ModalType = 'EXPENSE';
     @Output() closed = new EventEmitter<void>();
     @Output() transactionCreated = new EventEmitter<{ transaction: Transaction; alert: TransactionAlert | null }>();
@@ -26,13 +31,13 @@ export class QuickTransactionModal implements OnInit {
     categories = signal<Category[]>([]);
     loading = signal(true);
     submitting = signal(false);
+    currentAmount = signal(0);
 
     showDebtConfirm = signal(false);
     private pendingPayload: CreateTransactionPayload | null = null;
 
     selectedType = signal<ModalType>('EXPENSE');
 
-    amountStr = '0';
     selectedCategoryId = '';
     selectedAccountId = '';
     toAccountId = '';
@@ -41,12 +46,12 @@ export class QuickTransactionModal implements OnInit {
     showExtras = false;
 
     readonly today = new Date().toISOString().split('T')[0];
-    readonly numpadKeys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '<'];
     readonly typeOptions: { key: ModalType; label: string }[] = [
         { key: 'EXPENSE', label: 'Gasto' },
         { key: 'INCOME', label: 'Ingreso' },
         { key: 'TRANSFER', label: 'Transferencia' }
     ];
+    readonly formatCurrency = formatCurrency;
 
     filteredCategories = computed(() => {
         const t = this.selectedType();
@@ -56,9 +61,7 @@ export class QuickTransactionModal implements OnInit {
 
     topCategories = computed(() => this.filteredCategories().slice(0, 9));
 
-    toAccounts = computed(() =>
-        this.accounts().filter(a => a.id !== this.selectedAccountId)
-    );
+
 
     constructor(
         private financeService: FinanceService,
@@ -99,36 +102,19 @@ export class QuickTransactionModal implements OnInit {
         setTimeout(() => this.preselectCategory(), 0);
     }
 
-    pad(key: string): void {
-        if (this.showDebtConfirm()) return;
-        if (key === '<') { this.amountStr = this.amountStr.length <= 1 ? '0' : this.amountStr.slice(0, -1); return; }
-        if (key === '.' && this.amountStr.includes('.')) return;
-        const parts = this.amountStr.split('.');
-        if (parts[1] !== undefined && parts[1].length >= 2) return;
-        this.amountStr = this.amountStr === '0' && key !== '.' ? key : this.amountStr + key;
-    }
-
-    getAmount(): number { return parseFloat(this.amountStr) || 0; }
-
-    formatAmount(): string {
-        return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(this.getAmount());
-    }
-
     getSelectedAccountBalance(): number {
         const acc = this.accounts().find(a => a.id === this.selectedAccountId);
         return parseFloat(String(acc?.balance ?? '0'));
     }
 
+    onAmountChange(amount: number): void {
+        this.currentAmount.set(amount);
+    }
 
     submit(): void {
-        if (this.getAmount() <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
+        if (this.currentAmount() <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
         if (!this.selectedAccountId) { this.toast.warning('Selecciona una cuenta'); return; }
-
-        if (this.selectedType() === 'TRANSFER') {
-            this.submitTransfer();
-        } else {
-            this.submitTransaction();
-        }
+        this.selectedType() === 'TRANSFER' ? this.submitTransfer() : this.submitTransaction();
     }
 
     private submitTransaction(): void {
@@ -137,7 +123,7 @@ export class QuickTransactionModal implements OnInit {
         const payload: CreateTransactionPayload = {
             accountId: this.selectedAccountId,
             categoryId: this.selectedCategoryId,
-            amount: this.getAmount(),
+            amount: this.currentAmount(),
             type: this.selectedType() as 'INCOME' | 'EXPENSE',
             description: this.description.trim() || undefined,
             date: this.selectedDate
@@ -148,7 +134,6 @@ export class QuickTransactionModal implements OnInit {
             this.showDebtConfirm.set(true);
             return;
         }
-
         this.executeTransaction(payload);
     }
 
@@ -183,14 +168,12 @@ export class QuickTransactionModal implements OnInit {
     private submitTransfer(): void {
         if (!this.toAccountId) { this.toast.warning('Selecciona la cuenta destino'); return; }
         if (this.selectedAccountId === this.toAccountId) { this.toast.warning('Las cuentas deben ser diferentes'); return; }
-        if (this.getAmount() > this.getSelectedAccountBalance()) {
-            this.toast.error('Saldo insuficiente en la cuenta origen'); return;
-        }
+        if (this.currentAmount() > this.getSelectedAccountBalance()) { this.toast.error('Saldo insuficiente en la cuenta origen'); return; }
 
         const payload: CreateTransferPayload = {
             fromAccountId: this.selectedAccountId,
             toAccountId: this.toAccountId,
-            amount: this.getAmount(),
+            amount: this.currentAmount(),
             description: this.description.trim() || undefined,
             date: this.selectedDate
         };
@@ -212,7 +195,8 @@ export class QuickTransactionModal implements OnInit {
     }
 
     private reset(): void {
-        this.amountStr = '0';
+        this.numpad.setFromNumber(0);
+        this.currentAmount.set(0);
         this.description = '';
         this.toAccountId = '';
         this.selectedDate = this.today;

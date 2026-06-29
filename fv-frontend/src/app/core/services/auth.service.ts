@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { OnboardingService } from './onboarding.service';
 import { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '../models/auth.model';
 
 @Injectable({
@@ -16,7 +17,8 @@ export class AuthService {
 
   constructor(
     private api: ApiService,
-    private router: Router
+    private router: Router,
+    private onboardingService: OnboardingService
   ) {}
 
   login(data: LoginRequest): Observable<AuthResponse> {
@@ -31,11 +33,24 @@ export class AuthService {
     );
   }
 
+  refreshProfile(profile: { displayName: string; avatarUrl: string | null }): void {
+    this.currentUser.update(prev => prev ? {
+      ...prev,
+      displayName: profile.displayName ?? prev.displayName,
+      avatarUrl: profile.avatarUrl ?? prev.avatarUrl,
+    } : prev);
+    const saved = this.currentUser();
+    if (saved) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(saved));
+    }
+  }
+
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.isLoggedIn.set(false);
     this.currentUser.set(null);
+    this.onboardingService.clearAll();
     this.router.navigate(['/auth/login']);
   }
 
@@ -57,5 +72,6 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     this.isLoggedIn.set(true);
     this.currentUser.set(response.user);
+    this.onboardingService.clearAll();
   }
 }

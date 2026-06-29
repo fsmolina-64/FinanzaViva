@@ -10,7 +10,7 @@ export class GamificationService {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async addXp(userId: string, dto: AddXpDto) {
     await this.prisma.xpTransaction.create({
@@ -100,7 +100,7 @@ export class GamificationService {
       where: { userId },
     });
 
-    if (!stats) return;
+    if (!stats) return null;
 
     const now = new Date();
     const last = stats.lastActivityAt;
@@ -109,17 +109,33 @@ export class GamificationService {
       ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
-    let newStreak = stats.currentStreak;
+    if (diffDays === 0) {
+      return {
+        currentStreak: stats.currentStreak,
+        streakStatus: null,
+      };
+    }
 
-    if (diffDays === null || diffDays > 1) {
+    let newStreak: number;
+    let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
+
+    if (diffDays === null) {
       newStreak = 1;
+      streakStatus = 'ACTIVE';
     } else if (diffDays === 1) {
-      newStreak += 1;
+      newStreak = stats.currentStreak + 1;
+      streakStatus = 'ACTIVE';
+    } else if (diffDays === 2) {
+      newStreak = stats.currentStreak;
+      streakStatus = 'AT_RISK';
+    } else {
+      newStreak = 1;
+      streakStatus = 'LOST';
     }
 
     const longestStreak = Math.max(newStreak, stats.longestStreak);
 
-    return this.prisma.userGameStats.update({
+    await this.prisma.userGameStats.update({
       where: { userId },
       data: {
         currentStreak: newStreak,
@@ -127,12 +143,14 @@ export class GamificationService {
         lastActivityAt: now,
       },
     });
+
+    return { currentStreak: newStreak, streakStatus };
   }
 
   async checkAndEmitLevelUp(userId: string) {
     const stats = await this.prisma.userGameStats.findUnique({ where: { userId } });
     if (!stats) return null;
-    
+
     const newLevel = await this.checkLevelUp(userId, stats.xp);
     if (newLevel) {
       this.eventEmitter.emit('user.action', new UserActionEvent(userId));

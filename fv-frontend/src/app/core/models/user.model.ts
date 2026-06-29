@@ -36,6 +36,8 @@ export interface UserProfile {
     gamesWon: number;
     totalTransactions: number;
     achievementsCount: number;
+    totalQuizzes: number;
+    distinctPassedQuizzes: number;
   };
 }
 
