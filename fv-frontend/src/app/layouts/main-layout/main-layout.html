@@ -27,7 +27,7 @@
     <nav class="flex-1 py-4 overflow-y-auto">
       @for (item of navItems; track item.path) {
       <a [routerLink]="item.path" routerLinkActive="nav-active"
-        class="nav-item flex items-center px-4 py-3 mx-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-200 group mb-1 cursor-pointer">
+        class="nav-item flex items-center px-4 py-3 mx-2 rounded-xl text-slate-400 transition-all duration-200 group mb-1 cursor-pointer">
         @if (item.icon.endsWith('.png') || item.icon.length > 2) {
   <img [src]="item.icon" 
      alt="Icono Premium" 
