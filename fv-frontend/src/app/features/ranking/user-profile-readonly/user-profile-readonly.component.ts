@@ -109,7 +109,6 @@ export class UserProfileReadonlyComponent implements OnInit {
   error = signal<string | null>(null);
   loaded = signal(false);
 
-  // ── Caps sincronizados con backend ────────────────────────────────────────
   readonly TOTAL_MODULES = 7;
   readonly TOTAL_LESSONS = 28;
   readonly TOTAL_QUIZZES = 7;
@@ -118,7 +117,6 @@ export class UserProfileReadonlyComponent implements OnInit {
   readonly CAP_TRANSACTIONS = 200;
   readonly CAP_LEVEL = 10;
 
-  // ── Tiers sincronizados con ranking.service.ts ────────────────────────────
   readonly streakTiers: StreakTier[] = [
     { min: 0, max: 6, mult: 1.00, label: '1–6d' },
     { min: 7, max: 14, mult: 1.10, label: '7–14d' },
@@ -162,7 +160,6 @@ export class UserProfileReadonlyComponent implements OnInit {
     },
   ];
 
-  // ── Tier derivado de currentStreak (fuente de verdad para la barra) ───────
   tierInfo = computed<TierInfo | null>(() => {
     const user = this.userData();
     if (!user) return null;
@@ -204,13 +201,11 @@ export class UserProfileReadonlyComponent implements OnInit {
     return Math.round((won / played) * 100);
   }
 
-  // 'progress' usa nivel / 10 para que nivel 7 = 70% visualmente
   categoryBarWidth(key: keyof Breakdown, user: RankingUser): number {
     if (key === 'progress') return Math.min((user.level / this.CAP_LEVEL) * 100, 100);
     return user.breakdown[key];
   }
 
-  // ── Puntos reales por categoría (ponderados) ──────────────────────────────
   round2(n: number): number {
     return Math.round(n * 100) / 100;
   }
@@ -227,7 +222,6 @@ export class UserProfileReadonlyComponent implements OnInit {
     return this.round2(user.score / user.streakMultiplier);
   });
 
-  // Helper singular/plural reutilizable
   plural(n: number, singular: string, pluralStr: string): string {
     return n === 1 ? `1 ${singular}` : `${n} ${pluralStr}`;
   }
@@ -239,7 +233,6 @@ export class UserProfileReadonlyComponent implements OnInit {
     return 'text-red-400 bg-red-500/10 border-red-500/20';
   }
 
-  // ── Helpers de multiplicador ──────────────────────────────────────────────
 
   multiplierColorClass(mult: number): string {
     if (mult >= 1.80) return 'text-emerald-400';
@@ -259,14 +252,12 @@ export class UserProfileReadonlyComponent implements OnInit {
     return 'from-slate-600 to-slate-400';
   }
 
-  // Solo describe el estado de la racha. Los "faltan X dias" van en la barra.
   multiplierMessage(streak: number): string {
     if (streak === 0) return 'Sin racha activa. Inicia sesion diariamente para activar el bono.';
     if (streak >= 91) return `${this.plural(streak, 'dia', 'dias')} consecutivos. Multiplicador maximo activo.`;
     return `${this.plural(streak, 'dia', 'dias')} de racha activa.`;
   }
 
-  // "Falta 1 dia" / "Faltan X dias"
   daysToNextLabel(days: number): string {
     return days === 1 ? 'Falta 1 dia' : `Faltan ${days} dias`;
   }

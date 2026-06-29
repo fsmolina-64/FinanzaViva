@@ -17,6 +17,13 @@ import {
 } from '../../core/models/finance.model';
 import { EditTransactionModalService } from '../../core/services/edit-transaction-modal.service';
 import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
+import { buildTransferDisplay } from './transfer-group.util';
+import {
+  formatDateLabel, isInitBalanceTx, getCategoryName, getAccountName,
+  getTransactionBg, getTransactionColor, getTransactionSign, getTransactionLabel,
+  getAccountTypeLabel, getAccountTypeColor, getGoalProgress,
+  computeSpent, getBudgetPct, getRecurrenceLabel, extractError,
+} from './finances.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
 type TxTypeFilter = 'ALL' | 'INCOME' | 'EXPENSE';
@@ -208,107 +215,11 @@ export class Finances implements OnInit {
   });
 
   visibleTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
-    const txs = this.filteredTransactions();
-    const transferGroups = new Map<string, Transaction[]>();
-    const nonTransfers: (Transaction | TransferDisplay)[] = [];
-
-    for (const tx of txs) {
-      if (tx.type === 'TRANSFER' && tx.transferGroupId) {
-        const g = transferGroups.get(tx.transferGroupId) || [];
-        g.push(tx);
-        transferGroups.set(tx.transferGroupId, g);
-      } else {
-        nonTransfers.push(tx);
-      }
-    }
-
-    for (const [, group] of transferGroups) {
-      if (group.length >= 2) {
-        const from = group.find(t => {
-          const other = group.find(o => o.id !== t.id);
-          return other && t.accountId !== other.accountId;
-        }) ?? group[0];
-        const to = group.find(t => t.id !== from.id)!;
-        const fromAcc = this.accounts().find(a => a.id === from.accountId);
-        const toAcc = this.accounts().find(a => a.id === to.accountId);
-        nonTransfers.push({
-          groupId: from.transferGroupId!,
-          type: 'TRANSFER',
-          fromAccountId: from.accountId,
-          toAccountId: to.accountId,
-          fromAccountName: fromAcc?.name ?? 'Cuenta origen',
-          toAccountName: toAcc?.name ?? 'Cuenta destino',
-          amount: parseFloat(String(from.amount)),
-          description: from.description || to.description,
-          date: from.date,
-          fromTxId: from.id,
-          toTxId: to.id,
-        });
-      } else if (group.length === 1) {
-        nonTransfers.push(group[0]);
-      }
-    }
-
-    return nonTransfers.sort((a, b) => {
-      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
-      const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
-      return bMs - aMs;
-    });
+    return buildTransferDisplay(this.filteredTransactions(), this.accounts());
   });
 
   recentTransactions = computed<(Transaction | TransferDisplay)[]>(() => {
-    const txs = this.transactions();
-    const transferGroups = new Map<string, Transaction[]>();
-    const result: (Transaction | TransferDisplay)[] = [];
-
-    for (const tx of txs) {
-      if (tx.type === 'TRANSFER' && tx.transferGroupId) {
-        const g = transferGroups.get(tx.transferGroupId) || [];
-        g.push(tx);
-        transferGroups.set(tx.transferGroupId, g);
-      } else {
-        result.push(tx);
-      }
-    }
-
-    for (const [, group] of transferGroups) {
-      if (group.length >= 2) {
-        const from = group.find(t => {
-          const other = group.find(o => o.id !== t.id);
-          return other && t.accountId !== other.accountId;
-        }) ?? group[0];
-        const to = group.find(t => t.id !== from.id)!;
-        const fromAcc = this.accounts().find(a => a.id === from.accountId);
-        const toAcc = this.accounts().find(a => a.id === to.accountId);
-        result.push({
-          groupId: from.transferGroupId!,
-          type: 'TRANSFER',
-          fromAccountId: from.accountId,
-          toAccountId: to.accountId,
-          fromAccountName: fromAcc?.name ?? 'Cuenta origen',
-          toAccountName: toAcc?.name ?? 'Cuenta destino',
-          amount: parseFloat(String(from.amount)),
-          description: from.description || to.description,
-          date: from.date,
-          fromTxId: from.id,
-          toTxId: to.id,
-        });
-      } else if (group.length === 1) {
-        result.push(group[0]);
-      }
-    }
-
-    return result
-      .sort((a, b) => {
-        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        const aMs = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0;
-        const bMs = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0;
-        return bMs - aMs;
-      })
-      .slice(0, 5);
+    return buildTransferDisplay(this.transactions(), this.accounts()).slice(0, 5);
   });
 
   groupedTransactions = computed(() => {
@@ -1099,9 +1010,7 @@ export class Finances implements OnInit {
     });
   }
 
-  isInitBalanceTx(tx: any): boolean {
-    return tx?.isInitialBalance === true;
-  }
+  isInitBalanceTx(tx: any): boolean { return isInitBalanceTx(tx); }
 
   editBudgetCategoryDeleted(): boolean {
     return !!this.editingBudgetId() && !this.categories().some(c => c.id === this.editBudget.categoryId);
@@ -1159,83 +1068,41 @@ export class Finances implements OnInit {
   }
 
   formatCurrency = formatCurrency;
+  formatDateLabel = formatDateLabel;
+  getAccountTypeLabel = getAccountTypeLabel;
+  getAccountTypeColor = getAccountTypeColor;
+  getGoalProgress = getGoalProgress;
 
-  formatDateLabel(dateKey: string): string {
-    const d = new Date(dateKey + 'T12:00:00');
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (dateKey === today) return 'Hoy';
-    if (dateKey === yesterday) return 'Ayer';
-    return d.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
+  getAccountName(accountId: string): string {
+    return getAccountName(this.accounts(), accountId);
   }
 
   getCategoryName(categoryId: string): string {
-    return this.categories().find(c => c.id === categoryId)?.name ?? 'Sin categoría';
-  }
-
-  getAccountName(accountId: string): string {
-    return this.accounts().find(a => a.id === accountId)?.name ?? '';
+    return getCategoryName(this.categories(), categoryId);
   }
 
   getTransactionBg(tx: Transaction | TransferDisplay): string {
-    if (this.isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
-    if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
-    if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
-    return 'bg-red-500/20 text-red-400';
+    return getTransactionBg(tx);
   }
 
   getTransactionColor(tx: Transaction | TransferDisplay): string {
-    if (this.isInitBalanceTx(tx)) return 'text-purple-400';
-    if (tx.type === 'INCOME') return 'text-emerald-400';
-    if (tx.type === 'TRANSFER') return 'text-blue-400';
-    return 'text-red-400';
+    return getTransactionColor(tx);
   }
 
   getTransactionSign(tx: Transaction | TransferDisplay): string {
-    if (this.isInitBalanceTx(tx)) return '$';
-    if (tx.type === 'INCOME') return '+$';
-    if (tx.type === 'TRANSFER') return '$';
-    return '-$';
+    return getTransactionSign(tx);
   }
 
   getTransactionLabel(tx: Transaction | TransferDisplay): string {
-    if (this.isInitBalanceTx(tx)) return 'Balance inicial';
-    if (tx.type === 'TRANSFER') {
-      const td = tx as TransferDisplay;
-      return `${td.fromAccountName} → ${td.toAccountName}`;
-    }
-    return this.getCategoryName(tx.categoryId);
-  }
-
-  getAccountTypeLabel(type: AccountType): string {
-    const map: Record<AccountType, string> = { CASH: 'Efectivo', BANK: 'Banco', DIGITAL_WALLET: 'Billetera' };
-    return map[type] ?? type;
-  }
-
-  getAccountTypeColor(type: AccountType): string {
-    if (type === 'CASH') return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
-    if (type === 'BANK') return 'text-blue-400 border-blue-500/30 bg-blue-500/10';
-    return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+    return getTransactionLabel(tx, this.categories());
   }
 
   computeSpent(categoryId: string): number {
-    const now = new Date();
-    return this.transactions()
-      .filter(t => t.type === 'EXPENSE'
-        && (!categoryId || t.categoryId === categoryId)
-        && new Date(t.date).getMonth() === now.getMonth()
-        && new Date(t.date).getFullYear() === now.getFullYear())
-      .reduce((s, t) => s + parseFloat(String(t.amount)), 0);
+    return computeSpent(this.transactions(), categoryId);
   }
 
   getBudgetPct(b: Budget): number {
-    const spent = this.computeSpent(b.categoryId), amount = parseFloat(String(b.amount));
-    return amount ? Math.min(100, Math.round((spent / amount) * 100)) : 0;
-  }
-
-  getGoalProgress(g: Goal): number {
-    const current = parseFloat(String(g.currentAmount)), target = parseFloat(String(g.targetAmount));
-    return target ? Math.min(100, Math.round((current / target) * 100)) : 0;
+    return getBudgetPct(b, this.transactions());
   }
 
   sanitizeNumber(val: any): number { return parseAmount(val); }
@@ -1243,9 +1110,7 @@ export class Finances implements OnInit {
   sanitizeStr(val: any): string { return sanitizeNumberInput(val); }
   validateAmount = validateAmount;
 
-  extractError(err: any, fallback: string): string {
-    return err?.error?.message ?? fallback;
-  }
+  extractError(err: any, fallback: string): string { return extractError(err, fallback); }
 
   refreshSummary(): void {
     this.financeService.getSummary().subscribe({ next: d => this.summary.set(d) });

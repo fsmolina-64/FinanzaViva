@@ -1,0 +1,39 @@
+<div class="amount-card mx-3 mt-4 mb-2 rounded-2xl bg-gradient-to-b to-transparent border py-5 px-2 text-center select-none"
+  [ngClass]="amountCardClass()">
+  <p class="text-subtle text-[10px] font-semibold mb-2.5 uppercase tracking-[0.2em]">Monto</p>
+  <div class="flex items-baseline justify-center" [ngClass]="amountColorClass()">
+    <span class="text-2xl font-semibold opacity-40 mr-0.5 pb-1">$</span>
+    <span class="text-6xl font-black tracking-tight tabular-nums leading-none">
+      {{ getIntegerDisplay() }}
+    </span>
+    <span class="text-4xl font-bold leading-none transition-opacity duration-200"
+      [style.opacity]="inDecimalMode ? '1' : '0.18'">.</span>
+    <span class="text-4xl font-bold tabular-nums leading-none transition-opacity duration-200"
+      [style.opacity]="inDecimalMode ? '1' : '0.14'">
+      {{ getDecimalDisplay() }}
+    </span>
+  </div>
+  @if (inDecimalMode) {
+  <p class="text-[11px] mt-2 font-medium opacity-50" [ngClass]="amountColorClass()">
+    centavos &mdash; presiona &larr; para volver
+  </p>
+  }
+</div>
+
+<div class="px-3 pb-3">
+  <div class="grid grid-cols-3 gap-1.5">
+    @for (key of numpadKeys; track key) {
+    <button (click)="pad(key)"
+      class="numpad-key h-11 rounded-xl font-bold select-none transition-colors duration-100 btn-press"
+      [class.is-pressed]="pressedKey() === key" [ngClass]="key === '<'
+        ? 'bg-red-950/40 hover:bg-red-950/60 border border-red-900/30 text-red-400/80 text-base'
+        : key === '.'
+        ? (inDecimalMode
+           ? 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-lg'
+           : 'bg-elevated/40 hover:bg-elevated/60 border border-default/25 text-muted text-lg')
+        : 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-base'">
+      @if (key === '<') { &#8592; } @else { {{ key }} }
+    </button>
+    }
+  </div>
+</div>
