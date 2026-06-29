@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { Quiz, QuizQuestion, QuizSubmitResponse, QuizHistoryEntry } from '../../../core/models/quiz.model';
+import { Quiz, QuizQuestion, QuizSubmitResponse } from '../../../core/models/quiz.model';
 
 @Component({
   selector: 'app-quiz-detail',
@@ -16,10 +16,8 @@ export class QuizDetail implements OnInit {
   submitting = signal(false);
   notFound = signal(false);
   result = signal<QuizSubmitResponse | null>(null);
-  history = signal<QuizHistoryEntry[]>([]);
   answers = signal<Record<string, string>>({});
   currentIndex = signal(0);
-  expandedAttemptId = signal<string | null>(null);
   backLink = '/academy';
   protected Object = Object;
 
@@ -56,16 +54,8 @@ export class QuizDetail implements OnInit {
         const q = quizzes[0];
         this.quiz.set(q);
         this.loading.set(false);
-        this.loadHistory(q.id);
       },
       error: () => { this.loading.set(false); this.toast.error('Error al cargar el quiz'); }
-    });
-  }
-
-  private loadHistory(quizId: string): void {
-    this.quizService.getHistory(quizId).subscribe({
-      next: h => this.history.set(h),
-      error: () => { }
     });
   }
 
@@ -124,15 +114,10 @@ export class QuizDetail implements OnInit {
     return this.result()?.results.find(r => r.questionId === questionId)?.explanation ?? '';
   }
 
-  toggleAttempt(id: string): void {
-    this.expandedAttemptId.update(cur => cur === id ? null : id);
-  }
-
   restart(): void {
     this.answers.set({});
     this.result.set(null);
     this.currentIndex.set(0);
-    this.loadHistory(this.quiz()!.id);
   }
 
   goBack(): void {

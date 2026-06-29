@@ -123,8 +123,11 @@ export class QuizzesService {
         return {
           questionId: a.questionId,
           questionText: a.question.text,
+          selectedAnswerId: a.answerId,
+          correctAnswerId: correctAnswer?.id ?? '',
           selectedAnswerText: a.answer.text,
           correctAnswerText: correctAnswer?.text ?? '',
+          allOptions: question?.answers.map(ans => ({ id: ans.id, text: ans.text })) ?? [],
           isCorrect: a.isCorrect,
           explanation: correctAnswer?.explanation ?? '',
         };

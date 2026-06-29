@@ -43,8 +43,11 @@ export interface QuizSubmitResponse {
 export interface QuizHistoryAnswer {
   questionId: string;
   questionText: string;
+  selectedAnswerId: string;
+  correctAnswerId: string;
   selectedAnswerText: string;
   correctAnswerText: string;
+  allOptions: { id: string; text: string }[];
   isCorrect: boolean;
   explanation: string;
 }
