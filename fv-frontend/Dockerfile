@@ -3,9 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-ARG API_URL=http://localhost:3000
-RUN sed -i "s|__API_URL__|$API_URL|g" src/environments/environment.prod.ts && \
-    npm run build -- --configuration production
+RUN npm run build -- --configuration production
 
 FROM nginx:alpine
 COPY --from=builder /app/dist/fv-frontend/browser /usr/share/nginx/html
