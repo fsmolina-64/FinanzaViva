@@ -57,6 +57,7 @@ enum XpSource {
   TRANSACTION_LOGGED
   SIMULATOR_ROUND
   SIMULATOR_GAME_FINISHED
+  SIMULATOR_OBSERVED
   STREAK_BONUS
   ACHIEVEMENT_UNLOCKED
   GOAL_COMPLETED
@@ -664,14 +665,14 @@ model BoardCell {
 
 model CellDecisionOption {
   id          String    @id @default(cuid())
-  cellId      Int
-  cell        BoardCell @relation(fields: [cellId], references: [position], onDelete: Cascade)
-  text        String    @db.VarChar(400)
-  isCorrect   Boolean
-  amount      Int
-  explanation String    @db.VarChar(600)
+  cellPosition Int
+  cell         BoardCell @relation(fields: [cellPosition], references: [position], onDelete: Cascade)
+  text         String    @db.VarChar(400)
+  isCorrect    Boolean
+  amount       Int
+  explanation  String    @db.VarChar(600)
 
-  @@index([cellId])
+  @@index([cellPosition])
   @@map("cell_decision_options")
 }
 

@@ -794,7 +794,7 @@ async function main() {
   for (const dc of decisionData) {
     const cell = await prisma.boardCell.findFirst({ where: { position: dc.position } });
     if (cell) {
-      await prisma.cellDecisionOption.deleteMany({ where: { cellId: cell.position } });
+      await prisma.cellDecisionOption.deleteMany({ where: { cellPosition: cell.position } });
     }
     await prisma.boardCell.updateMany({
       where: { position: dc.position },
@@ -817,7 +817,7 @@ async function main() {
     for (const opt of dc.options) {
       await prisma.cellDecisionOption.create({
         data: {
-          cellId: cell.position,
+          cellPosition: cell.position,
           text: opt.text,
           isCorrect: opt.isCorrect,
           amount: opt.amount,

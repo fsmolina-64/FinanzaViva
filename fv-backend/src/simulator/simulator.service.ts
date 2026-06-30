@@ -129,6 +129,10 @@ export class SimulatorService {
       },
     });
 
+    if (game.mode === 'SIMULATION') {
+      return this.gameState.getGameState(gameId);
+    }
+
     const result = await this.advanceToHuman(gameId);
     return result.gameState;
   }
@@ -342,7 +346,7 @@ export class SimulatorService {
 
       case 'DECISION': {
         const options = await this.prisma.cellDecisionOption.findMany({
-          where: { cellId: cell.position },
+          where: { cellPosition: cell.position },
           select: { id: true, text: true },
         });
 
@@ -697,6 +701,47 @@ export class SimulatorService {
 
   async getBoardCells() {
     return this.gameState.getBoardCells();
+  }
+
+  async botStep(gameId: string, userId: string) {
+    const game = await this.prisma.simulatorGame.findUnique({
+      where: { id: gameId },
+      include: { players: { orderBy: { turnOrder: 'asc' }, include: { properties: true } } },
+    });
+
+    if (!game) throw new NotFoundException('Partida no encontrada');
+    if (game.mode !== 'SIMULATION') throw new BadRequestException('Este endpoint es solo para modo observar');
+    if (game.createdByUserId !== userId) throw new BadRequestException('Solo el creador puede observar esta partida');
+    if (game.status !== 'IN_PROGRESS') {
+      return { finished: true, botMove: null, gameState: await this.gameState.getGameState(gameId) };
+    }
+
+    if (this.gameState.checkGameOver(game) || this.gameState.checkLapFinish(game)) {
+      await this.gameState.finishGame(gameId);
+      return { finished: true, botMove: null, gameState: await this.gameState.getGameState(gameId) };
+    }
+
+    const currentPlayer = game.players[game.currentPlayerIdx];
+    const nextIdx = (game.currentPlayerIdx + 1) % game.players.length;
+    const isNewRound = nextIdx <= game.currentPlayerIdx;
+    const newRound = isNewRound ? game.currentRound + 1 : game.currentRound;
+
+    if (!currentPlayer || currentPlayer.isEliminated) {
+      await this.prisma.simulatorGame.update({
+        where: { id: gameId },
+        data: { currentPlayerIdx: nextIdx, currentRound: newRound },
+      });
+      return { finished: false, botMove: null, gameState: await this.gameState.getGameState(gameId) };
+    }
+
+    const move = await this.bot.processBotFullTurn(gameId);
+
+    await this.prisma.simulatorGame.update({
+      where: { id: gameId },
+      data: { currentPlayerIdx: nextIdx, currentRound: newRound, gamePhase: 'ROLLING' },
+    });
+
+    return { finished: false, botMove: move, gameState: await this.gameState.getGameState(gameId) };
   }
 
   private async advanceToHuman(gameId: string): Promise<{ gameState: any; botMoves: BotMoveData[] }> {

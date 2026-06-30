@@ -153,7 +153,7 @@ export class BotService {
 
       case 'DECISION': {
         const options = await this.prisma.cellDecisionOption.findMany({
-          where: { cellId: cell.position },
+          where: { cellPosition: cell.position },
         });
 
         if (options.length >= 2) {

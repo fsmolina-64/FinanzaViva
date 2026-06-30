@@ -50,6 +50,11 @@ export class SimulatorController {
     return this.simulatorService.endTurn(id, req.user.id);
   }
 
+  @Post('games/:id/bot-step')
+  botStep(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.botStep(id, req.user.id);
+  }
+
   @Post('games/:id/abandon')
   abandonGame(@Request() req: any, @Param('id') id: string) {
     return this.simulatorService.abandonGame(id, req.user.id);
