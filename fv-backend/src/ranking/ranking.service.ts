@@ -39,7 +39,7 @@ export class RankingService {
       this.buildSimulatorMap(),
     ]);
 
-    const scored = this.scoreAndSort(users, quizMap, simulatorMap);
+    const scored = this.scoreAndSort(users as unknown as UserSelect[], quizMap, simulatorMap);
     const start = (page - 1) * limit;
 
     return {
@@ -64,12 +64,12 @@ export class RankingService {
       this.fetchUsers(),
     ]);
 
-    const scored = this.scoreAndSort(allUsers, quizMap, simulatorMap);
+    const scored = this.scoreAndSort(allUsers as unknown as UserSelect[], quizMap, simulatorMap);
     const position = scored.findIndex(u => u.userId === userId) + 1;
     const entry = scored.find(u => u.userId === userId)!;
 
     const nonAbandonedGames = simulatorMap.get(userId) ?? 0;
-    const rawStats = user.statistics!;
+    const rawStats = user.statistics as unknown as UserSelect['statistics'] & {};
 
     return {
       ...entry,
