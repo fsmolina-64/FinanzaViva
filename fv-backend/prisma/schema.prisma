@@ -112,6 +112,8 @@ enum CellType {
   PENSION_ESPECIAL
   JAIL
   GO_TO_JAIL
+  DECISION
+  EDUCATIONAL
 }
 
 enum WildcardType {
@@ -129,6 +131,7 @@ enum GamePhase {
   ACTION
   BUYING
   WILDCARD_REVEAL
+  DECISION_PENDING
   BETWEEN_TURNS
   FINISHED
   ABANDONED
@@ -654,7 +657,22 @@ model BoardCell {
   amount      Int?
   description String
 
+  decisionOptions CellDecisionOption[]
+
   @@map("board_cells")
+}
+
+model CellDecisionOption {
+  id          String    @id @default(cuid())
+  cellId      Int
+  cell        BoardCell @relation(fields: [cellId], references: [position], onDelete: Cascade)
+  text        String    @db.VarChar(400)
+  isCorrect   Boolean
+  amount      Int
+  explanation String    @db.VarChar(600)
+
+  @@index([cellId])
+  @@map("cell_decision_options")
 }
 
 model BoardWildcard {

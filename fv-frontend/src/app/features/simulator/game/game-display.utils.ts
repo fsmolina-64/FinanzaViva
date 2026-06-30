@@ -32,7 +32,7 @@ export function cellTypeIcon(cell: BoardCell): string {
 export function phaseLabel(ph?: GamePhase): string {
   const m: Record<string, string> = {
     ROLLING: 'Lanzar dados', MOVING: 'Moviendo', ACTION: 'Accion',
-    BUYING: 'Comprar', WILDCARD_REVEAL: 'Carta', BETWEEN_TURNS: 'Terminar turno',
+    BUYING: 'Comprar', WILDCARD_REVEAL: 'Carta', DECISION_PENDING: 'Decision', BETWEEN_TURNS: 'Terminar turno',
     FINISHED: 'Finalizada', ABANDONED: 'Abandonada', WAITING: 'Esperando',
   };
   return m[ph ?? ''] ?? '';

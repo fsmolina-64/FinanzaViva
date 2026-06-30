@@ -5,6 +5,7 @@ import { GameStateService } from './game-state.service';
 import { BotService, BotMoveData } from './bot.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { DecideBuyDto } from './dto/decide-buy.dto';
+import { DecideOptionDto } from './dto/decide-option.dto';
 import { GamePhase } from '@prisma/client';
 
 const WILDCARD_TYPE_CODE: Record<string, number> = {
@@ -329,6 +330,55 @@ export class SimulatorService {
         action = 'NOTHING';
         break;
       }
+
+      case 'EDUCATIONAL': {
+        const amount = cell.amount ?? 50;
+        moneyChange = amount;
+        currentPlayer.money += amount;
+        action = 'EDUCATIONAL';
+        actionDetails = { amount, lesson: cell.description };
+        break;
+      }
+
+      case 'DECISION': {
+        const options = await this.prisma.cellDecisionOption.findMany({
+          where: { cellId: cell.position },
+          select: { id: true, text: true },
+        });
+
+        currentPlayer.position = newPosition;
+        skippedBuy = true;
+        action = 'DECISION';
+        actionDetails = {
+          options,
+          cellDescription: cell.description,
+        };
+
+        await this.prisma.simulatorPlayer.update({
+          where: { id: currentPlayer.id },
+          data: { position: newPosition, hasRolled: true },
+        });
+
+        await this.prisma.simulatorGame.update({
+          where: { id: gameId },
+          data: {
+            currentDice1: dice1,
+            currentDice2: dice2,
+            gamePhase: 'DECISION_PENDING',
+          },
+        });
+
+        return {
+          dice1,
+          dice2,
+          newPosition,
+          oldPosition,
+          passedGo,
+          action: 'DECISION',
+          actionDetails,
+          gameState: await this.gameState.getGameState(gameId),
+        };
+      }
     }
 
     if (!skippedBuy) {
@@ -564,6 +614,48 @@ export class SimulatorService {
 
     const result = await this.advanceToNextTurn(gameId);
     return { gameState: result.gameState, botMoves: result.botMoves };
+  }
+
+  async decideOption(gameId: string, userId: string, dto: DecideOptionDto) {
+    const game = await this.prisma.simulatorGame.findUnique({
+      where: { id: gameId },
+      include: { players: { orderBy: { turnOrder: 'asc' } } },
+    });
+
+    if (!game) throw new NotFoundException('Partida no encontrada');
+    if (game.status !== 'IN_PROGRESS') throw new BadRequestException('La partida no esta activa');
+    if (game.gamePhase !== 'DECISION_PENDING') throw new BadRequestException('No hay decision pendiente');
+
+    const player = game.players[game.currentPlayerIdx];
+    if (!player) throw new NotFoundException('Jugador no encontrado');
+    if (!player.isBot && player.userId !== userId) throw new BadRequestException('No es tu turno');
+
+    const option = await this.prisma.cellDecisionOption.findUnique({
+      where: { id: dto.optionId },
+    });
+    if (!option) throw new NotFoundException('Opcion no encontrada');
+
+    const delta = option.isCorrect ? option.amount : -option.amount;
+    player.money += delta;
+    if (player.money <= 0) player.isEliminated = true;
+
+    await this.prisma.simulatorPlayer.update({
+      where: { id: player.id },
+      data: { money: player.money, isEliminated: player.isEliminated },
+    });
+
+    await this.prisma.simulatorGame.update({
+      where: { id: gameId },
+      data: { gamePhase: 'BETWEEN_TURNS' },
+    });
+
+    return {
+      correct: option.isCorrect,
+      amount: delta,
+      explanation: option.explanation,
+      playerMoney: player.money,
+      gameState: await this.gameState.getGameState(gameId),
+    };
   }
 
   async abandonGame(gameId: string, userId: string) {

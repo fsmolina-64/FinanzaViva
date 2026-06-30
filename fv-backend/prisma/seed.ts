@@ -647,6 +647,187 @@ async function main() {
     await prisma.boardWildcard.create({ data: wc });
   }
   console.log(`OK Cartas comodin creadas: ${wildcards.length} cartas`);
+
+  // ── EDUCATIONAL CELLS ──────────────────────────────────────────────
+  const educationalData = [
+    {
+      position: 4,
+      name: 'Interes Compuesto',
+      description: 'Aprendiste el poder del interes compuesto. Tu inversion inicial crecio gracias a los rendimientos reinvertidos a lo largo del tiempo.',
+      amount: 80,
+    },
+    {
+      position: 18,
+      name: 'Fondo de Emergencia',
+      description: 'Tu fondo de emergencia cubrió un gasto imprevisto sin necesidad de endeudarte. La prevencion es la base de las finanzas sanas.',
+      amount: 100,
+    },
+    {
+      position: 26,
+      name: 'Presupuesto Personal',
+      description: 'Seguiste tu presupuesto mensual al pie de la letra. El control del gasto habitual es lo que genera ahorro real a largo plazo.',
+      amount: 70,
+    },
+    {
+      position: 37,
+      name: 'Diversificacion',
+      description: 'Diversificaste tu cartera entre distintos activos. Al no concentrar el riesgo en uno solo, protegiste tu capital de volatilidad.',
+      amount: 90,
+    },
+  ];
+
+  for (const ed of educationalData) {
+    await prisma.boardCell.updateMany({
+      where: { position: ed.position },
+      data: {
+        type: 'EDUCATIONAL',
+        name: ed.name,
+        description: ed.description,
+        amount: ed.amount,
+        price: null,
+        rent: null,
+        group: null,
+      },
+    });
+  }
+
+  // ── DECISION CELLS ─────────────────────────────────────────────────
+  const decisionData = [
+    {
+      position: 9,
+      name: 'Bonus Inesperado',
+      description: 'Recibiste un bono extra de $500. La decision que tomes ahora puede definir tu salud financiera a futuro.',
+      options: [
+        {
+          text: 'Invertirlo en un fondo de inversion diversificado',
+          isCorrect: true,
+          amount: 180,
+          explanation: 'Invertir en fondos diversificados genera rendimientos a largo plazo y protege contra la inflacion. Cada dolar invertido temprano vale mucho mas en el futuro.',
+        },
+        {
+          text: 'Gastarlo en unas vacaciones de lujo ahora mismo',
+          isCorrect: false,
+          amount: 150,
+          explanation: 'Gastar un bono extra sin ahorrar ni invertir elimina la oportunidad de que ese dinero trabaje por ti. La gratificacion inmediata tiene un costo enorme a largo plazo.',
+        },
+      ],
+    },
+    {
+      position: 14,
+      name: 'Oferta de Credito',
+      description: 'Un banco te ofrece una tarjeta de credito con 45% de interes anual. Ya tienes otras deudas activas.',
+      options: [
+        {
+          text: 'Rechazarla y seguir pagando mis deudas con disciplina',
+          isCorrect: true,
+          amount: 150,
+          explanation: 'Las tarjetas con tasas altas generan deudas en espiral. Siempre compara tasas de interes antes de aceptar cualquier credito y evita acumular deuda innecesaria.',
+        },
+        {
+          text: 'Aceptarla para pagar mis deudas actuales con ella',
+          isCorrect: false,
+          amount: 200,
+          explanation: 'Pagar deuda con mas deuda a mayor interes es una trampa comun. El costo total crece exponencialmente y terminas debiendo mucho mas de lo que empezaste.',
+        },
+      ],
+    },
+    {
+      position: 24,
+      name: 'Negocio de un Amigo',
+      description: 'Un conocido te pide todo tu ahorro para un negocio sin plan escrito, sin garantias y sin proyecciones.',
+      options: [
+        {
+          text: 'Pedir un plan de negocio y garantias por escrito primero',
+          isCorrect: true,
+          amount: 120,
+          explanation: 'Antes de invertir siempre exige documentacion formal. Un plan solido con proyecciones reales reduce el riesgo y protege tu capital de perdidas evitables.',
+        },
+        {
+          text: 'Prestar todo sin documentos por confianza personal',
+          isCorrect: false,
+          amount: 280,
+          explanation: 'Prestar dinero sin documentacion expone tu capital a perdidas totales. Mezclar finanzas personales con relaciones sociales frecuentemente arruina ambas cosas.',
+        },
+      ],
+    },
+    {
+      position: 34,
+      name: 'Celular de Ultimo Modelo',
+      description: 'Quieres el ultimo celular que cuesta $1200. No tienes el dinero completo en este momento.',
+      options: [
+        {
+          text: 'Ahorrar durante 3 meses y comprarlo en efectivo',
+          isCorrect: true,
+          amount: 100,
+          explanation: 'El ahorro previo evita pagar intereses y refuerza la disciplina financiera. El precio real en efectivo siempre es significativamente menor que en cuotas con interes.',
+        },
+        {
+          text: 'Comprarlo en 24 cuotas con 40% de interes total',
+          isCorrect: false,
+          amount: 220,
+          explanation: 'En 24 cuotas terminas pagando $1680 por algo que vale $1200. El credito de consumo para bienes que se deprecian rapidamente es una de las peores decisiones financieras.',
+        },
+      ],
+    },
+    {
+      position: 38,
+      name: 'Ahorro para Jubilacion',
+      description: 'Tienes 25 anos. Te preguntas si ya es momento de empezar a ahorrar para tu jubilacion o esperar.',
+      options: [
+        {
+          text: 'Empezar ahora aunque sea con pequenas aportaciones',
+          isCorrect: true,
+          amount: 130,
+          explanation: 'El tiempo es tu mayor aliado financiero. Empezar a los 25 con $50 mensuales puede acumularse en cientos de miles gracias al interes compuesto durante 40 anos.',
+        },
+        {
+          text: 'Esperar a ganar mas para hacerlo en serio a los 40',
+          isCorrect: false,
+          amount: 80,
+          explanation: 'Cada ano sin ahorrar para jubilacion tiene un costo exponencial. Los 15 anos perdidos entre los 25 y 40 representan la diferencia entre retirarse con comodidad o con aprietos.',
+        },
+      ],
+    },
+  ];
+
+  // Limpiar opciones existentes y actualizar celdas
+  for (const dc of decisionData) {
+    const cell = await prisma.boardCell.findFirst({ where: { position: dc.position } });
+    if (cell) {
+      await prisma.cellDecisionOption.deleteMany({ where: { cellId: cell.position } });
+    }
+    await prisma.boardCell.updateMany({
+      where: { position: dc.position },
+      data: {
+        type: 'DECISION',
+        name: dc.name,
+        description: dc.description,
+        amount: null,
+        price: null,
+        rent: null,
+        group: null,
+      },
+    });
+  }
+
+  // Crear opciones de decision
+  for (const dc of decisionData) {
+    const cell = await prisma.boardCell.findFirst({ where: { position: dc.position } });
+    if (!cell) continue;
+    for (const opt of dc.options) {
+      await prisma.cellDecisionOption.create({
+        data: {
+          cellId: cell.position,
+          text: opt.text,
+          isCorrect: opt.isCorrect,
+          amount: opt.amount,
+          explanation: opt.explanation,
+        },
+      });
+    }
+  }
+
+  console.log('Decision y Educational cells creadas');
 }
 
 main()

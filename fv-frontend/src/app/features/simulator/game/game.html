@@ -1,6 +1,4 @@
-<!-- ══════════════════════════════════════════════════════════════════
-     TOASTS  — fixed top-right, fuera de cualquier container
-══════════════════════════════════════════════════════════════════ -->
+<!-- ── TOASTS ── -->
 <div class="fixed top-4 right-4 z-[80] flex flex-col gap-2 pointer-events-none" style="max-width:280px">
   @for (t of toasts(); track t.id) {
   <div
@@ -10,15 +8,11 @@
       'bg-emerald-900/95 border-emerald-700/60 text-emerald-200': t.type === 'success',
       'bg-amber-900/95 border-amber-700/60 text-amber-200':       t.type === 'warning',
       'bg-red-900/95 border-red-700/60 text-red-200':             t.type === 'error'
-    }">
-    {{ t.msg }}
-  </div>
+    }">{{ t.msg }}</div>
   }
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════════
-     MODAL SALIR
-══════════════════════════════════════════════════════════════════ -->
+<!-- ── MODAL ABANDONAR ── -->
 @if (showExitModal()) {
 <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 backdrop-blur-sm px-4">
   <div class="bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl p-6 w-full max-w-sm space-y-5">
@@ -27,588 +21,671 @@
         class="w-14 h-14 rounded-full bg-red-500/15 border-2 border-red-500/30 flex items-center justify-center mx-auto">
         <span class="text-red-400 text-2xl font-black leading-none">!</span>
       </div>
-      <p class="text-slate-400 text-sm">Cargando partida...</p>
+      <h3 class="text-white font-bold text-lg">Abandonar partida</h3>
+      <p class="text-slate-400 text-sm leading-relaxed">La partida quedara registrada como abandonada y no contara como
+        partida jugada ni ganada.</p>
+    </div>
+    <div class="flex gap-3">
+      <button (click)="cancelLeave()"
+        class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all text-sm">
+        Seguir jugando
+      </button>
+      <button (click)="confirmLeave()"
+        class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all text-sm">
+        Abandonar
+      </button>
     </div>
   </div>
 </div>
 }
 
+<!-- ── CARGANDO ── -->
+@if (loading()) {
+<div class="flex items-center justify-center min-h-[70vh]">
+  <div class="text-center space-y-3">
+    <div class="w-12 h-12 rounded-full border-4 border-blue-500/30 border-t-blue-500 animate-spin mx-auto"></div>
+    <p class="text-slate-400 text-sm">Cargando partida...</p>
+  </div>
+</div>
+}
+
+<!-- ── ERROR ── -->
 @if (!loading() && error()) {
-  <div class="flex items-center justify-center min-h-[70vh] p-4">
-    <div class="text-center space-y-4 max-w-md w-full">
-      <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 space-y-2">
-        <p class="text-red-400 font-bold text-lg">Error</p>
-        <p class="text-slate-400 text-sm">{{ error() }}</p>
-      </div>
-      <button (click)="goToLobby()"
-        class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3.5 rounded-2xl transition-all duration-200">
-        Volver al lobby
-      </button>
+<div class="flex items-center justify-center min-h-[70vh] p-4">
+  <div class="text-center space-y-4 max-w-md w-full">
+    <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 space-y-2">
+      <p class="text-red-400 font-bold text-lg">Error</p>
+      <p class="text-slate-400 text-sm">{{ error() }}</p>
     </div>
+    <button (click)="goToLobby()"
+      class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3.5 rounded-2xl transition-all">
+      Volver al lobby
+    </button>
   </div>
-  }
+</div>
+}
 
-  @if (!loading() && !error() && gameState()) {
+@if (!loading() && !error() && gameState()) {
 
-  @if (game()?.gamePhase === 'WAITING') {
-  <div class="flex items-center justify-center min-h-[70vh] p-4">
-    <div class="text-center space-y-6 max-w-md w-full">
-      <div
-        class="w-16 h-16 rounded-full bg-yellow-500/20 border-2 border-yellow-500/40 flex items-center justify-center mx-auto">
-        <span class="text-yellow-400 text-2xl">&#x23F3;</span>
-      </div>
-      <div>
-        <h2 class="text-white text-xl font-bold">Preparando partida...</h2>
-        <p class="text-slate-400 text-sm mt-1">{{ players().length }} jugador(es) registrados</p>
-      </div>
-      <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-4 space-y-2">
-        @for (p of sortedPlayers(); track p.id) {
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-            [ngClass]="playerBg(p.turnOrder)">
-            {{ p.displayName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="flex-1 text-left">
-            <p class="text-white text-sm font-medium">{{ p.displayName }}</p>
-            @if (p.isBot) {
-            <span
-              class="text-amber-400 text-xs bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">IA</span>
-            }
-          </div>
-        </div>
-        }
-      </div>
-      <button (click)="handleStartGame()"
-        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/25">
-        Iniciar partida
-      </button>
+<!-- ── FASE: WAITING ── -->
+@if (game()?.gamePhase === 'WAITING') {
+<div class="flex items-center justify-center min-h-[70vh] p-4">
+  <div class="text-center space-y-6 max-w-md w-full">
+    <div
+      class="w-16 h-16 rounded-full bg-yellow-500/20 border-2 border-yellow-500/40 flex items-center justify-center mx-auto">
+      <div class="w-7 h-7 rounded-full border-4 border-yellow-500/30 border-t-yellow-400 animate-spin"></div>
     </div>
-  </div>
-  }
-
-  <!-- ══════ FINISHED ══════ -->
-  @if (!error() && game()?.gamePhase === 'FINISHED') {
-  <div class="min-h-screen bg-[#0F172A] p-4 flex items-center justify-center">
-    <div class="w-full max-w-lg space-y-5 py-8">
-      <div class="text-center">
-        <div
-          class="w-20 h-20 rounded-full bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-center mx-auto mb-4">
-          <span class="text-amber-400 text-4xl font-black">1</span>
-        </div>
-        <h2 class="text-white text-2xl font-bold mt-4">Partida finalizada</h2>
-      </div>
-      <div class="space-y-2">
-        @for (p of rankedPlayers(); track p.id; let i = $index) {
-        <div class="flex items-center gap-3 rounded-2xl p-4 border"
-          [ngClass]="i === 0 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/40' : 'bg-[#1E293B] border-slate-700'">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0"
-            [ngClass]="i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400'">
-            {{ i + 1 }}
-          </div>
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-            [ngClass]="playerBg(p.turnOrder)">
-            {{ p.displayName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-white font-semibold text-sm truncate">{{ p.displayName }}</p>
-            @if (p.isBot) {
-            <span
-              class="text-amber-400 text-xs bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">IA</span>
-            }
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-emerald-400 font-bold">{{ fmt(p.money) }}</p>
-          </div>
-          <p class="font-bold flex-shrink-0"
-            [ngClass]="p.money >= 0 ? (i === 0 ? 'text-amber-400' : 'text-emerald-400') : 'text-red-400'">{{
-            fmt(p.money) }}</p>
-        </div>
-        }
-      </div>
-      <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 text-center space-y-2">
-        <p class="text-slate-400 text-sm">Experiencia ganada</p>
-        <p class="text-amber-400 text-3xl font-bold">+{{ calcXP() }} XP</p>
-      </div>
-      <button (click)="goToLobby()"
-        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all duration-200">
-        Volver al lobby
-      </button>
+    <div>
+      <h2 class="text-white text-xl font-bold">Preparando partida</h2>
+      <p class="text-slate-400 text-sm mt-1">{{ players().length }} jugadores listos</p>
     </div>
-  </div>
-    }
-
-    @if (game()?.gamePhase === 'ABANDONED') {
-    <div class="flex items-center justify-center min-h-[70vh] p-4">
-      <div class="text-center space-y-6 max-w-md">
-        <div
-          class="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-500/40 flex items-center justify-center mx-auto">
-          <span class="text-red-400 text-2xl">&#x1F6AA;</span>
-        </div>
-        <div>
-          <h2 class="text-white text-xl font-bold">Partida abandonada</h2>
-          <p class="text-slate-400 text-sm mt-1">Uno de los jugadores abandon&oacute; la partida</p>
-        </div>
-        <button (click)="goToLobby()"
-          class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-2xl transition-all duration-200">
-          Volver al lobby
-        </button>
-      </div>
-    </div>
-    }
-
-    <!-- ══════════════════════════════════════════════════════════════════
-     JUEGO ACTIVO
-══════════════════════════════════════════════════════════════════ -->
-    <div class="min-h-screen bg-[#060E1D] flex flex-col">
-
-      <!-- Top bar -->
-      <div class="flex items-center justify-between bg-[#1E293B] rounded-2xl px-4 py-3 border border-slate-700">
-        <div class="flex items-center gap-4">
-          <div>
-            <p class="text-white font-bold text-sm">
-              Ronda {{ game()?.currentRound ?? '?' }}
-              <span class="text-slate-500 font-normal">/ {{ game()?.maxRounds ?? '?' }}</span>
-            </p>
-            <p class="text-xs text-slate-500">{{ modeLabel(game()?.mode) }}</p>
-          </div>
-          <div class="h-8 w-px bg-slate-700"></div>
-          <div>
-            <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border"
-              [ngClass]="game()?.gamePhase === 'ROLLING' ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' : game()?.gamePhase === 'BETWEEN_TURNS' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : game()?.gamePhase === 'BUYING' || game()?.gamePhase === 'WILDCARD_REVEAL' ? 'bg-amber-500/15 border-amber-500/30 text-amber-400' : 'bg-slate-700 border-slate-600 text-slate-400'">
-              <span class="w-1.5 h-1.5 rounded-full"
-                [ngClass]="game()?.gamePhase === 'ROLLING' ? 'bg-blue-400 animate-pulse' : game()?.gamePhase === 'BETWEEN_TURNS' ? 'bg-emerald-400' : game()?.gamePhase === 'BUYING' || game()?.gamePhase === 'WILDCARD_REVEAL' ? 'bg-amber-400 animate-pulse' : 'bg-slate-500'">
-              </span>
-              {{ phaseLabel(game()?.gamePhase) }}
-            </span>
-          </div>
-        </div>
-        <button (click)="abandonGame()"
-          class="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all flex-shrink-0">
-          Abandonar
-        </button>
-      </div>
-
-      <!-- Main layout: Board + Player panel -->
-      <div class="flex flex-col lg:flex-row gap-4">
-
-        <!-- Board -->
-        <div class="lg:flex-1 min-w-0">
-          <div class="bg-[#1E293B]/80 rounded-2xl p-3 border border-slate-700 overflow-x-auto">
-            <div class="grid grid-cols-10 gap-1 min-w-[600px] mx-auto">
-              @for (cell of cells(); track cell.position) {
-              <div (click)="onCellClick(cell, $event)"
-                class="relative w-[58px] h-[68px] rounded-lg border cursor-pointer transition-all duration-150 overflow-hidden flex flex-col items-center justify-center hover:brightness-125 hover:shadow-lg hover:shadow-black/20"
-                [ngClass]="cellBg(cell)" [style.borderTopWidth]="'3px'">
-                <!-- Top stripe -->
-                <div class="absolute top-0 left-0 right-0 h-[3px]" [ngClass]="cellBandColor(cell)"></div>
-                <!-- Position number -->
-                <span class="absolute top-[5px] left-[4px] text-[7px] text-slate-500 font-mono leading-none">{{
-                  cell.position }}</span>
-                <!-- Cell name -->
-                <p class="text-[8px] leading-tight text-center text-white font-medium px-0.5 mt-1.5">{{
-                  abbr(cell.name) }}</p>
-                <!-- Price if property -->
-                @if (cell.type === 'PROPERTY' && cell.price != null) {
-                <p class="text-[7px] text-emerald-400 mt-0.5 font-semibold">${{ cell.price }}</p>
-                }
-                <!-- Owner indicator -->
-                @if (getOwner(cell.position)) {
-                <div class="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-4 h-[3px] rounded-full opacity-70"
-                  [ngClass]="playerBg(getOwner(cell.position)?.turnOrder ?? 0)"></div>
-                }
-                <!-- Player tokens -->
-                @if (getPlayersOnCell(cell.position).length > 0) {
-                <div class="absolute -top-1.5 -right-1.5 flex -space-x-1.5">
-                  @for (p of getPlayersOnCell(cell.position); track p.id; let pi = $index) {
-                  @if (pi < 3) {
-                  <div class="w-4 h-4 rounded-full border border-white/40 flex items-center justify-center text-[7px] font-bold text-white shadow-sm"
-                    [ngClass]="playerBg(p.turnOrder)" [title]="p.displayName">
-                    {{ p.displayName.charAt(0).toUpperCase() }}
-                  </div>
-                  }
-                }
-                @if (getPlayersOnCell(cell.position).length > 3) {
-                <div
-                  class="w-4 h-4 rounded-full bg-slate-700 border border-white/30 flex items-center justify-center text-[7px] text-slate-300 font-bold">
-                  +
-                </div>
-                }
-              </div>
-              }
-              <!-- Inicio icon -->
-              @if (cell.type === 'INICIO') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x1F3E0;</span>
-              }
-              <!-- Jail icon -->
-              @if (cell.type === 'JAIL') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x1F6E1;</span>
-              }
-              @if (cell.type === 'GO_TO_JAIL') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x1F4A8;</span>
-              }
-              <!-- Wildcard icon -->
-              @if (cell.type === 'WILDCARD') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x1F4B3;</span>
-              }
-              <!-- Tax / Scam icon -->
-              @if (cell.type === 'TAX' || cell.type === 'SCAM') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x26A0;</span>
-              }
-              <!-- Lottery / Pension icon -->
-              @if (cell.type === 'LOTTERY' || cell.type === 'PENSION' || cell.type === 'PENSION_ESPECIAL') {
-              <span class="text-[10px] mt-0.5 leading-none">&#x1F4B0;</span>
-              }
-            </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Player panel -->
-      <div class="lg:w-72 xl:w-80 flex-shrink-0">
-        <div class="bg-[#1E293B]/80 rounded-2xl p-4 border border-slate-700 space-y-3">
-          <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jugadores</p>
-            <span class="text-xs text-slate-600">{{ players().length }} en partida</span>
-          </div>
-          <div class="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
-            @for (p of sortedPlayers(); track p.id) {
-            <div class="rounded-xl p-3 border transition-all duration-200"
-              [ngClass]="p.id === currentPlayer()?.id ? 'bg-blue-600/10 border-blue-500/40 shadow-sm shadow-blue-500/10' : p.isEliminated ? 'bg-slate-800/30 border-slate-700/50 opacity-40' : 'bg-slate-800/40 border-slate-700/60'">
-              <div class="flex items-center gap-2.5">
-                <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-sm"
-                  [ngClass]="playerBg(p.turnOrder)">
-                  {{ p.displayName.charAt(0).toUpperCase() }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <p class="text-white text-sm font-semibold truncate">{{ p.displayName }}</p>
-                    @if (p.isBot) {
-                    <span
-                      class="text-[10px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 flex-shrink-0">IA</span>
-                    }
-                    @if (p.isInJail) {
-                    <span class="text-[10px] flex-shrink-0" title="En la c&aacute;rcel">&#x1F512;</span>
-                    }
-                  </div>
-                  <div class="flex items-center gap-3 mt-0.5">
-                    <p class="text-xs font-bold" [ngClass]="p.money >= 0 ? 'text-emerald-400' : 'text-red-400'">
-                      {{ fmt(p.money) }}
-                    </p>
-                    @if (p.properties?.length) {
-                    <p class="text-xs text-blue-400">{{ p.properties!.length }} prop(s)</p>
-                    }
-                  </div>
-                </div>
-
-                @if (!isMyTurn() && !isAnimating() && !isDiceRolling() && !botMsg()) {
-                <p class="text-slate-600 text-[10px] sm:text-xs text-center">
-                  Esperando a {{ currentPlayer()?.displayName }}
-                  @if (currentPlayer()?.isBot) {
-                    <span class="text-amber-600">(IA)</span>
-                  }
-                </p>
-                }
-
-                @if (currentPlayer()?.isInJail) {
-                <span
-                  class="text-amber-400 text-[9px] font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                  En carcel — {{ currentPlayer()!.jailTurnsLeft }} turno(s) restante(s)
-                </span>
-                }
-              </div>
-            </div>
-            }
-          </div>
-          <!-- fin center -->
-
-        </div>
-        <!-- fin board grid -->
-      </div>
-      <!-- fin overflow-x-auto -->
-    </div>
-    <!-- fin board container -->
-
-    <!-- ════════ PANEL JUGADORES ════════ -->
-    <div class="xl:w-72 flex-shrink-0">
-      <div class="bg-[#0E1827]/80 rounded-2xl border border-slate-800 p-3 space-y-2">
-
-        <div class="flex items-center justify-between px-1">
-          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Jugadores</p>
-          <span class="text-[10px] text-slate-600">{{ players().length }} en partida</span>
-        </div>
-
-        <!-- Dice + Action button + Action log -->
-        <div class="bg-[#1E293B]/80 rounded-2xl p-4 border border-slate-700">
-          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
-            <!-- Dice display -->
-            <div class="flex items-center gap-3">
-              @if (dice1() !== null && dice2() !== null) {
-              <div class="flex items-center gap-2">
-                <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20">
-                  <span class="text-2xl font-bold text-slate-800">{{ dice1() }}</span>
-                </div>
-                <span class="text-slate-500 text-lg">+</span>
-                <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20">
-                  <span class="text-2xl font-bold text-slate-800">{{ dice2() }}</span>
-                </div>
-                <span class="text-slate-400 text-sm font-semibold ml-1">
-                  = {{ (dice1() ?? 0) + (dice2() ?? 0) }}
-                </span>
-              </div>
-              } @else {
-              <div class="flex items-center gap-2">
-                <div
-                  class="w-12 h-12 bg-slate-700/60 rounded-xl border border-slate-600/50 flex items-center justify-center">
-                  <span class="text-slate-600 text-xs">?</span>
-                </div>
-                <span class="text-slate-500 text-lg">+</span>
-                <div
-                  class="w-12 h-12 bg-slate-700/60 rounded-xl border border-slate-600/50 flex items-center justify-center">
-                  <span class="text-slate-600 text-xs">?</span>
-                </div>
-              </div>
-              }
-            </div>
-
-            <!-- Action buttons -->
-            <div class="flex-shrink-0 w-full sm:w-auto">
-              @if (game()?.gamePhase === 'ROLLING' && isMyTurn()) {
-              <button (click)="rollDice()"
-                class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25 text-sm">
-                &#x1F3B2; Lanzar Dados
-              </button>
-              }
-              @if (game()?.gamePhase === 'BETWEEN_TURNS' && isMyTurn()) {
-              <button (click)="endTurn()"
-                class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3 rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/25 text-sm">
-                Terminar turno
-              </button>
-              }
-              @if (!isMyTurn() && game()?.gamePhase !== 'FINISHED' && game()?.gamePhase !== 'ABANDONED') {
-              <div class="w-full sm:w-auto bg-slate-700/40 rounded-2xl px-6 py-3 border border-slate-600/50">
-                <p class="text-slate-400 text-sm font-medium text-center sm:text-left">
-                  @if (currentPlayer()?.isBot) {
-                  Esperando a {{ currentPlayer()?.displayName }} (IA)...
-                  } @else {
-                  Esperando a {{ currentPlayer()?.displayName }}...
-                  }
-                </p>
-              </div>
-              }
-            </div>
-
-            <!-- Action log -->
-            @if (actionLog().length > 0) {
-            <div class="mt-4 pt-3 border-t border-slate-700/60">
-              <p class="text-[10px] font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Bit&aacute;cora</p>
-              <div class="space-y-0.5 max-h-[80px] overflow-y-auto">
-                @for (entry of actionLog(); track $index) {
-                <p class="text-[11px] text-slate-400 font-mono">{{ entry }}</p>
-                }
-              </div>
-            </div>
-            }
-          </div>
-
-          <!-- Property tooltip -->
-          @if (showTooltip(); as cell) {
-          <div class="fixed z-50 pointer-events-none" [style.left.px]="tooltipPos().x" [style.top.px]="tooltipPos().y">
-            <div
-              class="bg-[#1E293B] rounded-xl border border-slate-600 shadow-2xl shadow-black/40 p-3 min-w-[160px] max-w-[220px] pointer-events-auto">
-              <div class="flex items-center gap-2 mb-1.5">
-                <div class="w-3 h-3 rounded-sm" [ngClass]="cellBandColor(cell)"></div>
-                <p class="text-white text-sm font-bold truncate">{{ cell.name }}</p>
-              </div>
-              <div class="space-y-1 text-xs">
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Tipo</span>
-                  <span class="text-slate-300">{{ cell.type }}</span>
-                </div>
-                @if (cell.group) {
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Grupo</span>
-                  <span class="text-slate-300 capitalize">{{ cell.group }}</span>
-                </div>
-                }
-                @if (cell.price != null) {
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Precio</span>
-                  <span class="text-emerald-400 font-semibold">{{ fmt(cell.price) }}</span>
-                </div>
-                }
-                @if (cell.rent != null) {
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Renta</span>
-                  <span class="text-blue-400 font-semibold">{{ fmt(cell.rent) }}</span>
-                </div>
-                }
-                @if (cell.amount != null) {
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Monto</span>
-                  <span class="text-amber-400 font-semibold">{{ fmt(cell.amount) }}</span>
-                </div>
-                }
-                @if (getOwner(cell.position); as owner) {
-                <div class="flex justify-between pt-1.5 border-t border-slate-700">
-                  <span class="text-slate-500">Due&ntilde;o</span>
-                  <span class="text-white font-medium text-xs">{{ owner.displayName }}</span>
-                </div>
-                }
-                @if (cell.description) {
-                <p class="text-slate-500 text-[10px] mt-1.5 italic leading-tight">{{ cell.description }}</p>
-                }
-              </div>
-              <button (click)="showTooltip.set(null)"
-                class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-slate-600 border border-slate-500 flex items-center justify-center text-[10px] text-slate-300 hover:bg-slate-500 transition-colors pointer-events-auto">
-                &times;
-              </button>
-            </div>
-          </div>
-          }
-
-          <!-- Buy Modal -->
-          @if (showBuyModal() && buyCell(); as cell) {
-          <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            (click)="showBuyModal.set(false)">
-            <div
-              class="animate-fade-in bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-6 max-w-sm w-full mx-4 space-y-4"
-              (click)="$event.stopPropagation()">
-              <div class="text-center space-y-2">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto"
-                  [ngClass]="cellBg(cell)">
-                  <p class="text-white font-bold text-lg">$</p>
-                </div>
-                <h3 class="text-white font-bold text-lg">&iquest;Comprar {{ cell.name }}?</h3>
-                <p class="text-slate-400 text-sm">Propiedad de grupo <span class="text-white capitalize">{{ cell.group
-                    ?? '&mdash;' }}</span></p>
-              </div>
-              <div class="bg-slate-800/50 rounded-xl p-4 space-y-2 border border-slate-700">
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-400">Precio</span>
-                  <span class="text-emerald-400 font-bold">{{ fmt(cell.price ?? 0) }}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-400">Renta</span>
-                  <span class="text-blue-400 font-bold">{{ fmt(cell.rent ?? 0) }}</span>
-                </div>
-                @if (currentPlayer()) {
-                <div class="flex justify-between text-sm pt-2 border-t border-slate-700">
-                  <span class="text-slate-400">Tu dinero</span>
-                  <span class="font-bold"
-                    [ngClass]="(currentPlayer()?.money ?? 0) >= (cell.price ?? 0) ? 'text-emerald-400' : 'text-red-400'">
-                    {{ fmt(currentPlayer()?.money ?? 0) }}
-                  </span>
-                </div>
-                }
-              </div>
-              <div class="flex gap-3">
-                <button (click)="decideBuy(true)" [disabled]="(currentPlayer()?.money ?? 0) < (cell.price ?? 0)"
-                  class="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all">
-                  S&iacute;, comprar
-                </button>
-                <button (click)="decideBuy(false)"
-                  class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all">
-                  No
-                </button>
-              </div>
-            </div>
-          </div>
-          }
-
-          <!-- Wildcard Modal -->
-          @if (showWildcardModal()) {
-          <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div
-              class="animate-fade-in bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl shadow-black/30 p-6 max-w-sm w-full mx-4 space-y-4">
-              <div class="text-center space-y-3">
-                <div
-                  class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border-2 border-amber-500/30 flex items-center justify-center mx-auto">
-                  <span class="text-2xl">&#x1F4B3;</span>
-                </div>
-                <h3 class="text-amber-400 font-bold text-lg">Carta Financiera</h3>
-              </div>
-              <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-                <p class="text-white text-sm leading-relaxed text-center">{{ wildcardText() }}</p>
-              </div>
-              @if (wildcardExpl()) {
-              <p class="text-slate-400 text-xs text-center italic">{{ wildcardExpl() }}</p>
-              }
-              <button (click)="dismissWildcard()"
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all">
-                Continuar
-              </button>
-            </div>
-          </div>
-          }
-
-          <!-- ══════════════════════════════════════════════════════════════════
-     TOOLTIP DE CASILLA
-══════════════════════════════════════════════════════════════════ -->
-          @if (showTooltip(); as cell) {
-          <div class="fixed inset-0 z-40 pointer-events-none" (click)="showTooltip.set(null)">
-            <div class="absolute pointer-events-auto"
-              style="bottom: 80px; right: 12px; left: 12px; max-width: 240px; margin-left: auto;">
-              <div class="bg-[#0E1827] rounded-xl border border-slate-700 shadow-2xl shadow-black/50 p-3 space-y-2">
-                <div class="flex items-start gap-2">
-                  <div class="w-3 h-3 rounded-sm mt-0.5 flex-shrink-0" [style.background-color]="cellBandColor(cell)">
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-white text-sm font-bold leading-tight">{{ cell.name }}</p>
-                    <p class="text-slate-500 text-xs mt-0.5 capitalize">{{ cell.type.toLowerCase().replace('_',' ') }}
-                    </p>
-                  </div>
-                  <button (click)="showTooltip.set(null)"
-                    class="text-slate-500 hover:text-white text-lg leading-none flex-shrink-0 ml-1">&times;</button>
-                </div>
-
-                <div class="space-y-1 text-xs border-t border-slate-800 pt-2">
-                  @if (cell.price != null) {
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Precio</span>
-                    <span class="text-emerald-400 font-semibold">{{ fmt(cell.price) }}</span>
-                  </div>
-                  }
-                  @if (cell.rent != null) {
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Renta</span>
-                    <span class="text-blue-400 font-semibold">{{ fmt(cell.rent) }}</span>
-                  </div>
-                  }
-                  @if (cell.amount != null) {
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Monto</span>
-                    <span class="text-amber-400 font-semibold">{{ fmt(cell.amount) }}</span>
-                  </div>
-                  }
-                  @if (cell.group) {
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Grupo</span>
-                    <span class="text-white capitalize">{{ cell.group }}</span>
-                  </div>
-                  }
-                  @if (getOwner(cell.position); as owner) {
-                  <div class="flex justify-between pt-1 border-t border-slate-800">
-                    <span class="text-slate-500">Due&ntilde;o</span>
-                    <span class="font-medium" [style.color]="playerHex(owner.turnOrder)">{{ owner.displayName }}</span>
-                  </div>
-                  }
-                  @if (cell.description) {
-                  <p class="text-slate-600 text-[10px] pt-1 border-t border-slate-800 italic leading-relaxed">{{
-                    cell.description }}</p>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-4 space-y-2">
+      @for (p of sortedPlayers(); track p.id) {
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+          [ngClass]="playerBg(p.turnOrder)">{{ playerToken(p) }}</div>
+        <div class="flex-1 text-left">
+          <p class="text-white text-sm font-medium">{{ p.displayName }}</p>
+          @if (p.isBot) {
+          <span
+            class="text-amber-400 text-xs bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">IA</span>
           }
         </div>
       </div>
-    </div>
-    </div>
       }
-      <!-- fin juego activo @if -->
+    </div>
+    <button (click)="handleStartGame()"
+      class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl transition-all">
+      Iniciar partida
+    </button>
+  </div>
+</div>
+}
 
-      <!-- fin !loading() @if -->
+<!-- ── FASE: FINISHED ── -->
+@if (game()?.gamePhase === 'FINISHED') {
+<div class="min-h-screen bg-[#0F172A] p-4 flex items-center justify-center">
+  <div class="w-full max-w-lg space-y-5 py-8">
+    <div class="text-center">
+      <div
+        class="w-20 h-20 rounded-full bg-amber-500/15 border-2 border-amber-500/40 flex items-center justify-center mx-auto mb-4">
+        <span class="text-amber-400 text-4xl font-black">1</span>
+      </div>
+      <h2 class="text-white text-2xl font-bold">Partida finalizada</h2>
+      <p class="text-slate-400 text-sm mt-1">{{ modeLabel(game()?.mode) }} — {{ game()?.maxRounds }} vueltas</p>
+    </div>
+    <div class="space-y-2">
+      @for (p of rankedPlayers(); track p.id; let i = $index) {
+      <div class="flex items-center gap-3 rounded-2xl p-4 border"
+        [ngClass]="i === 0 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-500/40' : p.isEliminated ? 'bg-slate-800/30 border-slate-700/40 opacity-60' : 'bg-[#1E293B] border-slate-700'">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0"
+          [ngClass]="i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400'">{{ i + 1 }}</div>
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+          [ngClass]="playerBg(p.turnOrder)">{{ playerToken(p) }}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white font-semibold text-sm truncate">{{ p.displayName }}</p>
+          <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+            @if (p.isBot) { <span class="text-amber-400 text-xs">IA</span> }
+            @if (p.isEliminated) { <span class="text-red-400 text-xs">Eliminado</span> }
+          </div>
+        </div>
+        <p class="font-bold flex-shrink-0"
+          [ngClass]="p.money >= 0 ? (i === 0 ? 'text-amber-400' : 'text-emerald-400') : 'text-red-400'">
+          {{ fmt(p.money) }}
+        </p>
+      </div>
+      }
+    </div>
+    @if (game()?.mode !== 'SIMULATION') {
+    <div class="bg-[#1E293B] rounded-2xl p-5 border border-slate-700 text-center space-y-2">
+      <p class="text-slate-400 text-sm">Experiencia ganada</p>
+      <p class="text-amber-400 text-3xl font-bold">+{{ calcXP() }} XP</p>
+    </div>
+    }
+    <button (click)="goToLobby()"
+      class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all">
+      Volver al lobby
+    </button>
+  </div>
+</div>
+}
+
+<!-- ── FASE: ABANDONED ── -->
+@if (game()?.gamePhase === 'ABANDONED') {
+<div class="flex items-center justify-center min-h-[70vh] p-4">
+  <div class="text-center space-y-6 max-w-md">
+    <div
+      class="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-500/40 flex items-center justify-center mx-auto">
+      <span class="text-red-400 text-xl font-bold">X</span>
+    </div>
+    <div>
+      <h2 class="text-white text-xl font-bold">Partida abandonada</h2>
+      <p class="text-slate-400 text-sm mt-1">Registrada como abandonada.</p>
+    </div>
+    <button (click)="goToLobby()"
+      class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 rounded-2xl transition-all">
+      Volver al lobby
+    </button>
+  </div>
+</div>
+}
+
+<!-- ── JUEGO ACTIVO ── -->
+@if (game()?.gamePhase !== 'WAITING' && game()?.gamePhase !== 'FINISHED' && game()?.gamePhase !== 'ABANDONED') {
+<div class="min-h-screen bg-[#060E1D] flex flex-col gap-3 pb-6">
+
+  <!-- Top bar -->
+  <div class="flex items-center justify-between bg-[#1E293B] rounded-2xl px-4 py-3 border border-slate-700">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="min-w-0">
+        <p class="text-white font-bold text-sm">
+          Vuelta {{ currentLap() }}<span class="text-slate-500 font-normal"> / {{ game()?.maxRounds ?? '?' }}</span>
+        </p>
+        <p class="text-xs text-slate-500">{{ modeLabel(game()?.mode) }}</p>
+      </div>
+      <div class="h-8 w-px bg-slate-700 flex-shrink-0"></div>
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border flex-shrink-0"
+        [ngClass]="{
+          'bg-blue-500/15 border-blue-500/30 text-blue-400':   game()?.gamePhase === 'ROLLING',
+          'bg-emerald-500/15 border-emerald-500/30 text-emerald-400': game()?.gamePhase === 'BETWEEN_TURNS',
+          'bg-amber-500/15 border-amber-500/30 text-amber-400': game()?.gamePhase === 'BUYING' || game()?.gamePhase === 'WILDCARD_REVEAL',
+          'bg-slate-700/60 border-slate-600 text-slate-400': game()?.gamePhase !== 'ROLLING' && game()?.gamePhase !== 'BETWEEN_TURNS' && game()?.gamePhase !== 'BUYING' && game()?.gamePhase !== 'WILDCARD_REVEAL'
+        }">
+        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" [ngClass]="{
+            'bg-blue-400 animate-pulse': game()?.gamePhase === 'ROLLING',
+            'bg-emerald-400':            game()?.gamePhase === 'BETWEEN_TURNS',
+            'bg-amber-400 animate-pulse': game()?.gamePhase === 'BUYING' || game()?.gamePhase === 'WILDCARD_REVEAL',
+            'bg-slate-500': game()?.gamePhase !== 'ROLLING' && game()?.gamePhase !== 'BETWEEN_TURNS' && game()?.gamePhase !== 'BUYING' && game()?.gamePhase !== 'WILDCARD_REVEAL'
+          }"></span>
+        {{ phaseLabel(game()?.gamePhase) }}
+      </span>
+    </div>
+    <button (click)="abandonGame()"
+      class="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all flex-shrink-0 ml-2">
+      Abandonar
+    </button>
+  </div>
+
+  <!-- Layout principal -->
+  <div class="flex flex-col xl:flex-row gap-3">
+
+    <!-- ── TABLERO ── -->
+    <div class="flex-1 min-w-0">
+      <div class="bg-[#0E1827] rounded-2xl border border-slate-700/60 p-3 overflow-x-auto">
+        <div
+          style="display:grid; grid-template-columns:repeat(11,52px); grid-template-rows:repeat(11,52px); gap:2px; width:fit-content; margin:0 auto;">
+
+          <!-- Centro del tablero -->
+          <div style="grid-column:2/11; grid-row:2/11;"
+            class="bg-gradient-to-br from-[#080F1E] to-[#0C1830] rounded-sm flex items-center justify-center overflow-hidden">
+            <img src="/tablero.png" alt="FinanzaViva"
+              class="w-full h-full object-contain opacity-75 select-none pointer-events-none"
+              (error)="$any($event.target).style.display='none'" />
+          </div>
+
+          <!-- Casillas -->
+          @for (cell of cells(); track cell.position) {
+          <div [style.grid-column]="cellCol(cell.position)" [style.grid-row]="cellRow(cell.position)"
+            [style.background-color]="cellBg(cell)"
+            class="relative border border-slate-700/40 cursor-pointer overflow-hidden transition-all duration-150 hover:brightness-125 flex flex-col items-center justify-end"
+            (click)="onCellClick(cell, $event)">
+
+            <!-- Banda de color (grupo o tipo) -->
+            <div class="absolute" [class]="getBandClass(cell.position)" [style.background-color]="cellBandColor(cell)">
+            </div>
+
+            <!-- Numero de posicion (debug) -->
+            <span
+              class="absolute top-[1px] left-[2px] text-[5px] text-slate-600 font-mono leading-none select-none z-10">{{
+              cell.position }}</span>
+
+            <!-- Esquinas especiales -->
+            @if (cell.type === 'INICIO') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+              <span class="text-emerald-400 font-black text-[12px] tracking-widest">GO</span>
+              <span class="text-emerald-600 text-[7px] font-semibold uppercase">Inicio</span>
+            </div>
+            } @else if (cell.type === 'JAIL') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+              <span class="text-slate-300 font-bold text-[9px] text-center leading-tight">Carcel</span>
+              <span class="text-slate-500 text-[7px] text-center">Visita</span>
+            </div>
+            } @else if (cell.type === 'GO_TO_JAIL') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10 px-1">
+              <span class="text-orange-400 font-bold text-[8px] text-center leading-tight">Ir a</span>
+              <span class="text-orange-400 font-bold text-[8px] text-center leading-tight">Carcel</span>
+            </div>
+            } @else if (cell.type === 'PENSION_ESPECIAL') {
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10 px-1">
+              <span class="text-blue-400 font-bold text-[7px] text-center leading-tight">Salario</span>
+              <span class="text-blue-300 text-[6px] text-center">+${{ cell.amount }}</span>
+            </div>
+            } @else {
+            <!-- Casilla normal -->
+            <div class="absolute inset-0 flex flex-col items-center justify-end pb-[3px] px-[2px] z-10">
+              <p class="text-[6.5px] leading-tight text-center text-white font-medium w-full">{{ abbr(cell.name, 10) }}
+              </p>
+              @if (cell.type === 'PROPERTY' && cell.price != null) {
+              <p class="text-[6px] text-emerald-400 font-bold leading-none mt-[1px]">${{ cell.price }}</p>
+              }
+              @if (cell.type === 'WILDCARD') {
+              <span class="text-amber-400 font-black text-[11px] leading-none">?</span>
+              }
+              @if (cell.type === 'DECISION') {
+              <span class="text-[8px] text-cyan-400 font-black leading-none mt-[1px]">Elegir</span>
+              }
+              @if (cell.type === 'EDUCATIONAL' && cell.amount != null) {
+              <p class="text-[6px] font-bold leading-none mt-[1px]"
+                [ngClass]="cell.amount >= 0 ? 'text-indigo-400' : 'text-red-400'">
+                {{ cell.amount >= 0 ? '+' : '' }}${{ cell.amount }}
+              </p>
+              }
+              @if ((cell.type === 'TAX' || cell.type === 'SCAM') && cell.amount != null) {
+              <p class="text-[6px] text-red-400 font-bold leading-none mt-[1px]">-${{ cell.amount }}</p>
+              }
+              @if ((cell.type === 'LOTTERY' || cell.type === 'PENSION') && cell.amount != null) {
+              <p class="text-[6px] text-yellow-400 font-bold leading-none mt-[1px]">+${{ cell.amount }}</p>
+              }
+            </div>
+            }
+
+            <!-- Indicador de dueno -->
+            @if (getOwner(cell.position); as owner) {
+            <div class="absolute bottom-0 left-0 right-0 h-[3px] z-20" [ngClass]="playerBg(owner.turnOrder)"></div>
+            }
+
+            <!-- Fichas de jugadores en esta casilla -->
+            @if (getPlayersOnCell(cell.position).length > 0) {
+            <div class="absolute top-[3px] right-[2px] flex flex-col-reverse items-end gap-[1px] z-30">
+              @for (p of getPlayersOnCell(cell.position); track p.id; let pi = $index) {
+              @if (pi < 4) { <div
+                class="w-[14px] h-[14px] rounded-full border border-white/60 flex items-center justify-center text-[7px] font-bold text-white shadow-md leading-none flex-shrink-0 cursor-default"
+                [ngClass]="[playerBg(p.turnOrder), bouncingId() === p.id ? 'token-jump' : '']" [title]="p.displayName">
+                {{ playerToken(p) }}</div>
+            }
+            }
+            @if (getPlayersOnCell(cell.position).length > 4) {
+            <div
+              class="w-[14px] h-[14px] rounded-full bg-slate-700 border border-white/30 flex items-center justify-center text-[7px] text-slate-300 font-bold">
+              +{{ getPlayersOnCell(cell.position).length - 4 }}
+            </div>
+            }
+          </div>
+          }
+        </div>
+        }
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL DERECHO ── -->
+  <div class="xl:w-72 2xl:w-80 flex-shrink-0 flex flex-col gap-3">
+
+    <!-- Lista de jugadores -->
+    <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-4 space-y-2.5">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Jugadores</p>
+        <span class="text-[10px] text-slate-600">{{ players().length }} en partida</span>
+      </div>
+      <div class="space-y-1.5">
+        @for (p of sortedPlayers(); track p.id) {
+        <div class="rounded-xl px-3 py-2.5 border transition-all duration-200" [ngClass]="{
+              'bg-blue-600/10 border-blue-500/40 shadow-sm shadow-blue-500/10': p.id === currentPlayer()?.id && !p.isEliminated,
+              'opacity-35 bg-slate-800/20 border-slate-700/30': p.isEliminated,
+              'bg-slate-800/40 border-slate-700/50': p.id !== currentPlayer()?.id && !p.isEliminated
+            }">
+          <div class="flex items-center gap-2">
+            <div
+              class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+              [ngClass]="playerBg(p.turnOrder)">{{ playerToken(p) }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1 flex-wrap">
+                <p class="text-white text-xs font-semibold truncate">{{ p.displayName }}</p>
+                @if (p.isBot) {
+                <span
+                  class="text-[8px] text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 flex-shrink-0 leading-none">IA</span>
+                }
+                @if (p.isInJail) {
+                <span
+                  class="text-[8px] text-orange-400 bg-orange-500/10 px-1 py-0.5 rounded border border-orange-500/20 flex-shrink-0 leading-none">Carcel</span>
+                }
+                @if (p.isEliminated) {
+                <span
+                  class="text-[8px] text-red-400 bg-red-500/10 px-1 py-0.5 rounded border border-red-500/20 flex-shrink-0 leading-none">Eliminado</span>
+                }
+              </div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs font-bold" [ngClass]="p.money >= 0 ? 'text-emerald-400' : 'text-red-400'">{{
+                  fmt(p.money) }}</span>
+                @if ((p.properties?.length ?? 0) > 0) {
+                <span class="text-[9px] text-blue-400">{{ p.properties!.length }} prop</span>
+                }
+                <span class="text-[9px] text-slate-600 ml-auto">V{{ p.lapsCompleted }}/{{ game()?.maxRounds
+                  }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Dados y acciones -->
+    <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-4 space-y-3">
+
+      <!-- Jugador en turno -->
+      @if (currentPlayer()) {
+      <div class="flex items-center gap-2 pb-3 border-b border-slate-700/60">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+          [ngClass]="playerBg(currentPlayer()!.turnOrder)">{{ playerToken(currentPlayer()!) }}</div>
+        <p class="text-white text-xs font-semibold truncate flex-1">
+          {{ currentPlayer()!.displayName }}
+          @if (currentPlayer()!.isBot) {<span class="text-amber-400"> (IA)</span>}
+        </p>
+        @if (currentPlayer()!.isInJail) {
+        <span
+          class="text-[9px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 flex-shrink-0">
+          Carcel {{ currentPlayer()!.jailTurnsLeft }}T
+        </span>
+        }
+      </div>
+      }
+
+      <!-- Dados -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+            [ngClass]="dice1() !== null ? 'bg-white' : 'bg-slate-700/60 border border-slate-600/50'"
+            [class.dice-roll]="isDiceRolling()" [class.dice-reveal]="diceRevealed() && !isDiceRolling()">
+            <span class="text-xl font-bold select-none"
+              [ngClass]="dice1() !== null ? 'text-slate-800' : 'text-slate-600'">{{ dice1() ?? '?' }}</span>
+          </div>
+          <span class="text-slate-500 font-bold">+</span>
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+            [ngClass]="dice2() !== null ? 'bg-white' : 'bg-slate-700/60 border border-slate-600/50'"
+            [class.dice-roll]="isDiceRolling()" [class.dice-reveal]="diceRevealed() && !isDiceRolling()">
+            <span class="text-xl font-bold select-none"
+              [ngClass]="dice2() !== null ? 'text-slate-800' : 'text-slate-600'">{{ dice2() ?? '?' }}</span>
+          </div>
+          @if (dice1() !== null && dice2() !== null) {
+          <span class="text-slate-300 text-sm font-bold">=&nbsp;{{ (dice1() ?? 0) + (dice2() ?? 0) }}</span>
+          }
+        </div>
+        @if (botMsg()) {
+        <p class="text-amber-400 text-xs animate-pulse ml-auto truncate max-w-[120px]">{{ botMsg() }}</p>
+        }
+      </div>
+
+      <!-- Boton principal -->
+      @if (game()?.gamePhase === 'ROLLING' && isMyTurn() && !isDiceRolling() && !isAnimating()) {
+      <button (click)="rollDice()"
+        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/25 text-sm">
+        Lanzar dados
+      </button>
+      }
+      @if (game()?.gamePhase === 'BETWEEN_TURNS' && isMyTurn() && !isAnimating()) {
+      <button (click)="endTurn()"
+        class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-500/25 text-sm">
+        Terminar turno
+      </button>
+      }
+      @if (isAnimating() || isDiceRolling()) {
+      <div class="bg-slate-700/30 rounded-xl px-4 py-2.5 border border-slate-600/30 text-center">
+        <p class="text-slate-400 text-xs animate-pulse">Procesando...</p>
+      </div>
+      }
+      @if (!isMyTurn() && !botMsg() && !isAnimating() && !isDiceRolling() && game()?.gamePhase !== 'BUYING' &&
+      game()?.gamePhase !== 'WILDCARD_REVEAL') {
+      <div class="bg-slate-700/30 rounded-xl px-4 py-2.5 border border-slate-600/30 text-center">
+        <p class="text-slate-400 text-xs">
+          Turno de <span class="text-white font-medium">{{ currentPlayer()?.displayName }}</span>
+          @if (currentPlayer()?.isBot) { <span class="text-amber-400">(IA)</span> }
+        </p>
+      </div>
+      }
+    </div>
+
+    <!-- Bitacora -->
+    @if (actionLog().length > 0) {
+    <div class="bg-[#1E293B] rounded-2xl border border-slate-700 p-3 space-y-1.5">
+      <p class="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">Bitacora</p>
+      <div class="space-y-0.5 max-h-[110px] overflow-y-auto">
+        @for (entry of actionLog(); track $index) {
+        <p class="text-[10px] text-slate-400 font-mono leading-snug">{{ entry }}</p>
+        }
+      </div>
+    </div>
+    }
+
+  </div>
+  <!-- fin panel derecho -->
+</div>
+<!-- fin layout principal -->
+
+<!-- ── MODAL: COMPRAR PROPIEDAD ── -->
+@if (showBuyModal() && buyCell(); as cell) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+  (click)="showBuyModal.set(false)">
+  <div class="bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4"
+    (click)="$event.stopPropagation()">
+    <div class="text-center space-y-2">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto"
+        [style.background-color]="cellBandColor(cell)">
+        <span class="text-white font-black text-lg">$</span>
+      </div>
+      <h3 class="text-white font-bold text-lg">Comprar {{ cell.name }}?</h3>
+      <p class="text-slate-400 text-sm">Grupo: <span class="text-white capitalize">{{ cell.group ?? 'sin grupo'
+          }}</span></p>
+    </div>
+    <div class="bg-slate-800/50 rounded-xl p-4 space-y-2 border border-slate-700">
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-400">Precio</span>
+        <span class="text-emerald-400 font-bold">{{ fmt(cell.price ?? 0) }}</span>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-400">Renta</span>
+        <span class="text-blue-400 font-bold">{{ fmt(cell.rent ?? 0) }}</span>
+      </div>
+      @if (currentPlayer()) {
+      <div class="flex justify-between text-sm pt-2 border-t border-slate-700">
+        <span class="text-slate-400">Tu dinero</span>
+        <span class="font-bold"
+          [ngClass]="(currentPlayer()?.money ?? 0) >= (cell.price ?? 0) ? 'text-emerald-400' : 'text-red-400'">
+          {{ fmt(currentPlayer()?.money ?? 0) }}
+        </span>
+      </div>
+      }
+      <p class="text-slate-500 text-xs italic pt-2 border-t border-slate-700/50 leading-relaxed">{{ cell.description }}
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button (click)="decideBuy(true)" [disabled]="(currentPlayer()?.money ?? 0) < (cell.price ?? 0)"
+        class="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all text-sm">
+        Si, comprar
+      </button>
+      <button (click)="decideBuy(false)"
+        class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition-all text-sm">
+        No, pasar
+      </button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── MODAL: DECISION FINANCIERA ── -->
+@if (showDecisionModal()) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm px-4">
+  <div class="bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl p-6 max-w-md w-full space-y-5">
+    <div class="text-center space-y-2">
+      <div class="w-14 h-14 rounded-full bg-cyan-500/15 border-2 border-cyan-500/30 flex items-center justify-center mx-auto">
+        <span class="text-cyan-400 font-black text-xl">?</span>
+      </div>
+      <h3 class="text-white font-bold text-lg">Decision Financiera</h3>
+      <p class="text-slate-500 text-xs">Piensa bien antes de elegir — ambas consecuencias son reales</p>
+    </div>
+    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+      <p class="text-slate-200 text-sm leading-relaxed text-center">{{ decisionCellDesc() }}</p>
+    </div>
+    <div class="space-y-3">
+      <p class="text-slate-500 text-[10px] text-center uppercase tracking-wider font-semibold">Elige una opcion:</p>
+      @for (opt of decisionOptions(); track opt.id; let i = $index) {
+      <button (click)="pickDecisionOption(opt.id)"
+        class="w-full text-left bg-slate-800/60 hover:bg-cyan-600/15 border border-slate-700 hover:border-cyan-500/50 text-white rounded-xl px-4 py-3.5 transition-all duration-200 leading-snug">
+        <span class="font-black text-cyan-400 mr-2 text-sm">{{ i === 0 ? 'A' : 'B' }}.</span>
+        <span class="text-sm">{{ opt.text }}</span>
+      </button>
+      }
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── MODAL: RESULTADO DECISION ── -->
+@if (showDecisionResult() && decisionResult(); as result) {
+<div class="fixed inset-0 z-[55] flex items-center justify-center bg-black/75 backdrop-blur-sm px-4">
+  <div class="rounded-2xl border shadow-2xl p-6 max-w-sm w-full space-y-4"
+    [ngClass]="result.correct ? 'bg-emerald-950/98 border-emerald-600/50' : 'bg-red-950/98 border-red-600/50'">
+    <div class="text-center space-y-2">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto border-2"
+        [ngClass]="result.correct ? 'bg-emerald-500/20 border-emerald-500/50' : 'bg-red-500/20 border-red-500/50'">
+        <span class="text-3xl font-black leading-none"
+          [ngClass]="result.correct ? 'text-emerald-400' : 'text-red-400'">
+          {{ result.correct ? '+' : '-' }}
+        </span>
+      </div>
+      <h3 class="font-bold text-xl"
+        [ngClass]="result.correct ? 'text-emerald-300' : 'text-red-300'">
+        {{ result.correct ? 'Buena decision!' : 'Decision incorrecta' }}
+      </h3>
+      <p class="text-3xl font-black"
+        [ngClass]="result.correct ? 'text-emerald-400' : 'text-red-400'">
+        {{ result.amount >= 0 ? '+' : '' }}{{ fmt(result.amount) }}
+      </p>
+    </div>
+    <div class="rounded-xl p-4 border"
+      [ngClass]="result.correct ? 'bg-emerald-900/40 border-emerald-700/40' : 'bg-red-900/40 border-red-700/40'">
+      <p class="text-sm leading-relaxed"
+        [ngClass]="result.correct ? 'text-emerald-200' : 'text-red-200'">
+        {{ result.explanation }}
+      </p>
+    </div>
+    <button (click)="closeDecisionResult()"
+      class="w-full font-bold py-3 rounded-xl transition-all text-sm"
+      [ngClass]="result.correct ? 'bg-emerald-700 hover:bg-emerald-600 text-white' : 'bg-red-700 hover:bg-red-600 text-white'">
+      Continuar
+    </button>
+  </div>
+</div>
+}
+
+<!-- ── MODAL: COMODIN ── -->
+@if (showWildcardModal()) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-[#1E293B] rounded-2xl border border-slate-700 shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+    <div class="text-center space-y-3">
+      <div
+        class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 to-yellow-600/20 border-2 border-amber-500/30 flex items-center justify-center mx-auto">
+        <span class="text-amber-400 font-black text-2xl">?</span>
+      </div>
+      <h3 class="text-amber-400 font-bold text-lg">Carta Financiera</h3>
+    </div>
+    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+      <p class="text-white text-sm leading-relaxed text-center">{{ wildcardText() }}</p>
+    </div>
+    @if (wildcardExpl()) {
+    <p class="text-slate-400 text-xs text-center italic leading-relaxed">{{ wildcardExpl() }}</p>
+    }
+    <button (click)="dismissWildcard()"
+      class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all">
+      Continuar
+    </button>
+  </div>
+</div>
+}
+
+<!-- ── OVERLAY: INFO CASILLA (auto-dismiss) ── -->
+@if (showCellExplain(); as info) {
+<div class="fixed bottom-6 left-4 right-4 z-50 flex justify-center pointer-events-none">
+  <div class="rounded-2xl border p-4 shadow-2xl shadow-black/50 space-y-1.5 w-full max-w-sm"
+    [ngClass]="info.isPositive === true ? 'bg-emerald-900/95 border-emerald-700/50' : info.isPositive === false ? 'bg-red-900/95 border-red-700/50' : 'bg-[#1E293B] border-slate-700'">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full flex-shrink-0"
+        [ngClass]="info.isPositive === true ? 'bg-emerald-400' : info.isPositive === false ? 'bg-red-400' : 'bg-blue-400'">
+      </div>
+      <p class="font-bold text-sm"
+        [ngClass]="info.isPositive === true ? 'text-emerald-200' : info.isPositive === false ? 'text-red-200' : 'text-white'">
+        {{ info.cellName }}
+      </p>
+      @if (info.impactText) {
+      <span class="ml-auto text-sm font-bold flex-shrink-0"
+        [ngClass]="info.isPositive === true ? 'text-emerald-400' : 'text-red-400'">{{ info.impactText }}</span>
+      }
+    </div>
+    <p class="text-xs leading-relaxed"
+      [ngClass]="info.isPositive === true ? 'text-emerald-200/70' : info.isPositive === false ? 'text-red-200/70' : 'text-slate-400'">
+      {{ info.description }}
+    </p>
+  </div>
+</div>
+}
+
+<!-- ── TOOLTIP CASILLA ── -->
+@if (showTooltip(); as cell) {
+<div class="fixed inset-0 z-40" (click)="showTooltip.set(null)">
+  <div class="absolute pointer-events-auto" style="bottom:80px; right:16px; max-width:220px;">
+    <div class="bg-[#0E1827] rounded-xl border border-slate-700 shadow-2xl p-3 space-y-2">
+      <div class="flex items-start gap-2">
+        <div class="w-3 h-3 rounded-sm mt-0.5 flex-shrink-0" [style.background-color]="cellBandColor(cell)"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white text-sm font-bold leading-tight">{{ cell.name }}</p>
+          <p class="text-slate-500 text-[10px] mt-0.5 capitalize">{{ cell.type.toLowerCase().replace('_', ' ') }}</p>
+        </div>
+        <button class="text-slate-500 hover:text-white text-xl leading-none flex-shrink-0 ml-1"
+          (click)="$event.stopPropagation(); showTooltip.set(null)">&times;</button>
+      </div>
+      <div class="space-y-1 text-xs border-t border-slate-800 pt-2">
+        @if (cell.price != null) {
+        <div class="flex justify-between">
+          <span class="text-slate-500">Precio</span>
+          <span class="text-emerald-400 font-semibold">{{ fmt(cell.price) }}</span>
+        </div>
+        }
+        @if (cell.rent != null) {
+        <div class="flex justify-between">
+          <span class="text-slate-500">Renta</span>
+          <span class="text-blue-400 font-semibold">{{ fmt(cell.rent) }}</span>
+        </div>
+        }
+        @if (cell.amount != null) {
+        <div class="flex justify-between">
+          <span class="text-slate-500">Monto</span>
+          <span class="text-amber-400 font-semibold">{{ fmt(cell.amount) }}</span>
+        </div>
+        }
+        @if (cell.group) {
+        <div class="flex justify-between">
+          <span class="text-slate-500">Grupo</span>
+          <span class="text-white capitalize">{{ cell.group }}</span>
+        </div>
+        }
+        @if (getOwner(cell.position); as owner) {
+        <div class="flex justify-between pt-1 border-t border-slate-800">
+          <span class="text-slate-500">Dueno</span>
+          <span class="font-medium" [style.color]="playerHex(owner.turnOrder)">{{ owner.displayName }}</span>
+        </div>
+        }
+        @if (cell.description) {
+        <p class="text-slate-600 text-[10px] pt-1 border-t border-slate-800 italic leading-relaxed">{{ cell.description
+          }}</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+</div>
+}
+
+}
