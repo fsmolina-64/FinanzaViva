@@ -130,7 +130,12 @@ export class EditTransactionModal implements OnInit {
   submit(): void {
     if (this.currentAmount() <= 0) { this.toast.warning('Ingresa un monto mayor a 0'); return; }
     if (!this.selectedAccountId) { this.toast.warning('Selecciona una cuenta'); return; }
-    this.editMode() === 'TRANSFER' ? this.submitTransfer() : this.submitTransaction();
+    if (this.editMode() === 'TRANSFER') { this.submitTransfer(); return; }
+    if (this.isBalanceTx) {
+      this.showBalanceModeModal.set(true);
+      return;
+    }
+    this.submitTransaction();
   }
 
   private submitTransaction(): void {
@@ -147,13 +152,27 @@ export class EditTransactionModal implements OnInit {
   confirmDebt(): void { this.showDebtConfirm.set(false); this.executeUpdate(true); }
   cancelDebt(): void { this.showDebtConfirm.set(false); }
 
+  showBalanceModeModal = signal(false);
+  private pendingBalanceMode: 'adjustment' | 'income' | null = null;
+
+  confirmBalanceMode(mode: 'adjustment' | 'income'): void {
+    this.showBalanceModeModal.set(false);
+    this.pendingBalanceMode = mode;
+    this.executeUpdate(false);
+  }
+
+  cancelBalanceMode(): void {
+    this.showBalanceModeModal.set(false);
+    this.pendingBalanceMode = null;
+  }
+
   private executeUpdate(allowNegative: boolean): void {
     this.submitting.set(true);
     const type = this.editMode() === 'BALANCE'
       ? this.originalType
       : (this.editMode() as 'INCOME' | 'EXPENSE');
 
-    this.financeService.updateTransaction(this.txId, {
+    const payload: any = {
       accountId: this.selectedAccountId,
       categoryId: this.selectedCategoryId || undefined,
       amount: this.currentAmount(),
@@ -161,16 +180,26 @@ export class EditTransactionModal implements OnInit {
       description: this.description.trim() || undefined,
       date: this.selectedDate,
       allowNegative
-    }).subscribe({
+    };
+
+    if (this.isBalanceTx && this.pendingBalanceMode === 'adjustment') {
+      payload.isInitialBalance = true;
+    } else if (this.isBalanceTx && this.pendingBalanceMode === 'income') {
+      payload.isInitialBalance = false;
+    }
+
+    this.financeService.updateTransaction(this.txId, payload).subscribe({
       next: () => {
         this.toast.success('Transaccion actualizada');
         this.submitting.set(false);
+        this.pendingBalanceMode = null;
         this.editTxService.notifySaved();
       },
       error: err => {
         const msg = err?.error?.message ?? 'Error al actualizar';
         this.toast.error(Array.isArray(msg) ? msg[0] : msg);
         this.submitting.set(false);
+        this.pendingBalanceMode = null;
       }
     });
   }

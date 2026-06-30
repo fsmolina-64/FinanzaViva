@@ -28,12 +28,8 @@
     <nav class="flex-1 py-4 overflow-y-auto sidebar-scroll">
       @for (item of navItems; track item.path; let i = $index) {
       <a [routerLink]="item.path" routerLinkActive="nav-active"
-<<<<<<< HEAD
-        class="nav-item flex items-center px-4 py-3 mx-2 rounded-xl text-slate-400 transition-all duration-200 group mb-1 cursor-pointer">
-=======
         class="nav-item flex items-center px-4 py-3 mx-2 rounded-xl text-muted hover:text-primary hover:bg-card transition-all duration-200 group mb-1 cursor-pointer"
         [style.animation-delay.ms]="i * 40">
->>>>>>> origin/develop
         @if (item.icon.endsWith('.png') || item.icon.length > 2) {
         <img [src]="item.icon" alt="Icono Premium"
           class="w-6 h-6 flex-shrink-0 object-contain transition-all duration-300 ease-out"
