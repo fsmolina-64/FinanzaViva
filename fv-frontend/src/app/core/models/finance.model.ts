@@ -155,6 +155,7 @@ export interface UpdateTransactionPayload {
   description?: string;
   date?: string;
   allowNegative?: boolean;
+  isInitialBalance?: boolean;
 }
 
 export interface UpdateBudgetPayload {
@@ -165,14 +166,6 @@ export interface UpdateBudgetPayload {
   endDate?: string | null;
 }
 
-export interface UpdateGoalPayload {
-  name?: string;
-  targetAmount?: number;
-  currentAmount?: number;
-  deadline?: string;
-  status?: GoalStatus;
-  fromAccountId?: string;
-}
 export interface CreateTransferPayload {
   fromAccountId: string;
   toAccountId: string;

@@ -30,4 +30,8 @@ export class UpdateTransactionDto {
     @IsOptional()
     @IsBoolean()
     allowNegative?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    isInitialBalance?: boolean;
 }

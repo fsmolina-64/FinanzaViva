@@ -1,5 +1,6 @@
-<div @fadeInUp class="space-y-6 max-w-2xl mx-auto">
+<div @fadeInUp class="space-y-4 max-w-2xl mx-auto">
 
+  <!-- Volver -->
   <button (click)="goBack()"
     class="flex items-center gap-2 text-muted hover:text-primary text-sm transition-colors btn-press">
     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -8,6 +9,7 @@
     Volver al ranking
   </button>
 
+  <!-- Skeleton -->
   @if (loading()) {
   <div class="bg-card rounded-2xl p-6 border border-default/60 space-y-4 animate-shimmer">
     <div class="flex items-center gap-4">
@@ -17,67 +19,280 @@
         <div class="h-4 bg-elevated rounded w-1/3"></div>
       </div>
     </div>
-    @for (i of [1,2,3,4,5,6]; track i) {
+    @for (i of [1,2,3,4,5]; track i) {
     <div class="h-4 bg-elevated rounded w-full"></div>
     }
   </div>
   }
 
+  <!-- Error -->
   @if (error()) {
   <div class="text-center py-20">
     <p class="text-muted text-lg">{{ error() }}</p>
-    <button (click)="goBack()"
-      class="mt-4 text-blue-400 text-sm hover:text-blue-300 transition-colors btn-press">Volver al ranking</button>
+    <button (click)="goBack()" class="mt-4 text-blue-400 text-sm hover:text-blue-300 transition-colors btn-press">
+      Volver al ranking
+    </button>
   </div>
   }
 
   @if (!loading() && userData(); as user) {
-  <div class="bg-card rounded-2xl p-6 border border-default/60 shadow-sm">
-    <div class="flex items-center gap-5 mb-6">
-      <div class="w-20 h-20 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0">
-        @if (user.avatarUrl) {
+
+  <!-- ── Hero card ─────────────────────────────────────────────── -->
+  <div class="bg-card rounded-2xl p-5 border border-default/60">
+    <div class="flex items-center gap-4">
+
+      <div
+        class="w-16 h-16 rounded-full overflow-hidden bg-elevated flex items-center justify-center flex-shrink-0"
+        [ngClass]="[getFrameClass(user.equippedFrame), getAuraClass(user.equippedAura)]">
+        @if (user.equippedAvatar) {
+        <span class="text-2xl">{{ user.equippedAvatar.icon }}</span>
+        } @else if (user.avatarUrl) {
         <img [src]="user.avatarUrl" alt="" class="w-full h-full object-cover" />
         } @else {
         <span class="text-primary font-bold text-2xl">{{ user.displayName.charAt(0).toUpperCase() }}</span>
         }
       </div>
+
       <div class="flex-1 min-w-0">
-        <h1 class="text-xl font-bold text-primary truncate">{{ user.displayName }}</h1>
-        <div class="flex items-center gap-2 mt-1.5">
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25">
+        <h1 class="text-lg font-bold text-primary truncate flex items-center gap-1.5">
+          {{ user.displayName }}
+          @if (user.equippedBadge) {
+          <span class="text-base" [title]="user.equippedBadge.name">{{ user.equippedBadge.icon }}</span>
+          }
+          @if (user.equippedTitle) {
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/25 truncate max-w-36">
+            {{ user.equippedTitle.name }}
+          </span>
+          }
+        </h1>
+        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25">
             Nivel {{ user.level }}
           </span>
-          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-            {{ user.rank }}
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/25">
+            {{ user.rank | rankLabel }}
+          </span>
+          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold border"
+            [class]="streakBadgeClass(user.currentStreak)">
+            <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+            </svg>
+            {{ user.currentStreak }}d racha
           </span>
         </div>
-        <p class="text-muted text-xs mt-2">Posici&oacute;n #{{ user.position }} &middot; {{ user.score.toFixed(1) }} puntos</p>
+        <p class="text-muted text-xs mt-1.5">Miembro desde {{ formatDate(user.registeredAt) }}</p>
       </div>
+
       <div class="text-right flex-shrink-0">
-        <p class="text-3xl font-bold text-primary">#{{ user.position }}</p>
-        <p class="text-muted text-xs">de {{ user.score.toFixed(1) }} pts</p>
+        <p class="text-3xl font-black text-primary">#{{ user.position }}</p>
+        <p class="text-muted text-xs mt-0.5">{{ user.score.toFixed(1) }} pts</p>
       </div>
+
     </div>
   </div>
 
-  <div class="bg-card rounded-2xl p-6 border border-default/60 shadow-sm">
-    <h2 class="text-primary font-semibold text-sm mb-4">Desglose de puntuaci&oacute;n</h2>
-    <div [@barAnimation]="loaded() ? 'loaded' : 'void'" class="space-y-4">
-      @for (item of breakdownLabels; track item.key) {
-      <div>
-        <div class="flex justify-between text-sm mb-1">
-          <span class="text-muted">{{ item.label }}</span>
-          <span class="text-primary font-semibold">{{ user.breakdown[item.key] }}</span>
-        </div>
-        <div class="h-2.5 bg-elevated rounded-full overflow-hidden">
-          <div class="progress-bar h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
-            [style.width.%]="loaded() ? user.breakdown[item.key] : 0">
+  <!-- ── Multiplicador de racha ─────────────────────────────────── -->
+  <div class="bg-card rounded-2xl p-5 border border-default/60">
+
+    <div class="flex items-start justify-between mb-4">
+      <div class="flex-1 min-w-0 pr-4">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="w-7 h-7 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 18a3.75 3.75 0 00.495-7.468 5.99 5.99 0 00-1.925 3.547 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+            </svg>
           </div>
+          <h2 class="text-primary font-semibold text-sm">Multiplicador de racha</h2>
         </div>
+        <p class="text-muted text-xs leading-relaxed">{{ multiplierMessage(user.currentStreak) }}</p>
       </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-2xl font-black leading-none" [class]="multiplierColorClass(user.streakMultiplier)">
+          &times;{{ user.streakMultiplier.toFixed(2) }}
+        </p>
+        <p class="text-muted text-[10px] mt-0.5">{{ tierInfo()?.tierLabel }}</p>
+      </div>
+    </div>
+
+    <!-- Chips de tiers -->
+    <div class="flex gap-1 mb-3">
+      @for (tier of streakTiers; track tier.mult) {
+      <span class="flex-1 px-1 py-1 rounded text-[10px] text-center border transition-colors duration-200 leading-none"
+        [class]="tierChipClass(tier.mult, tierInfo()?.currentMult ?? 1.00)">
+        &times;{{ tier.mult.toFixed(1) }}
+      </span>
       }
     </div>
+
+    <!-- Barra de progreso dentro del tier -->
+    @if (tierInfo()?.isMax) {
+    <div class="h-2.5 bg-elevated rounded-full overflow-hidden">
+      <div class="h-full w-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+    </div>
+    <p class="text-[10px] text-emerald-400 font-semibold text-center mt-1.5">
+      {{ user.currentStreak }} d&iacute;as de racha &mdash; Multiplicador m&aacute;ximo activo
+    </p>
+    } @else {
+    <div class="h-2.5 bg-elevated rounded-full overflow-hidden">
+      <div class="h-full rounded-full bg-gradient-to-r" [class]="multiplierBarClass(user.streakMultiplier)"
+        [style.width.%]="loaded() ? (tierInfo()?.progressInTier ?? 0) : 0" style="transition: width 700ms ease-out;">
+      </div>
+    </div>
+    <div class="flex justify-between text-[10px] text-muted mt-1.5">
+      <span>{{ plural(user.currentStreak, 'dia', 'dias') }} en este tier</span>
+      <span [class]="multiplierColorClass(tierInfo()?.nextMult ?? 1.00)" class="font-semibold">
+        {{ daysToNextLabel(tierInfo()?.daysToNext ?? 0) }} para
+        &times;{{ tierInfo()?.nextMult?.toFixed(1) }}
+      </span>
+    </div>
+    }
+
+    <!-- Racha actual / maxima -->
+    <div class="grid grid-cols-2 gap-3 mt-4">
+      <div class="bg-elevated rounded-xl p-3 text-center">
+        <p class="text-primary font-bold text-xl">{{ user.currentStreak }}</p>
+        <p class="text-muted text-xs mt-0.5">Racha actual</p>
+      </div>
+      <div class="bg-elevated rounded-xl p-3 text-center">
+        <p class="text-primary font-bold text-xl">{{ user.longestStreak }}</p>
+        <p class="text-muted text-xs mt-0.5">Racha m&aacute;xima</p>
+      </div>
+    </div>
+
   </div>
+
+  <!-- ── Motor de puntaje ───────────────────────────────────────── -->
+  <div class="bg-card rounded-2xl p-5 border border-default/60">
+
+    <div class="mb-4">
+      <h2 class="text-primary font-semibold text-sm">Motor de puntaje</h2>
+    </div>
+
+    <div [@barAnimation]="loaded() ? 'loaded' : 'void'" class="space-y-2.5">
+      @for (cat of scoreCategories; track cat.key) {
+      <div class="score-card bg-elevated rounded-xl p-3.5 space-y-2.5">
+
+        <!-- Encabezado -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0" [class]="cat.iconBgClass">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="cat.icon" />
+              </svg>
+            </div>
+            <div class="flex items-baseline gap-1.5 min-w-0">
+              <span class="text-primary text-xs font-semibold truncate">{{ cat.label }}</span>
+              <span class="text-[9px] text-muted flex-shrink-0">{{ cat.weight }}%</span>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-0.5 flex-shrink-0 ml-2">
+            <span class="text-primary font-bold text-sm">{{ categoryPoints(cat.key) }}</span>
+            <span class="text-muted text-[10px]">pts</span>
+          </div>
+        </div>
+
+        <!-- Barra animada (oculta para activity) -->
+        @if (cat.key !== 'activity') {
+        <div class="h-2 bg-card rounded-full overflow-hidden">
+          <div class="progress-bar h-full rounded-full bg-gradient-to-r" [class]="cat.barClass"
+            [style.width.%]="loaded() ? categoryBarWidth(cat.key, user) : 0">
+          </div>
+        </div>
+        }
+
+        <!-- Detalle por categoria -->
+        @switch (cat.key) {
+
+        @case ('academic') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.modulesCompleted }} de {{ TOTAL_MODULES }} m&oacute;dulos
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.lessonsCompleted }} de {{ TOTAL_LESSONS }} lecciones
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.distinctPassedQuizzes }}/{{ TOTAL_QUIZZES }} quizzes aprobados
+          </span>
+          <span class="stat-chip">{{ user.stats.approvalRate }}% aprobaci&oacute;n</span>
+        </div>
+        }
+
+        @case ('simulator') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">{{ user.stats.gamesPlayed }} partidas jugadas</span>
+          <span class="stat-chip">{{ user.stats.gamesWon }} victorias</span>
+          @if (user.stats.gamesPlayed > 0) {
+          <span class="stat-chip">
+            {{ winRate(user.stats.gamesWon, user.stats.gamesPlayed) }}% de victorias
+          </span>
+          }
+        </div>
+        }
+
+        @case ('achievements') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.achievementsCount }} de {{ TOTAL_ACHIEVEMENTS }}
+            {{ user.stats.achievementsCount === 1 ? 'logro' : 'logros' }}
+          </span>
+          <span class="stat-chip">
+            {{ user.stats.rewardsCount }} de {{ TOTAL_REWARDS }}
+            {{ user.stats.rewardsCount === 1 ? 'recompensa' : 'recompensas' }}
+          </span>
+        </div>
+        }
+
+        @case ('activity') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">
+            {{ user.stats.totalTransactions }} transacciones ({{ categoryPoints('activity') }} pts)
+          </span>
+        </div>
+        }
+
+        @case ('progress') {
+        <div class="flex flex-wrap gap-1.5">
+          <span class="stat-chip">Nivel {{ user.level }}/{{ CAP_LEVEL }}</span>
+          <span class="stat-chip">{{ user.stats.xp }} XP acumulado</span>
+          <span class="stat-chip">{{ user.rank | rankLabel }}</span>
+        </div>
+        }
+
+        }
+
+      </div>
+      }
+
+      <!-- Footer de totales -->
+      <div class="border-t border-default/20 pt-3 mt-3 space-y-1 text-xs">
+        <div class="flex justify-between text-muted">
+          <span>Base (suma de categor&iacute;as)</span>
+          <span class="text-primary font-semibold">{{ basePoints() }} pts</span>
+        </div>
+        <div class="flex justify-between text-muted">
+          <span>Multiplicador de racha</span>
+          <span class="text-primary font-semibold">&times;{{ user.streakMultiplier.toFixed(2) }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-sm pt-1.5 border-t border-default/20">
+          <span>TOTAL</span>
+          <span class="text-primary">{{ user.score.toFixed(2) }} pts</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   }
 
 </div>

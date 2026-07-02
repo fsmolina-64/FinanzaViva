@@ -9,6 +9,10 @@ export class HumanPlayerDto {
   @IsOptional()
   @IsString()
   userId?: string;
+
+  @IsOptional()
+  @IsString()
+  tokenSymbol?: string;
 }
 
 export class BotPlayerDto {
@@ -17,6 +21,10 @@ export class BotPlayerDto {
 
   @IsEnum(BotPersonality)
   personality!: BotPersonality;
+
+  @IsOptional()
+  @IsString()
+  tokenSymbol?: string;
 }
 
 export class CreateGameDto {

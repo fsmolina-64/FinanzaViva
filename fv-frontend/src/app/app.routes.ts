@@ -1,11 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { GameActiveGuard } from './features/simulator/game/game-active.guard';
 import { onboardingGuard, onboardingCompletedGuard } from './core/guards/onboarding.guard';
+
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'dashboard',
+    loadComponent: () => import('./features/landing/landing').then(m => m.Landing),
     pathMatch: 'full'
   },
 
@@ -85,7 +87,8 @@ export const routes: Routes = [
       {
         path: 'simulator/:id',
         loadComponent: () =>
-          import('./features/simulator/game/game').then(m => m.Game)
+          import('./features/simulator/game/game').then(m => m.Game),
+        canDeactivate: [GameActiveGuard]
       },
       {
         path: 'quizzes',
@@ -122,6 +125,6 @@ export const routes: Routes = [
 
   {
     path: '**',
-    redirectTo: 'dashboard'
+    redirectTo: '' // Si entran a cualquier sitio desconocido, regresan a la landing pública
   }
 ];

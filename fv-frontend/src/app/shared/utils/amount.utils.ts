@@ -10,7 +10,10 @@ export function filterAmountKey(e: KeyboardEvent): void {
   if (e.ctrlKey || e.metaKey) return;
   if (e.key === ',' || e.key === 'Comma') {
     e.preventDefault();
-    insertAtCursor(e.target as HTMLInputElement, '.');
+    const input = e.target as HTMLInputElement;
+    if (!input.value.includes('.')) {
+      insertAtCursor(e.target as HTMLInputElement, '.');
+    }
     return;
   }
   const input = e.target as HTMLInputElement;
@@ -52,7 +55,7 @@ export function sanitizeNumberInput(val: any): string {
   let str = String(val).replace(/,/g, '.');
   str = str.replace(/[^0-9.]/g, '');
   const parts = str.split('.');
-  if (parts.length > 2) str = parts[0] + '.' + parts.slice(1).join('');
+  if (parts.length > 2) str = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
   if (parts[0].length > 9) parts[0] = parts[0].substring(0, 9);
   if (parts[0].length > 1 && parts[0].startsWith('0')) parts[0] = parts[0].replace(/^0+/, '');
   if (parts[0] === '' && parts.length > 1) parts[0] = '0';
@@ -78,7 +81,8 @@ export function validateAmount(value: any, options?: { allowZero?: boolean }): s
   }
   const str = String(value).replace(/,/g, '.');
   if (str.includes('.') && str.split('.')[1]?.length > 2) return 'Máximo 2 decimales';
-  if (/^0\d+/.test(str.replace(/\./g, ''))) return 'No se permiten ceros a la izquierda';
+  const intPart = str.split('.')[0];
+  if (intPart.length > 1 && intPart.startsWith('0')) return 'No se permiten ceros a la izquierda';
   return null;
 }
 

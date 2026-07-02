@@ -4,10 +4,12 @@
   <div class="modal-sheet relative w-full md:max-w-lg bg-card border border-default/60
               rounded-t-3xl md:rounded-2xl shadow-2xl" style="max-height:95vh; overflow-y:auto">
 
+    <!-- Drag handle mobile -->
     <div class="flex justify-center pt-3 pb-1 md:hidden">
       <div class="w-10 h-1 bg-elevated rounded-full"></div>
     </div>
 
+    <!-- NUEVO: loading state mientras carga accounts/categories -->
     @if (loading()) {
     <div class="flex flex-col items-center justify-center py-24 gap-3">
       <div class="w-7 h-7 border-2 border-blue-500/40 border-t-blue-500 rounded-full animate-spin"></div>
@@ -15,6 +17,7 @@
     </div>
     } @else {
 
+    <!-- Header -->
     @if (editMode() === 'TRANSFER') {
     <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-default/80 mt-1">
       <span class="text-blue-400 font-semibold text-sm">Editar transferencia</span>
@@ -42,7 +45,34 @@
     </div>
     }
 
-    @if (showDebtConfirm()) {
+    <!-- Balance mode confirm -->
+    @if (showBalanceModeModal()) {
+    <div class="px-6 py-8 text-center space-y-4">
+      <div class="w-14 h-14 bg-purple-500/15 rounded-full flex items-center justify-center mx-auto">
+        <span class="text-purple-400 font-bold text-2xl">?</span>
+      </div>
+      <div>
+        <p class="text-primary font-bold text-base">Como registrar el cambio?</p>
+        <p class="text-muted text-sm mt-1">Elige como tratar esta transaccion en tu historial.</p>
+      </div>
+      <div class="space-y-2">
+        <button (click)="confirmBalanceMode('income')"
+          class="w-full bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-400 text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+          Registrar como ingreso/gasto
+          <span class="block text-xs font-normal text-subtle mt-0.5">Aparecera como transaccion normal en el historial</span>
+        </button>
+        <button (click)="confirmBalanceMode('adjustment')"
+          class="w-full bg-elevated/50 hover:bg-elevated border border-strong text-muted text-sm font-semibold py-3 rounded-xl transition-all text-left px-4">
+          Ajuste directo de balance
+          <span class="block text-xs font-normal text-subtle mt-0.5">Mantiene el registro como ajuste de balance</span>
+        </button>
+      </div>
+      <button (click)="cancelBalanceMode()"
+        class="w-full bg-card text-muted text-sm py-2 rounded-lg hover:text-primary transition-colors">
+        Cancelar
+      </button>
+    </div>
+    } @else if (showDebtConfirm()) {
     <div class="px-6 py-8 text-center space-y-4">
       <div class="w-14 h-14 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto">
         <span class="text-amber-400 font-bold text-2xl">!</span>
@@ -50,7 +80,7 @@
       <div>
         <p class="text-primary font-bold text-base">Saldo insuficiente</p>
         <p class="text-muted text-sm mt-1">
-          El monto <span class="text-danger font-semibold">{{ formatAmount() }}</span>
+          El monto <span class="text-danger font-semibold">{{ formatCurrency(currentAmount()) }}</span>
           supera el saldo de <span class="text-muted">${{ selectedAccountBalance().toFixed(2) }}</span>.
           Registrar como deuda?
         </p>
@@ -68,45 +98,9 @@
     </div>
     } @else {
 
-    <div
-      class="amount-card mx-4 mt-4 mb-2 rounded-2xl bg-gradient-to-b to-transparent border py-5 px-2 text-center select-none"
-      [ngClass]="amountCardClass()">
-      <p class="text-subtle text-[10px] font-semibold mb-2.5 uppercase tracking-[0.2em]">Monto</p>
-      <div class="flex items-baseline justify-center" [ngClass]="amountColorClass()">
-        <span class="text-2xl font-semibold opacity-40 mr-0.5 pb-1">$</span>
-        <span class="text-6xl font-black tracking-tight tabular-nums leading-none">{{ getIntegerDisplay() }}</span>
-        <span class="text-4xl font-bold leading-none transition-opacity duration-200"
-          [style.opacity]="inDecimalMode ? '1' : '0.18'">.</span>
-        <span class="text-4xl font-bold tabular-nums leading-none transition-opacity duration-200"
-          [style.opacity]="inDecimalMode ? '1' : '0.14'">{{ getDecimalDisplay() }}</span>
-      </div>
-      @if (inDecimalMode) {
-      <p class="text-[11px] mt-2 font-medium opacity-50" [ngClass]="amountColorClass()">
-        centavos &mdash; presiona &larr; para volver
-      </p>
-      }
-      @if (editMode() === 'EXPENSE' && getAmount() > 0 && getAmount() > selectedAccountBalance()) {
-      <p class="text-amber-400 text-xs mt-1.5 font-medium">Supera el saldo -- se registrara como deuda</p>
-      }
-    </div>
+    <app-numpad #numpad [amountType]="editMode()" (amountChange)="onAmountChange($event)"></app-numpad>
 
-    <div class="px-4 pb-3">
-      <div class="grid grid-cols-3 gap-2.5">
-        @for (key of numpadKeys; track key) {
-        <button (click)="pad(key)"
-          class="numpad-key h-14 rounded-2xl font-bold transition-colors duration-100 select-none"
-          [class.is-pressed]="pressedKey() === key" [ngClass]="key === '<'
-            ? 'bg-red-950/40 hover:bg-red-950/60 border border-red-900/30 text-danger/80 text-xl'
-            : key === '.'
-            ? (inDecimalMode
-               ? 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-2xl'
-               : 'bg-elevated/40 hover:bg-elevated/60 border border-default/25 text-muted text-2xl')
-            : 'bg-elevated hover:bg-elevated/80 border border-default/50 text-primary text-xl'">
-          @if (key === '<') { &#8592; } @else { {{ key }} } </button>
-            }
-      </div>
-    </div>
-
+    <!-- Transfer selectors -->
     @if (editMode() === 'TRANSFER') {
     <div class="px-4 pb-3 space-y-2">
       <div class="bg-elevated/30 rounded-xl border border-default/40 p-3 space-y-2.5">
@@ -114,6 +108,7 @@
           <p class="text-[11px] text-subtle font-semibold uppercase tracking-wider mb-1.5">Cuenta origen</p>
           <select [(ngModel)]="selectedAccountId"
             class="w-full bg-card border border-default text-primary text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+            <!-- CAMBIO: accounts() en lugar de accounts -->
             @for (acc of accounts(); track acc.id) {
             <option [value]="acc.id">{{ acc.name }} -- ${{ (+acc.balance).toFixed(2) }}</option>
             }
@@ -133,6 +128,7 @@
     </div>
     } @else {
 
+    <!-- Category + Account -->
     <div class="px-4 pb-3 space-y-2">
       @if (editMode() !== 'BALANCE') {
       <div class="bg-elevated/30 rounded-xl border border-default/40 p-3">
@@ -166,6 +162,7 @@
         <p class="text-[11px] text-subtle font-semibold uppercase tracking-wider mb-1.5">Cuenta</p>
         <select [(ngModel)]="selectedAccountId"
           class="w-full bg-card border border-default text-primary text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors">
+          <!-- CAMBIO: accounts() en lugar de accounts -->
           @for (acc of accounts(); track acc.id) {
           <option [value]="acc.id">{{ acc.name }} -- ${{ (+acc.balance).toFixed(2) }}</option>
           }
@@ -174,6 +171,7 @@
     </div>
     }
 
+    <!-- Date & Note -->
     <div class="px-4 pb-3 space-y-2">
       <button (click)="showExtras = !showExtras"
         class="text-xs text-subtle hover:text-muted transition-colors flex items-center gap-1.5">
@@ -198,6 +196,7 @@
       }
     </div>
 
+    <!-- Submit -->
     <div class="px-4 pb-6">
       <button (click)="submit()" [disabled]="submitting()"
         class="w-full py-4 rounded-2xl text-primary font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
