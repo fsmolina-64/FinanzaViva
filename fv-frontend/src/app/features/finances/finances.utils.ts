@@ -21,8 +21,16 @@ export function getAccountName(accounts: { id: string; name: string }[], account
   return accounts.find(a => a.id === accountId)?.name ?? '';
 }
 
+export function isBalanceAdjustmentTx(tx: any): boolean {
+  return !tx.isInitialBalance && (
+    tx.description?.startsWith('Ajuste de balance') ||
+    tx.description?.startsWith('Balance inicial')
+  );
+}
+
 export function getTransactionBg(tx: Transaction | TransferDisplay): string {
   if (isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
+  if (isBalanceAdjustmentTx(tx)) return 'bg-orange-500/20 text-orange-400';
   if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
   if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
   return 'bg-red-500/20 text-red-400';
@@ -30,6 +38,7 @@ export function getTransactionBg(tx: Transaction | TransferDisplay): string {
 
 export function getTransactionColor(tx: Transaction | TransferDisplay): string {
   if (isInitBalanceTx(tx)) return 'text-purple-400';
+  if (isBalanceAdjustmentTx(tx)) return 'text-orange-400';
   if (tx.type === 'INCOME') return 'text-emerald-400';
   if (tx.type === 'TRANSFER') return 'text-blue-400';
   return 'text-red-400';

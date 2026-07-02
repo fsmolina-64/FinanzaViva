@@ -77,7 +77,7 @@ export class Finances implements OnInit {
     recurrence: 'NONE' as Recurrence
   };
 
-  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY', months: 1 };
+  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY', months: 1, indefinido: false };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
   editingTxId = signal<string | null>(null);
@@ -114,6 +114,7 @@ export class Finances implements OnInit {
   confirmDeleteCategoryId = signal<string | null>(null);
 
   submittingAccount = signal(false);
+  submittingCategory = signal(false);
   editingAccountId = signal<string | null>(null);
   editAccountForm = { name: '', newBalance: 0 };
   showAccountBalanceModal = signal(false);
@@ -336,7 +337,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d);; done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });
@@ -399,20 +400,25 @@ export class Finances implements OnInit {
 
   submitAccount(): void {
     if (!this.newAccount.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    const initBalance = Number(this.newAccount.initialBalance);
     this.submittingAccount.set(true);
     this.financeService.createAccount({
       name: this.newAccount.name.trim(), type: this.newAccount.type,
-      initialBalance: Number(this.newAccount.initialBalance),
-      countAsIncome: this.newAccount.countAsIncome
+      initialBalance: 0,
+      countAsIncome: false
     }).subscribe({
       next: acc => {
         this.accounts.update(l => [acc, ...l]);
-        this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
-        this.refreshSummary();
         this.showAccountForm.set(false);
-        this.newAccount = { name: '', type: 'CASH', initialBalance: 0, countAsIncome: false };
+        if (initBalance > 0) {
+          this.editAccountForm.newBalance = initBalance;
+          this.pendingAccountEdit = { acc, mode: 'adjustment' };
+          this.showAccountBalanceModal.set(true);
+        } else {
+          this.newAccount = { name: '', type: 'CASH', initialBalance: 0, countAsIncome: false };
+          this.toast.success('Cuenta creada');
+        }
         this.submittingAccount.set(false);
-        this.toast.success('Cuenta creada');
       },
       error: err => { this.toast.error(this.extractError(err, 'Error al crear la cuenta')); this.submittingAccount.set(false); }
     });
@@ -760,12 +766,16 @@ export class Finances implements OnInit {
     const err = this.validateAmount(this.newBudget.amount);
     if (err) { this.toast.warning(err); return; }
     const now = new Date();
-    const months = Math.max(1, this.newBudget.months);
+    let endDate: string | null = null;
+    if (!this.newBudget.indefinido) {
+      const months = Math.max(1, this.newBudget.months);
+      endDate = new Date(now.getFullYear(), now.getMonth() + months, 0).toISOString().split('T')[0];
+    }
     const payload: CreateBudgetPayload = {
       amount: Number(this.newBudget.amount),
       period: 'MONTHLY',
       startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-      endDate: new Date(now.getFullYear(), now.getMonth() + months, 0).toISOString().split('T')[0],
+      endDate: endDate ?? undefined,
     };
     if (this.newBudget.categoryId) payload.categoryId = this.newBudget.categoryId;
     this.submittingBudget.set(true);
@@ -773,7 +783,7 @@ export class Finances implements OnInit {
       next: b => {
         this.budgets.update(l => [b, ...l]);
         this.showBudgetForm.set(false);
-        this.newBudget = { categoryId: '', amount: 0, period: 'MONTHLY', months: 1 };
+        this.newBudget = { categoryId: '', amount: 0, period: 'MONTHLY', months: 1, indefinido: false };
         this.submittingBudget.set(false);
         this.toast.success('Presupuesto creado');
       },
@@ -850,14 +860,17 @@ export class Finances implements OnInit {
 
   submitCategory(): void {
     if (!this.newCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    if (this.submittingCategory()) return;
+    this.submittingCategory.set(true);
     this.financeService.createCategory({ name: this.newCategory.name.trim(), type: this.newCategory.type }).subscribe({
       next: cat => {
         this.categories.update(l => [...l, cat].sort((a, b) => a.name.localeCompare(b.name)));
         this.showCategoryForm.set(false);
         this.newCategory = { name: '', type: 'EXPENSE' };
+        this.submittingCategory.set(false);
         this.toast.success('Categoría creada');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al crear la categoría'))
+      error: err => { this.toast.error(this.extractError(err, 'Error al crear la categoría')); this.submittingCategory.set(false); }
     });
   }
 
@@ -870,6 +883,8 @@ export class Finances implements OnInit {
 
   saveEditCategory(id: string): void {
     if (!this.editCategory.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
+    if (this.submittingCategory()) return;
+    this.submittingCategory.set(true);
     this.financeService.updateCategory(id, { name: this.editCategory.name.trim() }).subscribe({
       next: updated => {
         if (updated.id !== id) {
@@ -880,8 +895,9 @@ export class Finances implements OnInit {
           this.toast.success('Categoría actualizada');
         }
         this.editingCategoryId.set(null);
+        this.submittingCategory.set(false);
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
+      error: err => { this.toast.error(this.extractError(err, 'Error al actualizar')); this.submittingCategory.set(false); }
     });
   }
 
@@ -902,7 +918,10 @@ export class Finances implements OnInit {
 
   cancelDeleteCategory(): void { this.confirmDeleteCategoryId.set(null); }
 
+  private deletingCategory = false;
   deleteCategory(id: string, reassignToId?: string): void {
+    if (this.deletingCategory) return;
+    this.deletingCategory = true;
     this.financeService.deleteCategory(id, reassignToId).subscribe({
       next: (res: any) => {
         this.categories.update(l => l.filter(c => c.id !== id));
@@ -910,6 +929,7 @@ export class Finances implements OnInit {
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
+        this.deletingCategory = false;
         const msg = res?.message ?? 'Categoría eliminada';
         this.toast.success(msg);
       },
@@ -918,6 +938,7 @@ export class Finances implements OnInit {
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
+        this.deletingCategory = false;
       }
     });
   }
@@ -1013,7 +1034,7 @@ export class Finances implements OnInit {
   isInitBalanceTx(tx: any): boolean { return isInitBalanceTx(tx); }
 
   editBudgetCategoryDeleted(): boolean {
-    return !!this.editingBudgetId() && !this.categories().some(c => c.id === this.editBudget.categoryId);
+    return !!this.editingBudgetId() && !!this.editBudget.categoryId && !this.categories().some(c => c.id === this.editBudget.categoryId);
   }
 
   private loadRecurring(): RecurringRule[] {
@@ -1124,7 +1145,7 @@ export class Finances implements OnInit {
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
-    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d);; done(); }, error: done });
+    this.financeService.getTransactions().subscribe({ next: d => { this.transactions.set(d); done(); }, error: done });
     this.financeService.getCategories().subscribe({ next: d => { this.categories.set(d); done(); }, error: done });
     this.financeService.getBudgets().subscribe({ next: d => { this.budgets.set(d); done(); }, error: done });
     this.financeService.getGoals().subscribe({ next: d => { this.goals.set(d); done(); }, error: done });

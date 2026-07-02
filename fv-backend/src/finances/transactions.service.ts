@@ -162,6 +162,7 @@ export class TransactionsService {
           ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
           ...(dto.date && { date: new Date(dto.date) }),
+          ...(dto.isInitialBalance !== undefined && { isInitialBalance: dto.isInitialBalance }),
         },
         include: { category: true, account: true },
       }),
