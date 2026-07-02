@@ -2,6 +2,7 @@ import { Controller, Get, Post, Param, Body, UseGuards, Request, Query } from '@
 import { SimulatorService } from './simulator.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { DecideBuyDto } from './dto/decide-buy.dto';
+import { DecideOptionDto } from './dto/decide-option.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 
 @UseGuards(JwtGuard)
@@ -34,6 +35,11 @@ export class SimulatorController {
     return this.simulatorService.decideBuy(id, req.user.id, dto);
   }
 
+  @Post('games/:id/decide-option')
+  decideOption(@Request() req: any, @Param('id') id: string, @Body() dto: DecideOptionDto) {
+    return this.simulatorService.decideOption(id, req.user.id, dto);
+  }
+
   @Post('games/:id/dismiss-wildcard')
   dismissWildcard(@Request() req: any, @Param('id') id: string) {
     return this.simulatorService.dismissWildcard(id, req.user.id);
@@ -42,6 +48,11 @@ export class SimulatorController {
   @Post('games/:id/end-turn')
   endTurn(@Request() req: any, @Param('id') id: string) {
     return this.simulatorService.endTurn(id, req.user.id);
+  }
+
+  @Post('games/:id/bot-step')
+  botStep(@Request() req: any, @Param('id') id: string) {
+    return this.simulatorService.botStep(id, req.user.id);
   }
 
   @Post('games/:id/abandon')

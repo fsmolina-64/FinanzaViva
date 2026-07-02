@@ -142,6 +142,40 @@ export class BotService {
         actionDetail = `${player.displayName} fue a la carcel`;
         break;
       }
+
+      case 'EDUCATIONAL': {
+        const amount = cell.amount ?? 50;
+        player.money += amount;
+        action = 'COLLECT';
+        actionDetail = `${player.displayName} aprendio sobre finanzas: +$${amount}`;
+        break;
+      }
+
+      case 'DECISION': {
+        const options = await this.prisma.cellDecisionOption.findMany({
+          where: { cellPosition: cell.position },
+        });
+
+        if (options.length >= 2) {
+          const personality = player.botPersonality ?? 'CONSERVATIVE';
+          const correctChance: Record<string, number> = {
+            CONSERVATIVE: 0.80,
+            INVESTOR:     0.80,
+            SAVER:        0.75,
+            RISKY:        0.45,
+            IMPULSIVE:    0.40,
+          };
+          const pickCorrect = Math.random() < (correctChance[personality] ?? 0.60);
+          const chosen = options.find(o => o.isCorrect === pickCorrect)
+            ?? options[0];
+          const delta = chosen.isCorrect ? chosen.amount : -chosen.amount;
+          player.money += delta;
+          if (player.money <= 0) player.isEliminated = true;
+          action = 'DECISION';
+          actionDetail = `${player.displayName} ${chosen.isCorrect ? 'tomo buena decision' : 'tomo mala decision'}: ${chosen.text.slice(0, 40)}`;
+        }
+        break;
+      }
     }
 
     player.position = newPosition;

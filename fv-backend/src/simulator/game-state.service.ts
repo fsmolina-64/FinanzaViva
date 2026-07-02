@@ -48,11 +48,11 @@ export class GameStateService {
       mode: g.mode,
       status: g.status,
       humanPlayerCount: g.players.filter(p => !p.isBot).length,
+      botPlayerCount:   g.players.filter(p =>  p.isBot).length,
+      initialMoney:     (g as any).initialMoney ?? 1500,
       winner:
         g.status === 'FINISHED'
-          ? ((g.players as (typeof g.players[0] & { finalRank?: number })[]).find(p => !p.isBot && p.finalRank === 1)?.displayName ??
-             g.players[0]?.displayName ??
-             '-')
+          ? (g.players.find(p => p.finalRank === 1)?.displayName ?? '-')
           : '-',
       finishedAt: g.finishedAt ?? g.createdAt,
     }));
@@ -71,6 +71,8 @@ export class GameStateService {
   checkGameOver(game: any): boolean {
     const activePlayers = game.players.filter((p: any) => !p.isEliminated);
     if (activePlayers.length <= 1) return true;
+
+    if (game.mode === 'SIMULATION') return false;
 
     const humansLeft = activePlayers.filter((p: any) => !p.isBot);
     if (humansLeft.length === 0) return true;
@@ -129,7 +131,7 @@ export class GameStateService {
     }
 
     if (game.mode === 'SIMULATION') {
-      return this.prisma.simulatorGame.update({
+      const updated = await this.prisma.simulatorGame.update({
         where: { id: gameId },
         data: {
           status: 'FINISHED',
@@ -137,6 +139,18 @@ export class GameStateService {
           finishedAt: new Date(),
         },
       });
+
+      const recipientId = game.xpRecipientId ?? game.createdByUserId;
+      try {
+        await this.gamification.addXp(recipientId, {
+          amount: 15,
+          source: XpSource.SIMULATOR_OBSERVED,
+          referenceId: gameId,
+          description: 'Observaste una partida completa del simulador',
+        });
+      } catch {}
+
+      return updated;
     }
 
     const isWinner = bestHumanRank === 1;

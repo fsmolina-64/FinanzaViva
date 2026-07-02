@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "XpSource" ADD VALUE 'SIMULATOR_OBSERVED';

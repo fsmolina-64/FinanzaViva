@@ -35,12 +35,17 @@
     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duracion</p>
     <div class="grid grid-cols-3 gap-2">
       @for (opt of lapOptions; track opt.laps) {
-      <button (click)="selectedRounds = opt.laps" class="rounded-xl py-3 border text-center transition-all duration-200"
-        [ngClass]="selectedRounds === opt.laps ? 'bg-blue-600 border-blue-500 shadow-md shadow-blue-500/20' : 'bg-[#1E293B] border-slate-700 hover:border-slate-500'">
-        <p class="font-bold text-sm" [ngClass]="selectedRounds === opt.laps ? 'text-white' : 'text-slate-300'">{{
-          opt.label }}</p>
-        <p class="text-xs mt-0.5" [ngClass]="selectedRounds === opt.laps ? 'text-blue-200' : 'text-slate-500'">{{
-          opt.sub }}</p>
+      <button (click)="selectRounds(opt.laps)"
+        class="rounded-xl py-3 px-2 border text-center transition-all duration-200"
+        [ngClass]="selectedRounds === opt.laps
+          ? 'bg-blue-600 border-blue-500 shadow-md shadow-blue-500/20'
+          : 'bg-[#1E293B] border-slate-700 hover:border-slate-500'">
+        <p class="font-bold text-sm"
+          [ngClass]="selectedRounds === opt.laps ? 'text-white' : 'text-slate-300'">{{ opt.label }}</p>
+        <p class="text-xs mt-0.5"
+          [ngClass]="selectedRounds === opt.laps ? 'text-blue-200' : 'text-slate-500'">{{ opt.sub }}</p>
+        <p class="text-[10px] mt-1 font-semibold"
+          [ngClass]="selectedRounds === opt.laps ? 'text-emerald-300' : 'text-slate-600'">${{ opt.money }}</p>
       </button>
       }
     </div>
@@ -133,19 +138,26 @@
 
   <!-- XP -->
   <div class="flex items-center gap-3 bg-[#1E293B] rounded-2xl px-4 py-3.5 border border-slate-700">
-    <div
-      class="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-      <span class="text-emerald-400 text-xs font-bold">XP</span>
+    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+      [ngClass]="selectedMode === 'SIMULATION'
+        ? 'bg-indigo-500/10 border border-indigo-500/30'
+        : 'bg-emerald-500/10 border border-emerald-500/30'">
+      <span class="text-xs font-bold"
+        [ngClass]="selectedMode === 'SIMULATION' ? 'text-indigo-400' : 'text-emerald-400'">XP</span>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-slate-400 text-xs">La experiencia al finalizar va a</p>
+      <p class="text-slate-400 text-xs">La experiencia va a</p>
       <p class="text-white font-semibold text-sm truncate">{{ currentUserName() }}</p>
     </div>
-    @if (selectedMode === 'SIMULATION') {
-    <span
-      class="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex-shrink-0">Sin
-      XP</span>
-    }
+    <div class="text-right flex-shrink-0">
+      <p class="font-bold text-sm"
+        [ngClass]="selectedMode === 'SIMULATION' ? 'text-indigo-400' : 'text-amber-400'">
+        {{ selectedMode === 'SIMULATION' ? '+15' : 'Hasta +' + estimatedMaxXP }}
+      </p>
+      <p class="text-[10px] text-slate-600">
+        {{ selectedMode === 'SIMULATION' ? 'por observar' : 'si ganas' }}
+      </p>
+    </div>
   </div>
 
   @if (error()) {
@@ -183,15 +195,21 @@
     }
 
     @for (h of filteredHistory(); track h.id) {
-    <div class="bg-[#1E293B] rounded-xl border border-slate-700 overflow-hidden">
+    <div class="bg-[#1E293B] rounded-xl border border-slate-700/60 overflow-hidden">
       <button (click)="toggleHistory(h.id)"
         class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-800/40 transition-colors">
         <div class="flex items-center gap-2 min-w-0">
-          <p class="text-white text-sm font-medium flex-shrink-0">{{ modeLabel(h.mode) }}</p>
-          <span class="text-slate-600 text-xs flex-shrink-0">{{ h.rounds }} vueltas</span>
+          <!-- Modo badge con color -->
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0"
+            [ngClass]="{
+              'bg-blue-500/15 border-blue-500/30 text-blue-400':    h.mode === 'SOLO',
+              'bg-emerald-500/15 border-emerald-500/30 text-emerald-400': h.mode === 'MULTIPLAYER',
+              'bg-purple-500/15 border-purple-500/30 text-purple-400':   h.mode === 'MIXED',
+              'bg-indigo-500/15 border-indigo-500/30 text-indigo-400':   h.mode === 'SIMULATION'
+            }">{{ modeLabel(h.mode) }}</span>
+          <span class="text-slate-500 text-xs flex-shrink-0">{{ h.rounds }} vueltas</span>
           @if (h.status === 'ABANDONED') {
-          <span
-            class="text-red-400 text-[10px] font-medium bg-red-500/10 border border-red-500/25 px-1.5 py-0.5 rounded-full flex-shrink-0">Abandonada</span>
+          <span class="text-red-400 text-[10px] font-medium bg-red-500/10 border border-red-500/25 px-1.5 py-0.5 rounded-full flex-shrink-0">Abandonada</span>
           }
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -209,8 +227,16 @@
         </div>
         }
         <div class="flex justify-between text-xs">
-          <span class="text-slate-500">Participantes</span>
-          <span class="text-slate-300">{{ h.humanPlayerCount }} jugador(es)</span>
+          <span class="text-slate-500">Jugadores</span>
+          <span class="text-slate-300">
+            @if (h.humanPlayerCount > 0) {<span>{{ h.humanPlayerCount }} humano(s)</span>}
+            @if (h.humanPlayerCount > 0 && h.botPlayerCount > 0) {<span class="text-slate-600"> + </span>}
+            @if (h.botPlayerCount > 0) {<span class="text-amber-400/70">{{ h.botPlayerCount }} bot(s)</span>}
+          </span>
+        </div>
+        <div class="flex justify-between text-xs">
+          <span class="text-slate-500">Capital inicial</span>
+          <span class="text-slate-300">${{ h.initialMoney }}</span>
         </div>
         <div class="flex justify-between text-xs">
           <span class="text-slate-500">Fecha</span>

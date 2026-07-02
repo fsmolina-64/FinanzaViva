@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   BackendGame, GameStateResponse, RollDiceResponse,
-  DecideBuyResponse, DismissWildcardResponse, EndTurnResponse,
+  DecideBuyResponse, DismissWildcardResponse, DecideOptionResponse, EndTurnResponse,
   CreateGamePayload, HistoryEntry, BoardCell,
 } from '../models/simulator.model';
 
@@ -30,6 +30,9 @@ export class SimulatorService {
   }
   dismissWildcard(gameId: string): Observable<DismissWildcardResponse> {
     return this.http.post<DismissWildcardResponse>(`${this.base}/games/${gameId}/dismiss-wildcard`, {});
+  }
+  decideOption(gameId: string, optionId: string): Observable<DecideOptionResponse> {
+    return this.http.post<DecideOptionResponse>(`${this.base}/games/${gameId}/decide-option`, { optionId });
   }
   endTurn(gameId: string): Observable<EndTurnResponse> {
     return this.http.post<EndTurnResponse>(`${this.base}/games/${gameId}/end-turn`, {});

@@ -57,6 +57,7 @@ enum XpSource {
   TRANSACTION_LOGGED
   SIMULATOR_ROUND
   SIMULATOR_GAME_FINISHED
+  SIMULATOR_OBSERVED
   STREAK_BONUS
   ACHIEVEMENT_UNLOCKED
   GOAL_COMPLETED
@@ -112,6 +113,8 @@ enum CellType {
   PENSION_ESPECIAL
   JAIL
   GO_TO_JAIL
+  DECISION
+  EDUCATIONAL
 }
 
 enum WildcardType {
@@ -129,6 +132,7 @@ enum GamePhase {
   ACTION
   BUYING
   WILDCARD_REVEAL
+  DECISION_PENDING
   BETWEEN_TURNS
   FINISHED
   ABANDONED
@@ -654,7 +658,22 @@ model BoardCell {
   amount      Int?
   description String
 
+  decisionOptions CellDecisionOption[]
+
   @@map("board_cells")
+}
+
+model CellDecisionOption {
+  id          String    @id @default(cuid())
+  cellPosition Int
+  cell         BoardCell @relation(fields: [cellPosition], references: [position], onDelete: Cascade)
+  text         String    @db.VarChar(400)
+  isCorrect    Boolean
+  amount       Int
+  explanation  String    @db.VarChar(600)
+
+  @@index([cellPosition])
+  @@map("cell_decision_options")
 }
 
 model BoardWildcard {

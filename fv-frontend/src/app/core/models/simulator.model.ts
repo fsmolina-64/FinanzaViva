@@ -1,14 +1,16 @@
 export type GameStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED';
 export type GamePhase =
   | 'WAITING' | 'ROLLING' | 'MOVING' | 'ACTION'
-  | 'BUYING' | 'WILDCARD_REVEAL' | 'BETWEEN_TURNS'
+  | 'BUYING' | 'WILDCARD_REVEAL' | 'DECISION_PENDING' | 'BETWEEN_TURNS'
   | 'FINISHED' | 'ABANDONED';
 export type GameMode = 'SOLO' | 'MULTIPLAYER' | 'MIXED' | 'SIMULATION';
 export type BotPersonality = 'CONSERVATIVE' | 'RISKY' | 'IMPULSIVE' | 'INVESTOR' | 'SAVER';
 export type CellType =
   | 'INICIO' | 'PROPERTY' | 'TAX' | 'LOTTERY'
   | 'WILDCARD' | 'SCAM' | 'PENSION' | 'PENSION_ESPECIAL'
-  | 'JAIL' | 'GO_TO_JAIL';
+  | 'JAIL' | 'GO_TO_JAIL'
+  | 'DECISION'
+  | 'EDUCATIONAL';
 
 export interface PlayerProperty {
   id: string;
@@ -31,6 +33,7 @@ export interface BackendPlayer {
   isEliminated: boolean;
   finalRank: number | null;
   lapsCompleted: number;
+  tokenSymbol: string;
   properties?: PlayerProperty[];
 }
 
@@ -56,6 +59,7 @@ export interface BackendGame {
   currentPlayerIdx: number;
   currentDice1: number | null;
   currentDice2: number | null;
+  initialMoney: number;
   xpRecipientId: string | null;
   startedAt: string | null;
   finishedAt: string | null;
@@ -82,6 +86,8 @@ export interface RollDiceResponse {
     amount?: number;
     text?: string;
     explanation?: string;
+    options?: DecisionOption[];
+    cellDescription?: string;
   } | null;
   gameState: GameStateResponse;
 }
@@ -94,6 +100,19 @@ export interface DecideBuyResponse {
 export interface DismissWildcardResponse {
   wildcardType: string;
   effectAmount: number;
+  gameState: GameStateResponse;
+}
+
+export interface DecisionOption {
+  id: string;
+  text: string;
+}
+
+export interface DecideOptionResponse {
+  correct: boolean;
+  amount: number;
+  explanation: string;
+  playerMoney: number;
   gameState: GameStateResponse;
 }
 
@@ -117,13 +136,14 @@ export interface EndTurnResponse {
 export interface CreateGamePayload {
   maxRounds: number;
   mode: GameMode;
+  initialMoney?: number;
   humanPlayers: { displayName: string; tokenSymbol?: string }[];
   botPlayers?: { displayName: string; personality: BotPersonality; tokenSymbol?: string }[];
   xpRecipientId?: string;
 }
 
 export interface BackendPlayerExtended extends BackendPlayer {
-  tokenSymbol?: string;
+  tokenSymbol: string;
 }
 
 export interface HistoryEntry {
@@ -132,6 +152,8 @@ export interface HistoryEntry {
   mode: GameMode;
   status: string;
   humanPlayerCount: number;
+  botPlayerCount: number;
+  initialMoney: number;
   winner: string;
   finishedAt: string;
 }

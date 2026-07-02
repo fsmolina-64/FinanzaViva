@@ -7,16 +7,17 @@ import { Observable, firstValueFrom, of } from 'rxjs';
 import { SimulatorService } from '../../../core/services/simulator.service';
 import {
   GameStateResponse, BackendPlayer, BoardCell,
-  BotMove
+  BotMove, DecisionOption, DecideOptionResponse,
 } from '../../../core/models/simulator.model';
 import {
   getTokenPos, getPlayersOnCell, cellCol, cellRow, cellSection,
   cellFlexClass, bandIsHorizontal, cellBg, cellBandColor,
-  getOwner, cellByPos,
+  getOwner, cellByPos, getBandPositionClass,
 } from './game-board.utils';
 import {
   playerHex, playerBg, playerText, playerToken, abbr,
   cellTypeIcon, phaseLabel, modeLabel, fmt, calcXP,
+  fichaImg, healthPercent, healthColor, diceDots,
 } from './game-display.utils';
 
 interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' | 'error'; }
@@ -50,14 +51,26 @@ interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' 
 
     @keyframes diceReveal {
       0%  { transform:scale(0.6) rotate(-10deg); opacity:0; }
-      100%{ transform:scale(1) rotate(0deg);   opacity:1; }
+      100%{ transform:scale(1) rotate(0deg); opacity:1; }
     }
     .dice-reveal { animation: diceReveal 0.25s ease-out; }
 
-    @keyframes countdown {
-      from { width: 100%; }
-      to   { width: 0%; }
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(680deg) scale(0.6); opacity: 0; }
     }
+
+    @keyframes cellLanded {
+      0%, 100% { box-shadow: 0 0 0 0px rgba(99,102,241,0); }
+      30%, 70% { box-shadow: 0 0 0 5px rgba(99,102,241,0.55), inset 0 0 8px rgba(99,102,241,0.2); }
+    }
+    .cell-landed { animation: cellLanded 0.9s ease-in-out 2; z-index: 20; }
+
+    @keyframes modalReveal {
+      from { transform: scale(0.82) translateY(-12px); opacity: 0; }
+      to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .modal-reveal { animation: modalReveal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
   `]
 })
 export class Game implements OnInit, OnDestroy {
@@ -80,10 +93,17 @@ export class Game implements OnInit, OnDestroy {
   showWildcardModal = signal(false);
   wildcardText = signal('');
   wildcardExpl = signal('');
+  showDecisionModal  = signal(false);
+  showDecisionResult = signal(false);
+  decisionOptions    = signal<DecisionOption[]>([]);
+  decisionCellDesc   = signal('');
+  decisionResult     = signal<{ correct: boolean; amount: number; explanation: string } | null>(null);
   showExitModal = signal(false);
   showTooltip = signal<BoardCell | null>(null);
   tooltipPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   actionLog = signal<string[]>([]);
+  landedCellPos    = signal<number | null>(null);
+  confettiParticles = signal<Array<{ left: string; color: string; delay: string; dur: string }>>([]);
   showCellExplain = signal<{
     cellName: string;
     description: string;
@@ -95,6 +115,11 @@ export class Game implements OnInit, OnDestroy {
   botMsg = signal<string | null>(null);
 
   toasts = signal<Toast[]>([]);
+
+  isSimulating      = signal(false);
+  simSpeed          = signal<'normal' | 'fast'>('normal');
+  eliminatedCount   = computed(() => this.players().filter(p => p.isEliminated).length);
+  private simulationActive = false;
 
   private leaveCallback: ((v: boolean) => void) | null = null;
   private diceInterval: ReturnType<typeof setInterval> | null = null;
@@ -127,7 +152,7 @@ export class Game implements OnInit, OnDestroy {
   });
 
   currentLap = computed(() => {
-    const ps = this.players();
+    const ps = this.players().filter(p => !p.isEliminated);
     return ps.length ? Math.min(...ps.map(p => p.lapsCompleted ?? 0)) + 1 : 1;
   });
 
@@ -223,12 +248,16 @@ export class Game implements OnInit, OnDestroy {
   }
 
   private applyState(s: GameStateResponse): void {
+    const prevPhase = this.game()?.gamePhase;
     this.gameState.set(s);
     if (!this.isDiceRolling() && !this.isAnimating()) {
       this.dice1.set(s.game.currentDice1 ?? null);
       this.dice2.set(s.game.currentDice2 ?? null);
     }
     this.loading.set(false);
+    if (prevPhase !== 'FINISHED' && s.game.gamePhase === 'FINISHED' && s.game.mode !== 'SIMULATION') {
+      this.generateConfetti();
+    }
   }
 
   // ──── Lanzar dados ────────────────────────────────────────────────────
@@ -250,14 +279,21 @@ export class Game implements OnInit, OnDestroy {
       this.diceRevealed.set(true);
 
       const cp = this.currentPlayer();
+      const playerName = cp?.displayName ?? '?';
+      this.addToLog(`${playerName}: ${res.dice1}+${res.dice2}=${res.dice1 + res.dice2}`);
+
       if (cp) {
         await this.animateToken(cp.id, cp.position, res.dice1 + res.dice2);
       }
+      this.setLandedCell(res.newPosition);
 
-      if (res.passedGo) this.toast('Paso por el INICIO', 'success', 4000);
+      if (res.passedGo) {
+        this.toast('Paso por el INICIO', 'success', 4000);
+        this.addToLog(`${playerName} completo una vuelta`);
+      }
 
       const landedCell = res.gameState.boardCells.find(c => c.position === res.newPosition);
-      if (landedCell && res.action !== 'BUY' && res.action !== 'WILDCARD' && res.action !== 'NOTHING') {
+      if (landedCell && !['BUY', 'WILDCARD', 'NOTHING', 'DECISION', 'STAY_IN_JAIL'].includes(res.action)) {
         const amount = res.actionDetails?.amount ?? res.actionDetails?.rent;
         await this.showCellModal(landedCell, res.action, amount);
       }
@@ -267,31 +303,58 @@ export class Game implements OnInit, OnDestroy {
       switch (res.action) {
         case 'BUY': {
           const cell = res.gameState.boardCells.find(c => c.position === res.newPosition);
-          if (cell) { this.buyCell.set(cell); this.showBuyModal.set(true); }
+          if (cell) {
+            this.buyCell.set(cell);
+            this.showBuyModal.set(true);
+            this.addToLog(`${playerName} puede comprar ${cell.name}`);
+          }
           break;
         }
         case 'WILDCARD':
           this.wildcardText.set(res.actionDetails?.text ?? '');
           this.wildcardExpl.set(res.actionDetails?.explanation ?? '');
           this.showWildcardModal.set(true);
+          this.addToLog(`${playerName} saco carta comodin`);
           break;
         case 'PAY_RENT':
           this.toast(`Renta: -${this.fmt(res.actionDetails?.rent ?? 0)} a ${res.actionDetails?.ownerName ?? ''}`, 'warning');
+          this.addToLog(`${playerName} pago $${res.actionDetails?.rent ?? 0} de renta a ${res.actionDetails?.ownerName ?? '?'}`);
           break;
         case 'PAY_TAX':
           this.toast(`Impuesto: -${this.fmt(res.actionDetails?.amount ?? 0)}`, 'warning');
+          this.addToLog(`${playerName} pago $${res.actionDetails?.amount ?? 0} de impuesto`);
           break;
         case 'SCAM':
           this.toast(`Estafa: -${this.fmt(res.actionDetails?.amount ?? 0)}`, 'error');
+          this.addToLog(`${playerName} cayo en estafa -$${res.actionDetails?.amount ?? 0}`);
           break;
         case 'LOTTERY':
           this.toast(`Loteria: +${this.fmt(res.actionDetails?.amount ?? 0)}`, 'success');
+          this.addToLog(`${playerName} gano $${res.actionDetails?.amount ?? 0} en loteria`);
           break;
-        case 'PENSION': case 'PENSION_ESPECIAL':
+        case 'PENSION':
+        case 'PENSION_ESPECIAL':
           this.toast(`Cobrado: +${this.fmt(res.actionDetails?.amount ?? 0)}`, 'success');
+          this.addToLog(`${playerName} cobro $${res.actionDetails?.amount ?? 0}`);
           break;
         case 'GO_TO_JAIL':
-          this.toast(`${cp?.displayName} va a la carcel`, 'warning');
+          this.toast(`${playerName} va a la carcel`, 'warning');
+          this.addToLog(`${playerName} fue enviado a la carcel`);
+          break;
+        case 'STAY_IN_JAIL':
+          this.toast(`${playerName} sigue en la carcel`, 'warning');
+          this.addToLog(`${playerName} sigue en carcel`);
+          break;
+        case 'DECISION':
+          this.decisionOptions.set(res.actionDetails?.options ?? []);
+          this.decisionCellDesc.set(res.actionDetails?.cellDescription ?? '');
+          this.decisionResult.set(null);
+          this.showDecisionModal.set(true);
+          this.addToLog(`${playerName} enfrenta una decision financiera`);
+          break;
+        case 'EDUCATIONAL':
+          this.toast(`Leccion financiera: +${this.fmt(res.actionDetails?.amount ?? 0)}`, 'success');
+          this.addToLog(`${playerName} aprendio: ${landedCell?.name ?? '?'} +$${res.actionDetails?.amount ?? 0}`);
           break;
       }
 
@@ -302,12 +365,20 @@ export class Game implements OnInit, OnDestroy {
   }
 
   decideBuy(buy: boolean): void {
+    const cellName   = this.buyCell()?.name ?? '?';
+    const playerName = this.currentPlayer()?.displayName ?? '?';
     this.showBuyModal.set(false);
     this.buyCell.set(null);
     this.svc.decideBuy(this.gameId, buy).subscribe({
       next: res => {
         this.applyState(res.gameState);
-        this.toast(buy ? 'Propiedad comprada' : 'Paso de largo', buy ? 'success' : 'info');
+        if (buy) {
+          this.toast('Propiedad comprada', 'success');
+          this.addToLog(`${playerName} compro ${cellName}`);
+        } else {
+          this.toast('Paso de largo', 'info');
+          this.addToLog(`${playerName} no compro ${cellName}`);
+        }
       },
       error: err => this.toast(err?.error?.message ?? 'Error', 'error'),
     });
@@ -351,31 +422,67 @@ export class Game implements OnInit, OnDestroy {
     this.router.navigate(['/simulator']);
   }
 
+  pickDecisionOption(optionId: string): void {
+    this.showDecisionModal.set(false);
+    this.svc.decideOption(this.gameId, optionId).subscribe({
+      next: res => {
+        this.decisionResult.set({
+          correct:     res.correct,
+          amount:      res.amount,
+          explanation: res.explanation,
+        });
+        this.showDecisionResult.set(true);
+        this.applyState(res.gameState);
+        const msg = res.correct
+          ? `Buena decision! +${this.fmt(res.amount)}`
+          : `Decision incorrecta ${this.fmt(res.amount)}`;
+        this.toast(msg, res.correct ? 'success' : 'error', 5000);
+        this.addToLog(msg);
+      },
+      error: err => {
+        this.showDecisionModal.set(true);
+        this.toast(err?.error?.message ?? 'Error al procesar decision', 'error');
+      },
+    });
+  }
+
+  closeDecisionResult(): void {
+    this.showDecisionResult.set(false);
+  }
+
   goToLobby(): void { this.router.navigate(['/simulator']); }
 
   // ──── Animacion bot ──────────────────────────────────────────────────
 
   private async animateBotMove(m: BotMove, currentPlayers: BackendPlayer[]): Promise<void> {
+    const fast = this.simSpeed() === 'fast';
+    const d = (ms: number) => this.delay(fast ? Math.round(ms * 0.28) : ms);
+
     this.botMsg.set(`${m.playerName} pensando...`);
-    await this.delay(800);
+    await d(800);
 
     this.botMsg.set(`${m.playerName} lanzando dados...`);
     this.diceRevealed.set(false);
     this.startDiceAnim();
-    await this.delay(1000);
+    await d(1000);
     this.stopDiceAnim(m.dice1, m.dice2);
-    await this.delay(400);
+    await d(400);
     this.diceRevealed.set(true);
 
-    this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', 3000);
-    await this.delay(600);
+    this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', fast ? 1500 : 3000);
+    await d(600);
 
     const botPlayer = currentPlayers.find(p => p.displayName === m.playerName);
     if (botPlayer) await this.animateToken(botPlayer.id, m.fromPosition, m.diceSum);
 
-    if (m.passedGo) this.toast(`${m.playerName} completo una vuelta`, 'success', 3500);
-    if (m.actionDetail) this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', 3500);
-    await this.delay(1000);
+    this.setLandedCell(m.toPosition);
+
+    if (m.passedGo) this.toast(`${m.playerName} completo una vuelta`, 'success', fast ? 1200 : 3500);
+    if (m.actionDetail) {
+      this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', fast ? 1200 : 3500);
+      this.addToLog(m.actionDetail);
+    }
+    await d(1000);
   }
 
   private async animateToken(playerId: string, fromPos: number, steps: number): Promise<void> {
@@ -383,13 +490,16 @@ export class Game implements OnInit, OnDestroy {
     this.animatingId.set(playerId);
     this.animatingPos.set(fromPos);
 
+    const fast   = this.simSpeed() === 'fast';
+    const stepMs = fast ? 75 : 380;
+
     for (let i = 1; i <= steps; i++) {
       const next = (fromPos + i) % 40;
       this.animatingPos.set(next);
       this.bouncingId.set(playerId);
-      await this.delay(380);
+      await this.delay(stepMs);
       this.bouncingId.set(null);
-      await this.delay(20);
+      await this.delay(10);
     }
 
     this.animatingId.set(null);
@@ -451,7 +561,11 @@ export class Game implements OnInit, OnDestroy {
   playerToken = playerToken;
   playerText = playerText;
   playerHex = playerHex;
-  playerBg = playerBg;
+  playerBg      = playerBg;
+  fichaImg      = fichaImg;
+  healthPercent = healthPercent;
+  healthColor   = healthColor;
+  diceDots      = diceDots;
 
   getOwner(pos: number): BackendPlayer | null {
     return getOwner(this.players(), pos);
@@ -460,6 +574,8 @@ export class Game implements OnInit, OnDestroy {
   cellByPos(pos: number): BoardCell | undefined {
     return cellByPos(this.cells(), pos);
   }
+
+  getBandClass = getBandPositionClass;
 
   calcXP(): number {
     return calcXP(this.game()?.maxRounds ?? 5, this.rankedPlayers());
@@ -478,7 +594,7 @@ export class Game implements OnInit, OnDestroy {
     let isPositive: boolean | null = null;
 
     if (amount !== undefined && amount !== 0) {
-      if (['LOTTERY', 'PENSION', 'PENSION_ESPECIAL'].includes(action)) {
+      if (['LOTTERY', 'PENSION', 'PENSION_ESPECIAL', 'EDUCATIONAL'].includes(action)) {
         impactText = `+${this.fmt(amount)}`;
         isPositive = true;
       } else if (['PAY_TAX', 'SCAM'].includes(action)) {
@@ -500,6 +616,32 @@ export class Game implements OnInit, OnDestroy {
 
     await this.delay(2500);
     this.showCellExplain.set(null);
+  }
+
+  private addToLog(entry: string): void {
+    const t = new Date();
+    const stamp = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+    this.actionLog.update(log => [`[${stamp}] ${entry}`, ...log].slice(0, 30));
+  }
+
+  private setLandedCell(pos: number): void {
+    this.landedCellPos.set(pos);
+    setTimeout(() => {
+      if (this.landedCellPos() === pos) this.landedCellPos.set(null);
+    }, 2400);
+  }
+
+  private generateConfetti(): void {
+    const colors = ['#3B82F6','#10B981','#EAB308','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316'];
+    this.confettiParticles.set(
+      Array.from({ length: 48 }, () => ({
+        left: `${Math.random() * 100}%`,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        delay: `${(Math.random() * 1.8).toFixed(2)}s`,
+        dur:   `${(2.2 + Math.random() * 2.2).toFixed(2)}s`,
+      }))
+    );
+    setTimeout(() => this.confettiParticles.set([]), 6500);
   }
 
   private delay(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
