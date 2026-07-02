@@ -59,6 +59,7 @@ export interface BackendGame {
   currentPlayerIdx: number;
   currentDice1: number | null;
   currentDice2: number | null;
+  initialMoney: number;
   xpRecipientId: string | null;
   startedAt: string | null;
   finishedAt: string | null;
@@ -135,6 +136,7 @@ export interface EndTurnResponse {
 export interface CreateGamePayload {
   maxRounds: number;
   mode: GameMode;
+  initialMoney?: number;
   humanPlayers: { displayName: string; tokenSymbol?: string }[];
   botPlayers?: { displayName: string; personality: BotPersonality; tokenSymbol?: string }[];
   xpRecipientId?: string;
@@ -150,6 +152,8 @@ export interface HistoryEntry {
   mode: GameMode;
   status: string;
   humanPlayerCount: number;
+  botPlayerCount: number;
+  initialMoney: number;
   winner: string;
   finishedAt: string;
 }

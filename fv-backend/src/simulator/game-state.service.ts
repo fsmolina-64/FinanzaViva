@@ -48,13 +48,11 @@ export class GameStateService {
       mode: g.mode,
       status: g.status,
       humanPlayerCount: g.players.filter(p => !p.isBot).length,
+      botPlayerCount:   g.players.filter(p =>  p.isBot).length,
+      initialMoney:     (g as any).initialMoney ?? 1500,
       winner:
         g.status === 'FINISHED'
-          ? (g.mode === 'SIMULATION'
-              ? (g.players.find(p => p.finalRank === 1)?.displayName ?? '-')
-              : (g.players.find(p => !p.isBot && p.finalRank === 1)?.displayName ??
-                 g.players[0]?.displayName ??
-                 '-'))
+          ? (g.players.find(p => p.finalRank === 1)?.displayName ?? '-')
           : '-',
       finishedAt: g.finishedAt ?? g.createdAt,
     }));

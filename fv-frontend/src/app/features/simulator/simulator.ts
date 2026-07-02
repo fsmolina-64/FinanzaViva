@@ -74,9 +74,9 @@ export class Simulator implements OnInit {
   ];
 
   readonly lapOptions = [
-    { laps: 3, label: 'Rapido',    sub: '3 vueltas' },
-    { laps: 5, label: 'Estandar',  sub: '5 vueltas' },
-    { laps: 10, label: 'Intensivo', sub: '10 vueltas' },
+    { laps: 3,  label: 'Rapido',    sub: '3 vueltas',   money: 1000 },
+    { laps: 5,  label: 'Estandar',  sub: '5 vueltas',   money: 1500 },
+    { laps: 10, label: 'Intensivo', sub: '10 vueltas',  money: 2000 },
   ];
 
   readonly personalities: { value: BotPersonality; label: string }[] = [
@@ -92,6 +92,19 @@ export class Simulator implements OnInit {
   }
   get showHumans(): boolean { return this.selectedMode !== 'SIMULATION'; }
   get showBots():   boolean { return this.selectedMode !== 'MULTIPLAYER'; }
+
+  get suggestedMoney(): number {
+    const opt = this.lapOptions.find(o => o.laps === this.selectedRounds);
+    return opt?.money ?? 1500;
+  }
+
+  get estimatedMaxXP(): number {
+    if (this.selectedMode === 'SIMULATION') return 15;
+    const base = this.selectedRounds <= 3 ? 50
+               : this.selectedRounds <= 5 ? 80
+               : this.selectedRounds <= 7 ? 120 : 175;
+    return base * 2;
+  }
 
   usedTokens = computed(() => [
     ...this.humans.map(h => h.tokenSymbol),
@@ -162,6 +175,10 @@ export class Simulator implements OnInit {
     this.bots = b;
   }
 
+  selectRounds(laps: number): void {
+    this.selectedRounds = laps;
+  }
+
   private nextFreeToken(used: string[]): string {
     return TOKEN_OPTIONS.find(t => !used.includes(t.symbol))?.symbol ?? '★';
   }
@@ -209,10 +226,11 @@ export class Simulator implements OnInit {
     }));
 
     this.svc.createGame({
-      maxRounds: this.selectedRounds,
-      mode: this.selectedMode,
+      maxRounds:    this.selectedRounds,
+      mode:         this.selectedMode,
+      initialMoney: this.suggestedMoney,
       humanPlayers: this.showHumans ? humanPlayers : [],
-      botPlayers: this.showBots ? botPlayers : undefined,
+      botPlayers:   this.showBots ? botPlayers : undefined,
     }).subscribe({
       next: g => { this.starting.set(false); this.router.navigate(['/simulator', g.id]); },
       error: err => {

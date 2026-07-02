@@ -53,3 +53,44 @@ export function calcXP(maxRounds: number, rankedPlayers: BackendPlayer[]): numbe
   const props = (rankedPlayers[hIdx]?.properties?.length ?? 0) * 3;
   return Math.max(10, Math.round(base * mult + props));
 }
+
+// ── Mapa tokenSymbol → imagen de ficha ──────────────────────────────
+export const TOKEN_TO_FICHA: Record<string, string> = {
+  '★': '/ficha1.png',
+  '♦': '/ficha2.png',
+  '♣': '/ficha3.png',
+  '♥': '/ficha4.png',
+  '■': '/ficha5.png',
+  '▲': '/ficha6.png',
+  '●': '/ficha7.png',
+  '◆': '/ficha8.png',
+};
+
+export function fichaImg(p: BackendPlayer): string {
+  return TOKEN_TO_FICHA[(p as any).tokenSymbol ?? '★'] ?? '/ficha1.png';
+}
+
+// ── Salud financiera ────────────────────────────────────────────────
+export function healthPercent(money: number, initialMoney: number): number {
+  return Math.max(0, Math.min(100, (money / initialMoney) * 100));
+}
+
+export function healthColor(pct: number): string {
+  if (pct >= 75) return '#10B981';
+  if (pct >= 40) return '#F59E0B';
+  if (pct >= 10) return '#F97316';
+  return '#EF4444';
+}
+
+// ── Puntos de dado ──────────────────────────────────────────────────
+export function diceDots(face: number): Array<{ t: string; l: string }> {
+  const P: Record<number, Array<{ t: string; l: string }>> = {
+    1: [{ t: '50%', l: '50%' }],
+    2: [{ t: '28%', l: '72%' }, { t: '72%', l: '28%' }],
+    3: [{ t: '25%', l: '75%' }, { t: '50%', l: '50%' }, { t: '75%', l: '25%' }],
+    4: [{ t: '28%', l: '28%' }, { t: '28%', l: '72%' }, { t: '72%', l: '28%' }, { t: '72%', l: '72%' }],
+    5: [{ t: '28%', l: '28%' }, { t: '28%', l: '72%' }, { t: '50%', l: '50%' }, { t: '72%', l: '28%' }, { t: '72%', l: '72%' }],
+    6: [{ t: '22%', l: '28%' }, { t: '22%', l: '72%' }, { t: '50%', l: '28%' }, { t: '50%', l: '72%' }, { t: '78%', l: '28%' }, { t: '78%', l: '72%' }],
+  };
+  return P[face] ?? [];
+}

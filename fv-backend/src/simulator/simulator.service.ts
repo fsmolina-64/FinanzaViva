@@ -42,7 +42,7 @@ export class SimulatorService {
       throw new BadRequestException('La partida requiere entre 2 y 8 participantes en total');
     }
 
-    const initialMoney = dto.initialMoney ?? 1500;
+    const initialMoney = dto.initialMoney ?? this.getDefaultMoney(dto.maxRounds);
 
     const entries: Array<{
       displayName: string;
@@ -683,15 +683,6 @@ export class SimulatorService {
       },
     });
 
-    if (game.mode !== 'SIMULATION') {
-      await this.prisma.userStatistics
-        .update({
-          where: { userId },
-          data: { gamesPlayed: { increment: 1 } },
-        })
-        .catch(() => {});
-    }
-
     return { success: true, status: 'ABANDONED' };
   }
 
@@ -853,5 +844,11 @@ export class SimulatorService {
 
       return { gameState: await this.gameState.getGameState(gameId), botMoves };
     }
+  }
+
+  private getDefaultMoney(rounds: number): number {
+    if (rounds <= 3) return 1000;
+    if (rounds <= 5) return 1500;
+    return 2000;
   }
 }

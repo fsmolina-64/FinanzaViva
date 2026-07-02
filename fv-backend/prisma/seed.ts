@@ -792,10 +792,7 @@ async function main() {
 
   // Limpiar opciones existentes y actualizar celdas
   for (const dc of decisionData) {
-    const cell = await prisma.boardCell.findFirst({ where: { position: dc.position } });
-    if (cell) {
-      await prisma.cellDecisionOption.deleteMany({ where: { cellPosition: cell.position } });
-    }
+    await prisma.cellDecisionOption.deleteMany({ where: { cellPosition: dc.position } });
     await prisma.boardCell.updateMany({
       where: { position: dc.position },
       data: {
@@ -812,12 +809,10 @@ async function main() {
 
   // Crear opciones de decision
   for (const dc of decisionData) {
-    const cell = await prisma.boardCell.findFirst({ where: { position: dc.position } });
-    if (!cell) continue;
     for (const opt of dc.options) {
       await prisma.cellDecisionOption.create({
         data: {
-          cellPosition: cell.position,
+          cellPosition: dc.position,
           text: opt.text,
           isCorrect: opt.isCorrect,
           amount: opt.amount,
