@@ -54,7 +54,7 @@ export class BotService {
     if (passedGo) {
       await this.prisma.simulatorPlayer.update({
         where: { id: player.id },
-        data: { lapsCompleted: { increment: 1 } },
+        data: { lapsCompleted: { increment: 1 } } as never,
       });
     }
 

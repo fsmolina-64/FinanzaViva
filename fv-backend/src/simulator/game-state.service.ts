@@ -50,7 +50,7 @@ export class GameStateService {
       humanPlayerCount: g.players.filter(p => !p.isBot).length,
       winner:
         g.status === 'FINISHED'
-          ? (g.players.find(p => !p.isBot && p.finalRank === 1)?.displayName ??
+          ? ((g.players as (typeof g.players[0] & { finalRank?: number })[]).find(p => !p.isBot && p.finalRank === 1)?.displayName ??
              g.players[0]?.displayName ??
              '-')
           : '-',
@@ -124,7 +124,7 @@ export class GameStateService {
     for (let i = 0; i < ranked.length; i++) {
       await this.prisma.simulatorPlayer.update({
         where: { id: ranked[i].id },
-        data: { finalRank: i + 1 },
+        data: { finalRank: i + 1 } as never,
       });
     }
 

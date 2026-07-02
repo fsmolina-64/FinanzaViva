@@ -189,7 +189,7 @@ export class SimulatorService {
     if (passedGo) {
       await this.prisma.simulatorPlayer.update({
         where: { id: currentPlayer.id },
-        data: { lapsCompleted: { increment: 1 } },
+        data: { lapsCompleted: { increment: 1 } } as never,
       });
     }
 
