@@ -51,7 +51,7 @@ export class AuthService {
     this.isLoggedIn.set(false);
     this.currentUser.set(null);
     this.onboardingService.clearAll();
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/']);
   }
 
   getToken(): string | null {
