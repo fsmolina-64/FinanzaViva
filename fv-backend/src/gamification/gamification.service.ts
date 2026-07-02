@@ -105,8 +105,15 @@ export class GamificationService {
     const now = new Date();
     const last = stats.lastActivityAt;
 
-    const diffDays = last
-      ? Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
+    const todayCalendar = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastCalendar = last
+      ? new Date(last.getFullYear(), last.getMonth(), last.getDate())
+      : null;
+
+    const diffDays = lastCalendar
+      ? Math.floor(
+        (todayCalendar.getTime() - lastCalendar.getTime()) / (1000 * 60 * 60 * 24),
+      )
       : null;
 
     if (diffDays === 0) {
@@ -144,7 +151,39 @@ export class GamificationService {
       },
     });
 
+    const todayUtcMidnight = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+
+    await this.prisma.streakLog.create({
+      data: {
+        userId,
+        date: todayUtcMidnight,
+        streak: newStreak,
+        status: streakStatus,
+      },
+    });
+
     return { currentStreak: newStreak, streakStatus };
+  }
+
+  async getStreakHistory(userId: string, month: number, year: number) {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    return this.prisma.streakLog.findMany({
+      where: {
+        userId,
+        date: { gte: start, lt: end },
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        id: true,
+        date: true,
+        streak: true,
+        status: true,
+      },
+    });
   }
 
   async checkAndEmitLevelUp(userId: string) {

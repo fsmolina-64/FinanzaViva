@@ -169,6 +169,12 @@ enum UnlockType {
   XP_TOTAL
 }
 
+enum StreakStatus {
+  ACTIVE
+  AT_RISK
+  LOST
+}
+
 enum CategoryType {
   INCOME
   EXPENSE
@@ -203,6 +209,7 @@ model User {
   quizAttempts         QuizAttempt[]
   simulatorGames       SimulatorGame[]
   simulatorPlayers     SimulatorPlayer[]
+  streakLogs           StreakLog[]
 
   @@map("users")
 }
@@ -239,6 +246,21 @@ model UserGameStats {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_game_stats")
+}
+
+model StreakLog {
+  id        String       @id @default(uuid())
+  userId    String
+  date      DateTime
+  streak    Int
+  status    StreakStatus
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("streak_logs")
 }
 
 model Level {
