@@ -126,7 +126,7 @@ export class GameStateService {
     for (let i = 0; i < ranked.length; i++) {
       await this.prisma.simulatorPlayer.update({
         where: { id: ranked[i].id },
-        data: { finalRank: i + 1 },
+        data: { finalRank: i + 1 } as never,
       });
     }
 
