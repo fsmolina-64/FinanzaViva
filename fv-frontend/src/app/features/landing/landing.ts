@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, QueryList, ViewChildren, NgZone } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, QueryList, ViewChildren, ViewChild, NgZone } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -632,7 +632,7 @@ import { CommonModule } from '@angular/common';
   <!-- ═══ CTA FINAL ════════════════════════════════════════════════════ -->
   <section class="border-t border-default relative overflow-hidden" style="min-height:520px">
     <!-- Video de fondo -->
-    <video src="video.mp4" autoplay loop muted playsinline
+    <video #videoEl src="video.mp4" loop playsinline
            class="absolute inset-0 w-full h-full object-cover"
            style="z-index:0; transform:scale(1.18); transform-origin:center center"></video>
     <!-- Overlay oscuro para legibilidad del texto -->
@@ -687,6 +687,7 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class Landing implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('videoEl') private videoEl!: ElementRef<HTMLVideoElement>;
   @ViewChildren('revealEl') private revealEls!: QueryList<ElementRef>;
   @ViewChildren('tiltEl')   private tiltEls!:   QueryList<ElementRef>;
   private observer?: IntersectionObserver;
@@ -748,6 +749,10 @@ ngOnInit(): void {
 }
 
   ngAfterViewInit(): void {
+    const v = this.videoEl.nativeElement;
+    v.muted = true;
+    v.play().catch(() => {});
+
     this.observer = new IntersectionObserver(
       entries => entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add('show'); this.observer!.unobserve(e.target); }
