@@ -222,13 +222,14 @@ export class StreakCalendar implements OnInit {
     streakMessage(): string {
         const s = this.gamificationService.streakStatus();
         const streak = this.stats()?.currentStreak ?? 0;
-        if (s === 'AT_RISK') return 'Racha congelada — ingresa mañana para mantenerla';
-        if (s === 'LOST') return 'Racha reiniciada — hoy comienza una nueva historia';
-        if (streak === 0) return 'Ingresa cada día para comenzar tu primera racha';
-        if (streak >= 365) return 'Un año de disciplina financiera — leyenda absoluta';
-        if (streak >= 30) return 'Más de un mes consecutivo — el hábito ya es tuyo';
-        if (streak >= 7) return 'Una semana de racha — el hábito se está formando';
-        return 'Sigue así — cada día construye el hábito';
+        if (s === 'AT_RISK') return 'Racha congelada — vuelve hoy para mantenerla viva';
+        if (s === 'LOST') return 'Racha reiniciada — hoy empieza una nueva oportunidad';
+        if (streak === 0) return 'Ingresa cada día para encender tu primera racha';
+        if (streak >= 365) return 'Un año de disciplina financiera — eres una leyenda';
+        if (streak >= 30) return 'Más de un mes imparable — el hábito ya es parte de ti';
+        if (streak >= 7) return 'Una semana de constancia — el hábito se está fortaleciendo';
+        if (streak === 1) return 'Primer día de tu racha — ¡grandes cosas comienzan así!';
+        return 'Sigue así — cada día cuenta en tu camino financiero';
     }
 
     xpProgress(): number {

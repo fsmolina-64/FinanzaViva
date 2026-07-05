@@ -53,15 +53,18 @@ export class GamificationService {
         if (current) {
           this.stats.set({ ...current, currentStreak: response.currentStreak });
         }
-        switch (response.streakStatus) {
-          case 'ACTIVE':
-            this.toast.success(`Bienvenido! Tu racha aumentó a ${response.currentStreak} días`);
+        switch (response.streakEvent) {
+          case 'FIRST_STREAK':
+            this.toast.success('¡Bienvenido! Tu racha comenzó. Llevas 1 día.');
             break;
-          case 'AT_RISK':
-            this.toast.success('Llegaste a tiempo! Tu racha se restableció');
+          case 'STREAK_INCREASED':
+            this.toast.success(`¡Bienvenido! Tu racha aumentó a ${response.currentStreak} días.`);
             break;
-          case 'LOST':
-            this.toast.warning('Racha perdida. Empezamos desde cero!');
+          case 'STREAK_RECOVERED':
+            this.toast.success(`¡Volviste justo a tiempo! Tu racha se descongeló y continúa en ${response.currentStreak} días.`);
+            break;
+          case 'STREAK_LOST':
+            this.toast.warning('Perdiste tu racha. Pero no te rindas — hoy comienzas de nuevo. ¡Día 1!');
             break;
         }
       })

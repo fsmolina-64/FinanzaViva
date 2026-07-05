@@ -23,7 +23,7 @@ module.exports = {
         warning: '#FFCC00',
         gold: '#C9A227',
         accent: {
-          blue: '#3B82F6',
+          blue: '#3477e3ff',
           emerald: '#10B981',
           amber: '#F59E0B',
           purple: '#A855F7',
