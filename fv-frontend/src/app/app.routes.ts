@@ -8,6 +8,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/landing/landing').then(m => m.Landing),
+    canActivate: [guestGuard],
     pathMatch: 'full'
   },
 
