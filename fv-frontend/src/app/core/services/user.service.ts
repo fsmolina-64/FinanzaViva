@@ -18,9 +18,14 @@ export class UserService {
     return this.api.patch<UserProfile>('/users/profile', data);
   }
 
-  deleteAccount(): Observable<void> {
-    return this.api.delete<void>('/users/me');
+  deleteAccount(password: string): Observable<{ message: string; deletionScheduledAt: string }> {
+    return this.api.delete<{ message: string; deletionScheduledAt: string }>('/users/me', { body: { password } });
   }
+
+  cancelDeletion(): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>('/users/me/cancel-deletion', {});
+  }
+
   changePassword(data: ChangePasswordRequest): Observable<{ message: string }> {
     return this.api.patch<{ message: string }>('/users/password', data);
   }

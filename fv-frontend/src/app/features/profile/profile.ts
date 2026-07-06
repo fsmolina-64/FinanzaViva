@@ -8,6 +8,8 @@ import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model'
 import { AchievementService } from '../../core/services/achievement.service';
 import { Reward } from '../../core/models/achievement.model';
 import { ToastService } from '../../core/services/toast.service';
+import { RewardVisualsService } from '../../core/services/reward-visuals.service';
+import { getPasswordStrength, PasswordStrengthResult } from '../../core/utils/password-strength.util';
 import { RouterModule } from '@angular/router';
 
 type Tab = 'perfil' | 'estadisticas' | 'cuenta';
@@ -24,6 +26,7 @@ export class Profile implements OnInit {
   saving = signal(false);
   editing = signal(false);
   deleting = signal(false);
+  cancelingDeletion = signal(false);
 
   rewards = signal<Reward[]>([]);
   equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
@@ -35,6 +38,8 @@ export class Profile implements OnInit {
   activeTab = signal<Tab>('perfil');
   showDeleteModal = signal(false);
   deleteConfirmText = signal('');
+  deletePassword = signal('');
+  showDeletePassword = signal(false);
 
   readonly tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'perfil', label: 'Perfil', icon: '👤' },
@@ -48,7 +53,8 @@ export class Profile implements OnInit {
     private userService: UserService,
     private authService: AuthService,
     private achievementService: AchievementService,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private rewardVisuals: RewardVisualsService
   ) { }
 
   ngOnInit(): void {
@@ -113,12 +119,14 @@ export class Profile implements OnInit {
 
   openDeleteModal(): void {
     this.deleteConfirmText.set('');
+    this.deletePassword.set('');
     this.showDeleteModal.set(true);
   }
 
   closeDeleteModal(): void {
     this.showDeleteModal.set(false);
     this.deleteConfirmText.set('');
+    this.deletePassword.set('');
   }
   showPasswordSection = signal(false);
   changingPassword = signal(false);
@@ -128,18 +136,43 @@ export class Profile implements OnInit {
   passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
   passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
   confirmDelete(): void {
-    if (this.deleteConfirmText() !== 'ELIMINAR' || this.deleting()) return;
+    if (this.deleteConfirmText() !== 'ELIMINAR' || !this.deletePassword() || this.deleting()) return;
     this.deleting.set(true);
-    this.userService.deleteAccount().subscribe({
+    this.userService.deleteAccount(this.deletePassword()).subscribe({
       next: () => {
-        this.toastService.success('Cuenta eliminada');
-        this.authService.logout();
-      },
-      error: () => {
         this.deleting.set(false);
-        this.toastService.error('Error al eliminar la cuenta. Intenta de nuevo.');
+        this.closeDeleteModal();
+        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
+        this.toastService.success('Cuenta programada para eliminación en 30 días. Puedes cancelarla cuando quieras.');
+      },
+      error: (err) => {
+        this.deleting.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al eliminar la cuenta. Intenta de nuevo.');
       }
     });
+  }
+
+  cancelDeletion(): void {
+    if (this.cancelingDeletion()) return;
+    this.cancelingDeletion.set(true);
+    this.userService.cancelDeletion().subscribe({
+      next: () => {
+        this.cancelingDeletion.set(false);
+        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
+        this.toastService.success('Eliminación cancelada');
+      },
+      error: (err) => {
+        this.cancelingDeletion.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al cancelar la eliminación');
+      }
+    });
+  }
+
+  getDaysUntilDeletion(): number {
+    const scheduled = this.user()?.deletionScheduledAt;
+    if (!scheduled) return 0;
+    const diff = new Date(scheduled).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
 
@@ -179,23 +212,10 @@ export class Profile implements OnInit {
   }
 
   getFrameClass(): string {
-    const f = this.equippedFrame();
-    if (!f) return 'border-strong';
-    const map: Record<string, string> = {
-      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
-      '🥈': 'border-muted shadow-muted/40 shadow-md',
-      '🥇': 'border-warning shadow-warning/50 shadow-lg',
-      '💠': 'border-primary shadow-primary/50 shadow-lg',
-    };
-    return map[f.icon] ?? 'border-strong';
+    return this.rewardVisuals.getFrameClass(this.equippedFrame());
   }
   getAuraClass(): string {
-    const a = this.equippedAura();
-    if (!a) return '';
-    if (a.icon === '💙') return 'aura-blue';
-    if (a.icon === '✨') return 'aura-gold';
-    if (a.icon === '🔮') return 'aura-legendary';
-    return '';
+    return this.rewardVisuals.getAuraClass(this.equippedAura());
   }
 
   logout(): void {
@@ -209,10 +229,20 @@ export class Profile implements OnInit {
     }
   }
 
+  readonly strengthBars = [0, 1, 2, 3];
+
   changePassword(): void {
     const e: { current?: string; new?: string; confirm?: string } = {};
     if (!this.passwordForm.currentPassword) e.current = 'Contraseña actual requerida';
-    if (this.passwordForm.newPassword.length < 8) e.new = 'Mínimo 8 caracteres';
+
+    if (this.passwordForm.newPassword.length < 8) {
+      e.new = 'Mínimo 8 caracteres';
+    } else if (getPasswordStrength(this.passwordForm.newPassword).score < 2) {
+      e.new = 'Muy débil: combina mayúsculas, minúsculas, números y símbolos';
+    } else if (this.passwordForm.newPassword === this.passwordForm.currentPassword) {
+      e.new = 'Debe ser diferente a la contraseña actual';
+    }
+
     if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) e.confirm = 'Las contraseñas no coinciden';
 
     this.passwordErrors.set(e);
@@ -231,5 +261,23 @@ export class Profile implements OnInit {
         this.toastService.error(err?.error?.message ?? 'Error al cambiar la contraseña');
       }
     });
+  }
+
+  getNewPasswordStrength(): PasswordStrengthResult {
+    return getPasswordStrength(this.passwordForm.newPassword);
+  }
+
+  strengthBarClass(score: number): string {
+    if (score <= 1) return 'bg-danger';
+    if (score === 2) return 'bg-amber-500';
+    if (score === 3) return 'bg-blue-500';
+    return 'bg-emerald-500';
+  }
+
+  strengthTextClass(score: number): string {
+    if (score <= 1) return 'text-danger';
+    if (score === 2) return 'text-amber-400';
+    if (score === 3) return 'text-blue-400';
+    return 'text-emerald-400';
   }
 }

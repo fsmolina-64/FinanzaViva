@@ -5,6 +5,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { GamificationService } from '../../core/services/gamification.service';
 import { AchievementService } from '../../core/services/achievement.service';
+import { RewardVisualsService } from '../../core/services/reward-visuals.service';
+import { ToastService } from '../../core/services/toast.service';
 import { Reward } from '../../core/models/achievement.model';
 import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { ToastComponent } from '../../shared/components/toast/toast';
@@ -17,13 +19,21 @@ import { ToastComponent } from '../../shared/components/toast/toast';
 })
 export class MainLayout implements OnInit {
   sidebarOpen = signal(true);
-
   rewards = signal<Reward[]>([]);
+  deletionScheduledAt = signal<string | null>(null);
+  cancelingDeletion = signal(false);
 
   equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
   equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
   equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
   equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
+
+  daysUntilDeletion = computed(() => {
+    const scheduled = this.deletionScheduledAt();
+    if (!scheduled) return 0;
+    const diff = new Date(scheduled).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  });
 
   navItems = [
     { path: '/dashboard', icon: 'dashboard.png', label: 'Dashboard' },
@@ -40,14 +50,18 @@ export class MainLayout implements OnInit {
     public gamificationService: GamificationService,
     private userService: UserService,
     private achievementService: AchievementService,
+    private rewardVisuals: RewardVisualsService,
+    private toastService: ToastService,
   ) { }
 
   ngOnInit(): void {
     if (this.authService.currentUser()) {
       this.gamificationService.loadStats().subscribe();
-      this.gamificationService.registerStreak().subscribe();
       this.userService.getProfile().subscribe({
-        next: p => this.authService.refreshProfile(p.profile),
+        next: p => {
+          this.authService.refreshProfile(p.profile);
+          this.deletionScheduledAt.set(p.deletionScheduledAt ?? null);
+        },
       });
       this.achievementService.getRewards().subscribe({
         next: r => this.rewards.set(r),
@@ -64,24 +78,27 @@ export class MainLayout implements OnInit {
   }
 
   getFrameClass(): string {
-    const f = this.equippedFrame();
-    if (!f) return 'border-strong';
-    const map: Record<string, string> = {
-      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
-      '🥈': 'border-muted shadow-muted/40 shadow-md',
-      '🥇': 'border-warning shadow-warning/50 shadow-lg',
-      '💠': 'border-primary shadow-primary/50 shadow-lg',
-    };
-    return map[f.icon] ?? 'border-strong';
+    return this.rewardVisuals.getFrameClass(this.equippedFrame());
   }
 
   getAuraClass(): string {
-    const a = this.equippedAura();
-    if (!a) return '';
-    if (a.icon === '💙') return 'aura-blue';
-    if (a.icon === '✨') return 'aura-gold';
-    if (a.icon === '🔮') return 'aura-legendary';
-    return '';
+    return this.rewardVisuals.getAuraClass(this.equippedAura());
+  }
+
+  cancelDeletion(): void {
+    if (this.cancelingDeletion()) return;
+    this.cancelingDeletion.set(true);
+    this.userService.cancelDeletion().subscribe({
+      next: () => {
+        this.cancelingDeletion.set(false);
+        this.deletionScheduledAt.set(null);
+        this.toastService.success('Eliminación cancelada');
+      },
+      error: (err) => {
+        this.cancelingDeletion.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al cancelar la eliminación');
+      }
+    });
   }
 
   logout(): void {

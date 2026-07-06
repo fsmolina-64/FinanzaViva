@@ -63,14 +63,13 @@
       </button>
       <div class="flex items-center gap-4">
         @if (gamificationService.stats()) {
-        <a routerLink="/streak-calendar"
-          class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50 no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors"
-          [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'" title="Ver calendario de racha">
+        <div class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50"
+          [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'">
           <span class="text-sm font-semibold" [class.text-amber-400]="gamificationService.streakStatus() !== 'AT_RISK'"
             [class.text-muted]="gamificationService.streakStatus() === 'AT_RISK'">
             Racha: {{ gamificationService.stats()!.currentStreak }}
           </span>
-        </a>
+        </div>
         }
         @if (authService.currentUser()) {
         <div class="flex items-center gap-2 cursor-pointer select-none group" [routerLink]="['/profile']">
@@ -79,12 +78,11 @@
             @if (equippedAvatar()) {
             <span class="text-sm">{{ equippedAvatar()!.icon }}</span>
             } @else if (authService.currentUser()!.avatarUrl) {
-            <img [src]="authService.currentUser()!.avatarUrl" alt="avatar"
-              class="w-full h-full object-cover" />
+            <img [src]="authService.currentUser()!.avatarUrl" alt="avatar" class="w-full h-full object-cover" />
             } @else {
             <span class="text-primary text-xs font-bold">{{
               authService.currentUser()!.displayName.charAt(0).toUpperCase()
-            }}</span>
+              }}</span>
             }
           </div>
           <span
@@ -98,6 +96,18 @@
         }
       </div>
     </header>
+    @if (deletionScheduledAt()) {
+    <div
+      class="bg-amber-500/10 border-b border-amber-500/25 px-6 py-2.5 flex items-center justify-between gap-3 animate-fade-in">
+      <p class="text-amber-400 text-sm font-medium">
+        Tu cuenta se eliminará en {{ daysUntilDeletion() }} día{{ daysUntilDeletion() === 1 ? '' : 's' }}.
+      </p>
+      <button (click)="cancelDeletion()" [disabled]="cancelingDeletion()"
+        class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 text-xs font-semibold transition-all duration-200 disabled:opacity-50 btn-press">
+        {{ cancelingDeletion() ? 'Cancelando...' : 'Cancelar eliminación' }}
+      </button>
+    </div>
+    }
     <main class="flex-1 overflow-y-auto p-6 animate-slide-up">
       <router-outlet />
     </main>

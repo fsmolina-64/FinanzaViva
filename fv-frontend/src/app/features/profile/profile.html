@@ -236,9 +236,15 @@
               {{ user()!.isVerified ? '✓ Verificado' : '⚠ Sin verificar' }}
             </span>
           </div>
-          <div class="flex justify-between items-center py-3">
+          <div class="flex justify-between items-center py-3 border-b border-default/40">
             <span class="text-muted">Miembro desde</span>
             <span class="text-primary font-medium">{{ user()!.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="flex justify-between items-center py-3">
+            <span class="text-muted">Último cambio de contraseña</span>
+            <span class="text-primary font-medium">
+              {{ user()!.passwordChangedAt ? (user()!.passwordChangedAt | date:'dd/MM/yyyy') : 'Nunca' }}
+            </span>
           </div>
         </div>
       </div>
@@ -282,6 +288,21 @@
             @if (passwordErrors().new) {
             <p class="text-danger text-xs mt-1">{{ passwordErrors().new }}</p>
             }
+            @if (passwordForm.newPassword) {
+            @let strength = getNewPasswordStrength();
+            <div class="mt-2">
+              <div class="flex gap-1">
+                @for (bar of strengthBars; track bar) {
+                <div class="h-1 flex-1 rounded-full transition-colors duration-300"
+                  [class]="bar < strength.score ? strengthBarClass(strength.score) : 'bg-elevated'"></div>
+                }
+              </div>
+              <p class="text-xs mt-1 font-medium" [class]="strengthTextClass(strength.score)">{{ strength.label }}</p>
+              @if (strength.suggestions.length) {
+              <p class="text-subtle text-xs mt-0.5">{{ strength.suggestions[0] }}</p>
+              }
+            </div>
+            }
           </div>
 
           <div>
@@ -308,6 +329,21 @@
         </div>
         }
       </div>
+      @if (user()!.deletionScheduledAt) {
+      <div class="bg-amber-500/8 border border-amber-500/25 rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <p class="text-amber-400 font-semibold text-sm">Eliminación programada</p>
+          <p class="text-subtle text-xs mt-0.5">
+            Tu cuenta se eliminará en {{ getDaysUntilDeletion() }} día{{ getDaysUntilDeletion() === 1 ? '' : 's' }}.
+          </p>
+        </div>
+        <button (click)="cancelDeletion()" [disabled]="cancelingDeletion()"
+          class="flex-shrink-0 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 hover:bg-amber-500/25 text-xs font-semibold transition-all duration-200 disabled:opacity-50 btn-press">
+          {{ cancelingDeletion() ? 'Cancelando...' : 'Cancelar eliminación' }}
+        </button>
+      </div>
+      }
+
       <div class="danger-zone">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-base">⚠️</span>
@@ -319,14 +355,19 @@
         <div class="danger-zone-item">
           <div>
             <p class="text-primary text-sm font-medium">Eliminar cuenta</p>
-            <p class="text-subtle text-xs mt-0.5">Borra todos tus datos de forma permanente</p>
+            <p class="text-subtle text-xs mt-0.5">
+              @if (user()!.deletionScheduledAt) {
+              Ya tienes una eliminación programada
+              } @else {
+              Programa el borrado permanente de tus datos en 30 días
+              }
+            </p>
           </div>
-          <button (click)="openDeleteModal()"
-            class="flex-shrink-0 px-4 py-2 rounded-xl border border-danger/40 text-danger hover:bg-danger/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer btn-press">
+          <button (click)="openDeleteModal()" [disabled]="!!user()!.deletionScheduledAt"
+            class="flex-shrink-0 px-4 py-2 rounded-xl border border-danger/40 text-danger hover:bg-danger/10 hover:border-red-400 text-xs font-semibold transition-all duration-200 cursor-pointer btn-press disabled:opacity-40 disabled:cursor-not-allowed">
             Eliminar
           </button>
         </div>
-
       </div>
 
     </div>
@@ -347,16 +388,28 @@
         ⚠️</div>
       <div>
         <h3 class="text-primary font-bold text-lg">Eliminar cuenta</h3>
-        <p class="text-muted text-xs mt-0.5">Esta acción no se puede deshacer</p>
+        <p class="text-muted text-xs mt-0.5">Tendrás 30 días para cancelar antes del borrado definitivo</p>
       </div>
     </div>
 
     <div class="bg-red-500/8 border border-red-500/20 rounded-xl p-3.5 mb-5 space-y-1.5">
-      <p class="text-red-300/80 text-xs">• Se eliminarán todos tus datos permanentemente</p>
-      <p class="text-red-300/80 text-xs">• Tu progreso, logros y estadísticas se perderán</p>
-      <p class="text-red-300/80 text-xs">• No podrás recuperar tu cuenta</p>
+      <p class="text-red-300/80 text-xs">• Tu cuenta quedará programada para eliminación en 30 días</p>
+      <p class="text-red-300/80 text-xs">• Puedes cancelarlo en cualquier momento desde Perfil → Cuenta</p>
+      <p class="text-red-300/80 text-xs">• Pasado ese plazo, todos tus datos se borran de forma permanente</p>
     </div>
 
+    <div class="mb-4">
+      <label class="text-muted text-xs mb-2 block">Confirma tu contraseña</label>
+      <div class="relative">
+        <input [value]="deletePassword()" (input)="deletePassword.set($any($event.target).value)"
+          [type]="showDeletePassword() ? 'text' : 'password'" autocomplete="current-password"
+          class="w-full bg-elevated/80 border border-strong text-primary text-sm rounded-xl px-3 py-2.5 pr-10 focus:outline-none focus:border-red-500/70 transition-colors" />
+        <button type="button" (click)="showDeletePassword.update(v => !v)"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary text-sm transition-colors btn-press">
+          {{ showDeletePassword() ? '🙈' : '👁️' }}
+        </button>
+      </div>
+    </div>
     <div class="mb-5">
       <label class="text-muted text-xs mb-2 block">
         Escribe <span class="text-danger font-mono font-bold tracking-wider">ELIMINAR</span> para confirmar
@@ -367,7 +420,7 @@
     </div>
 
     <div class="flex gap-2">
-      <button (click)="confirmDelete()" [disabled]="deleteConfirmText() !== 'ELIMINAR' || deleting()"
+      <button (click)="confirmDelete()" [disabled]="deleteConfirmText() !== 'ELIMINAR' || !deletePassword() || deleting()"
         class="flex-1 py-2.5 rounded-xl bg-danger hover:bg-danger/90 disabled:opacity-35 disabled:cursor-not-allowed text-primary text-sm font-semibold transition-all duration-200 btn-press">
         {{ deleting() ? 'Eliminando...' : 'Eliminar cuenta' }}
       </button>
