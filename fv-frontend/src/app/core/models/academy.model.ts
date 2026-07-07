@@ -38,6 +38,7 @@ export interface Lesson {
   xpReward: number;
   status: LessonStatus;
   order: number;
+  type?: string;
 }
 
 export interface AcademyModule {
@@ -50,6 +51,7 @@ export interface AcademyModule {
   xpReward: number;
   order: number;
   lessons?: Lesson[];
+  progress?: any;
 }
 
 export interface LessonCompleteResponse {

@@ -62,7 +62,7 @@ export class ModuleDetail implements OnInit {
 
     this.quizService.getQuizByModule(this.moduleId).subscribe({
       next: quizzes => {
-        if (quizzes.length) {
+        if (quizzes?.length) {
           const q = quizzes[0];
           this.quiz.set(q);
           this.loadQuizHistory(q.id);
@@ -79,7 +79,7 @@ export class ModuleDetail implements OnInit {
         this.history.set(h);
         this.quizPassed.set(h.some(e => e.passed));
       },
-      error: () => { }
+      error: () => { this.toast.error('Error al cargar el historial del quiz'); }
     });
   }
 
