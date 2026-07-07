@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import {
@@ -11,6 +11,8 @@ import {
   providedIn: 'root'
 })
 export class AchievementService {
+  rewards = signal<Reward[]>([]);
+
   constructor(private api: ApiService) {}
 
   getAchievements(): Observable<Achievement[]> {
@@ -19,6 +21,10 @@ export class AchievementService {
 
   getRewards(): Observable<Reward[]> {
     return this.api.get<Reward[]>('/achievements/rewards');
+  }
+
+  refreshRewards(): void {
+    this.api.get<Reward[]>('/achievements/rewards').subscribe(r => this.rewards.set(r));
   }
 
   equipReward(id: string): Observable<EquipRewardResponse> {

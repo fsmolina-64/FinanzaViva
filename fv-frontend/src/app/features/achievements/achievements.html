@@ -133,17 +133,17 @@
             <div>
                 <p class="text-muted text-xs">Desbloqueadas</p>
                 <p class="text-primary font-bold text-xl">
-                    {{ rewards().filter(r => r.unlocked).length }}
-                    <span class="text-subtle text-base font-normal">/ {{ rewards().length }}</span>
+                    {{ achievementService.rewards().filter(r => r.unlocked).length }}
+                    <span class="text-subtle text-base font-normal">/ {{ achievementService.rewards().length }}</span>
                 </p>
             </div>
             <div class="flex-1 h-2.5 bg-elevated rounded-full overflow-hidden">
                 <div class="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-1000"
-                    [style.width.%]="rewards().length ? (rewards().filter(r => r.unlocked).length / rewards().length) * 100 : 0">
+                    [style.width.%]="achievementService.rewards().length ? (achievementService.rewards().filter(r => r.unlocked).length / achievementService.rewards().length) * 100 : 0">
                 </div>
             </div>
             <p class="text-violet-400 font-bold text-sm flex-shrink-0">
-                {{ rewards().length ? ((rewards().filter(r => r.unlocked).length / rewards().length) * 100 |
+                {{ achievementService.rewards().length ? ((achievementService.rewards().filter(r => r.unlocked).length / achievementService.rewards().length) * 100 |
                 number:'1.0-0') : 0 }}%
             </p>
             @if (equippedCount() > 0) {
@@ -154,12 +154,12 @@
             }
         </div>
 
-        @if (rewards().length === 0) {
+        @if (achievementService.rewards().length === 0) {
         <p class="text-subtle text-sm text-center py-10">Sin recompensas disponibles</p>
         }
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            @for (r of rewards(); track r.id) {
+            @for (r of achievementService.rewards(); track r.id) {
 
             <div class="rounded-2xl p-4 border transition-all duration-300 card-hover hover-lift group shadow-sm" [ngClass]="r.isEquipped
         ? 'bg-emerald-950/20 border-emerald-500/50 shadow-lg shadow-emerald-500/8'

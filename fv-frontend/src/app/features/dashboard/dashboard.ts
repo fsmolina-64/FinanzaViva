@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { staggerCards } from '../../core/animations/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
+import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
 import { GamificationService } from '../../core/services/gamification.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -131,9 +131,9 @@ export class Dashboard implements OnInit {
 
 
   getQuizApprovalRate(): number {
-    const completed = this.userStats()?.quizzesCompleted ?? 0;
+    const total = this.userStats()?.totalQuizzes ?? 0;
     const passed = this.userStats()?.distinctPassedQuizzes ?? 0;
-    return completed ? Math.round((passed / completed) * 100) : 0;
+    return total ? Math.round((passed / total) * 100) : 0;
   }
 
   getWinRate(): number {

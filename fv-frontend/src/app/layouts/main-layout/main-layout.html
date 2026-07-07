@@ -63,13 +63,14 @@
       </button>
       <div class="flex items-center gap-4">
         @if (gamificationService.stats()) {
-        <div class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50"
+        <a routerLink="/streak-calendar"
+          class="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg border border-default/50 hover:border-amber-500/40 transition-colors cursor-pointer"
           [class.opacity-50]="gamificationService.streakStatus() === 'AT_RISK'">
           <span class="text-sm font-semibold" [class.text-amber-400]="gamificationService.streakStatus() !== 'AT_RISK'"
             [class.text-muted]="gamificationService.streakStatus() === 'AT_RISK'">
             Racha: {{ gamificationService.stats()!.currentStreak }}
           </span>
-        </div>
+        </a>
         }
         @if (authService.currentUser()) {
         <div class="flex items-center gap-2 cursor-pointer select-none group" [routerLink]="['/profile']">
