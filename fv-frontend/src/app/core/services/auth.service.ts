@@ -34,10 +34,7 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/auth/register', data).pipe(
-      tap(response => this.saveSession(response)),
-      switchMap(response => this.gamificationService.registerStreak().pipe(
-        map(() => response)
-      ))
+      tap(response => this.saveSession(response))
     );
   }
 

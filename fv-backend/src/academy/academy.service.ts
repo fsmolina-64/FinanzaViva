@@ -136,14 +136,19 @@ export class AcademyService {
       if (!lesson) throw new NotFoundException('Lección no encontrada');
 
       const module = lesson.module;
-      const idx = module.lessons.findIndex(l => l.id === lessonId);
-      if (idx > 0) {
-        const prevLesson = module.lessons[idx - 1];
-        const prevProgress = await tx.userLessonProgress.findUnique({
-          where: { userId_lessonId: { userId, lessonId: prevLesson.id } },
-        });
-        if (prevProgress?.status !== 'COMPLETED') {
-          throw new BadRequestException('Completa la lección anterior primero');
+      const wasEverCompleted = await tx.xpTransaction.findFirst({
+        where: { userId, source: XpSource.LESSON_COMPLETED, referenceId: lessonId },
+      });
+      if (!wasEverCompleted) {
+        const idx = module.lessons.findIndex(l => l.id === lessonId);
+        if (idx > 0) {
+          const prevLesson = module.lessons[idx - 1];
+          const prevProgress = await tx.userLessonProgress.findUnique({
+            where: { userId_lessonId: { userId, lessonId: prevLesson.id } },
+          });
+          if (prevProgress?.status !== 'COMPLETED') {
+            throw new BadRequestException('Completa la lección anterior primero');
+          }
         }
       }
 
@@ -267,7 +272,10 @@ export class AcademyService {
       }
 
       const nextLesson = !moduleCompleted
-        ? (module.lessons.find(l => l.order > lesson.order) ?? null)
+        ? await tx.lesson.findFirst({
+            where: { moduleId: module.id, order: { gt: lesson.order } },
+            orderBy: { order: 'asc' },
+          })
         : null;
 
       return {
@@ -289,55 +297,6 @@ export class AcademyService {
   }
 
   async resetLesson(userId: string, lessonId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const progress = await tx.userLessonProgress.findUnique({
-        where: { userId_lessonId: { userId, lessonId } },
-      });
-
-      if (!progress || progress.status !== 'COMPLETED') {
-        throw new BadRequestException('La lección no está completada');
-      }
-
-      await tx.userLessonProgress.update({
-        where: { userId_lessonId: { userId, lessonId } },
-        data: { status: 'NOT_STARTED', completedAt: null },
-      });
-
-      await tx.userStatistics.update({
-        where: { userId },
-        data: { lessonsCompleted: { decrement: 1 } },
-      });
-
-      const lesson = await tx.lesson.findUnique({
-        where: { id: lessonId },
-        include: { module: true },
-      });
-      if (!lesson) throw new NotFoundException('Lección no encontrada');
-
-      const completedCount = await tx.userLessonProgress.count({
-        where: { userId, status: 'COMPLETED', lesson: { moduleId: lesson.moduleId } },
-      });
-      const totalLessons = await tx.lesson.count({
-        where: { moduleId: lesson.moduleId },
-      });
-      const readingProgress = totalLessons > 0
-        ? Math.round((completedCount / totalLessons) * 100)
-        : 0;
-
-      const wasFullyCompleted = totalLessons > 0 && completedCount === totalLessons;
-
-      await tx.userModuleProgress.upsert({
-        where: { userId_moduleId: { userId, moduleId: lesson.moduleId } },
-        update: {
-          readingProgress,
-          ...(wasFullyCompleted
-            ? { status: 'COMPLETED', completedAt: new Date() }
-            : { status: 'IN_PROGRESS', completedAt: null }),
-        },
-        create: { userId, moduleId: lesson.moduleId, readingProgress },
-      });
-
-      return { success: true };
-    });
+    throw new BadRequestException('Las lecciones completadas no se pueden reiniciar');
   }
 }

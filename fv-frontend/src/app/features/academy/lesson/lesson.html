@@ -364,22 +364,12 @@
             }
         </button>
         } @else {
-        <div class="flex flex-col sm:flex-row items-stretch gap-3">
-            <div
-                class="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Lección ya completada
-            </div>
-            <button (click)="reset()" [disabled]="resetting()"
-                class="sm:w-auto px-5 py-3 rounded-2xl border border-strong text-muted text-sm font-medium hover:text-primary hover:border-strong disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 btn-press">
-                {{ resetting() ? 'Actualizando...' : 'Marcar como pendiente' }}
-            </button>
+        <div class="flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Lección ya completada
         </div>
-        <p class="text-subtle text-xs text-center">
-            El XP ya fue otorgado y no se duplicará si vuelves a completar.
-        </p>
         }
         }
 

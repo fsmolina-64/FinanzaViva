@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, computed, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { Subject, switchMap, takeUntil } from 'rxjs';
 import { AcademyService } from '../../../core/services/academy.service';
 import { GamificationService } from '../../../core/services/gamification.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -12,15 +13,15 @@ import { ContentBlock, Lesson, LessonCompleteResponse } from '../../../core/mode
   imports: [CommonModule, RouterModule],
   templateUrl: './lesson.html'
 })
-export class LessonComponent implements OnInit {
+export class LessonComponent implements OnInit, OnDestroy {
   lesson = signal<Lesson | null>(null);
   loading = signal(true);
   completing = signal(false);
-  resetting = signal(false);
   result = signal<LessonCompleteResponse | null>(null);
   revealedHints = signal<Set<number>>(new Set());
   scrollProgress = signal(0);
   moduleReadingProgress = signal(0);
+  private destroy$ = new Subject<void>();
 
   exerciseIndices = computed(() => {
     const map = new Map<number, number>();
@@ -49,8 +50,18 @@ export class LessonComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('lessonId')!;
-    this.academyService.getLesson(id).subscribe({
+    this.route.paramMap.pipe(
+      takeUntil(this.destroy$),
+      switchMap(params => {
+        const id = params.get('lessonId')!;
+        this.loading.set(true);
+        this.lesson.set(null);
+        this.result.set(null);
+        this.revealedHints.set(new Set());
+        this.scrollProgress.set(0);
+        return this.academyService.getLesson(id);
+      }),
+    ).subscribe({
       next: d => {
         this.lesson.set(d);
         this.loading.set(false);
@@ -58,6 +69,11 @@ export class LessonComponent implements OnInit {
       },
       error: () => { this.loading.set(false); this.toast.error('Error al cargar la lección'); }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   @HostListener('window:scroll')
@@ -122,23 +138,12 @@ export class LessonComponent implements OnInit {
     });
   }
 
-  reset(): void {
-    if (this.resetting() || !this.isCompleted) return;
-    this.resetting.set(true);
-    this.academyService.resetLesson(this.lesson()!.id).subscribe({
-      next: () => {
-        this.lesson.update(l => l ? { ...l, status: 'AVAILABLE' as const } : l);
-        this.result.set(null);
-        this.revealedHints.set(new Set());
-        this.resetting.set(false);
-        this.toast.info('Progreso de la lección reiniciado');
-      },
-      error: () => { this.resetting.set(false); this.toast.error('Error al reiniciar la lección'); }
-    });
-  }
-
   goNext(): void {
     const next = this.result()?.nextLesson;
-    this.router.navigate(next ? ['/academy/lesson', next.id] : [this.backLink]);
+    if (!next?.id) {
+      this.router.navigateByUrl(this.backLink);
+      return;
+    }
+    this.router.navigateByUrl(`/academy/lesson/${next.id}`);
   }
 }
