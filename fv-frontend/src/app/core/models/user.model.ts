@@ -5,6 +5,8 @@ export interface UserProfile {
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  passwordChangedAt: string | null;
+  deletionScheduledAt: string | null;
   profile: {
     id: string;
     userId: string;

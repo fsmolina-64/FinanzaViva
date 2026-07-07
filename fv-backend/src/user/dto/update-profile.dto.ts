@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsUrl, ValidateIf, MinLength, MaxLength } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -8,10 +8,13 @@ export class UpdateProfileDto {
   displayName?: string;
 
   @IsOptional()
-  @IsString()
+  @ValidateIf((o) => o.avatarUrl !== '')
+  @IsUrl({}, { message: 'URL de avatar inválida' })
+  @MaxLength(500)
   avatarUrl?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(280, { message: 'Máximo 280 caracteres' })
   bio?: string;
 }
