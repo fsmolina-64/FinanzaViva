@@ -1,3 +1,11 @@
+/* ── Tipografía de display (Space Grotesk) — solo para H1/H2/números grandes.
+   Inter sigue siendo la fuente de cuerpo en toda la app; esto es exclusivo
+   de este componente. Requiere agregar el import en index.html (ver más abajo). ── */
+.font-display {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+}
+
 /* ── Entrada escalonada del hero (headline, subtítulo, CTAs, trust row) ── */
 @keyframes fade-up-hero {
     from {
@@ -125,6 +133,24 @@
     background: #3B82F6;
 }
 
+/* ── Barra de progreso del tab activo — se reinicia por JS en cada cambio de slide
+   (ver restartTabProgress en landing.ts). Duración real via [style.animationDuration.ms]. ── */
+.tab-progress-fill {
+    animation-name: tab-progress-grow;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@keyframes tab-progress-grow {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
 /* ── Fondo sutil de puntos + grid en el hero ── */
 .matrix-bg {
     background-image:
@@ -132,6 +158,176 @@
         linear-gradient(rgba(174, 174, 178, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(174, 174, 178, 0.02) 1px, transparent 1px);
     background-size: 28px 28px, 56px 56px, 56px 56px;
+}
+
+/* ── Aurora: par de blobs desenfocados que derivan lento y constante detrás
+   del hero. Es la capa de "vida" ambiental — nunca se detiene, muy sutil. ── */
+.aurora-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.aurora-bg::before,
+.aurora-bg::after {
+    content: '';
+    position: absolute;
+    width: 55%;
+    padding-bottom: 55%;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.15;
+}
+
+.aurora-bg::before {
+    background: #3477E3;
+    top: -12%;
+    left: -8%;
+    animation: aurora-drift-a 22s ease-in-out infinite alternate;
+}
+
+.aurora-bg::after {
+    background: #C9A227;
+    bottom: -16%;
+    right: -10%;
+    animation: aurora-drift-b 27s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift-a {
+    from {
+        transform: translate(0, 0);
+    }
+
+    to {
+        transform: translate(6%, 8%);
+    }
+}
+
+@keyframes aurora-drift-b {
+    from {
+        transform: translate(0, 0);
+    }
+
+    to {
+        transform: translate(-8%, -6%);
+    }
+}
+
+/* ── Spotlight del hero: brillo que sigue el cursor (--spot-x/--spot-y los
+   escribe landing.ts en pointermove). Default centrado arriba para cuando
+   no hay puntero (touch) o antes del primer movimiento. ── */
+.spotlight {
+    position: relative;
+}
+
+.spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(500px circle at var(--spot-x, 50%) var(--spot-y, 15%), rgba(201, 162, 39, 0.10), transparent 60%);
+    pointer-events: none;
+}
+
+/* ── holo-card: borde holográfico rotando muy lento, constante. Antes esta
+   clase existía en el HTML pero no estaba definida en ningún .css del
+   proyecto — no hacía nada. Implementación real, sin gradients en JS,
+   sin @property (compatibilidad amplia): un pseudo-elemento gigante con
+   conic-gradient rotando por transform, tapado por un segundo pseudo-elemento
+   del color de la tarjeta que deja ver solo un anillo de ~1.5px. ── */
+.holo-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.holo-card::before {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    z-index: -1;
+    background: conic-gradient(from 0deg,
+            transparent 0deg, rgba(201, 162, 39, .55) 25deg, transparent 65deg 175deg,
+            rgba(52, 119, 227, .5) 205deg, transparent 245deg 355deg, rgba(201, 162, 39, .55) 360deg);
+    animation: holo-rotate 9s linear infinite;
+}
+
+.holo-card::after {
+    content: '';
+    position: absolute;
+    inset: 1.5px;
+    z-index: -1;
+    /* #2C2C2E = token `card` de tailwind.config.js — si ese token cambia, actualizar aquí también */
+    background-color: #2C2C2E;
+    border-radius: inherit;
+}
+
+@keyframes holo-rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Badges flotantes alrededor del mockup del hero: bob continuo con
+   duración/retraso distintos por badge para que se sienta orgánico, no
+   sincronizado. Van en un wrapper SIN overflow:hidden (hermano del
+   .holo-card), para poder asomarse fuera de la tarjeta. ── */
+@keyframes float-bob {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.float-badge {
+    animation: float-bob 5s ease-in-out infinite;
+}
+
+.float-badge.f2 {
+    animation-duration: 6.4s;
+    animation-delay: .4s;
+}
+
+.float-badge.f3 {
+    animation-duration: 5.7s;
+    animation-delay: 1.1s;
+}
+
+/* ── Línea conectora del camino de rangos: guiones que fluyen sin parar,
+   da sensación de progreso "en movimiento" incluso sin scroll. ── */
+.path-flow {
+    stroke-dasharray: 6 10;
+    animation: path-flow-move 1.2s linear infinite;
+}
+
+@keyframes path-flow-move {
+    to {
+        stroke-dashoffset: -32;
+    }
+}
+
+/* ── Dado del spotlight del Simulador: idle sutil, no gira 360°, solo
+   se "acomoda" — sensación de estar vivo sin distraer. ── */
+@keyframes dice-idle {
+
+    0%,
+    100% {
+        transform: rotate(-4deg);
+    }
+
+    50% {
+        transform: rotate(4deg);
+    }
+}
+
+.dice-idle {
+    animation: dice-idle 2.6s ease-in-out infinite;
+    transform-origin: 50% 80%;
 }
 
 /* ── Barra de progreso: crece de 0 al valor real al entrar en pantalla ── */
@@ -186,7 +382,14 @@
     .tilt-card,
     .bar-anim,
     .gold-underline path,
-    .current-tier-ring {
+    .current-tier-ring,
+    .aurora-bg::before,
+    .aurora-bg::after,
+    .holo-card::before,
+    .float-badge,
+    .path-flow,
+    .dice-idle,
+    .tab-progress-fill {
         animation: none !important;
         transition: none !important;
     }
@@ -203,5 +406,9 @@
 
     .gold-underline path {
         stroke-dashoffset: 0;
+    }
+
+    .spotlight::before {
+        display: none;
     }
 }

@@ -1,726 +1,577 @@
-<!-- ═══ NAVBAR ════════════════════════════════════════════════════════ -->
-<nav [class]="scrolled()
-  ? 'fixed inset-x-0 top-0 z-50 bg-app/95 backdrop-blur-md border-b border-default shadow-lg shadow-black/20 transition-all duration-300'
-  : 'fixed inset-x-0 top-0 z-50 bg-app/70 backdrop-blur-md border-b border-transparent transition-all duration-300'">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-            <img src="/logo-oficial.png" alt="FinanzaViva" class="w-8 h-8 object-contain">
-            <span class="text-lg font-extrabold tracking-tight">
-                <span class="text-gold">Finanza</span><span class="text-primary">Viva</span>
-            </span>
+<!-- ═══════════════ NAVBAR ═══════════════ -->
+<nav class="fixed top-0 inset-x-0 z-50 transition-all duration-300" [class.bg-app/80]="scrolled()"
+    [class.backdrop-blur-xl]="scrolled()" [class.border-b]="scrolled()" [class.border-default/60]="scrolled()">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a routerLink="/" class="flex items-center gap-2">
+            <img ngSrc="/logo-oficial.png" width="64" height="64" priority alt="FinanzaViva"
+                class="w-8 h-8 object-contain">
+            <span class="font-display font-semibold text-primary">Finanza<span class="text-gold">Viva</span></span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-8 text-sm text-muted">
+            <a href="#como-funciona" class="hover:text-primary transition-colors">Cómo funciona</a>
+            <a href="#progresion" class="hover:text-primary transition-colors">Progresión</a>
+            <a href="https://github.com/fsmolina-64/FinanzaViva" target="_blank" rel="noopener"
+                class="hover:text-primary transition-colors">GitHub</a>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
-            <a href="https://github.com/fsmolina-64/FinanzaViva" target="_blank" rel="noopener noreferrer"
-                aria-label="Ver repositorio en GitHub"
-                class="p-2 rounded-lg text-muted hover:text-primary hover:bg-card transition-all duration-200">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                        d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                </svg>
-            </a>
+
+        <div class="flex items-center gap-3">
             <a routerLink="/auth/login"
-                class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-default/60 text-sm font-medium text-primary-light hover:bg-elevated hover:border-blue-500/40 transition-all duration-200 btn-press">
-                <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-                Iniciar sesión
-            </a>
+                class="hidden sm:inline text-sm text-muted hover:text-primary transition-colors px-3 py-2">Iniciar
+                sesión</a>
             <a routerLink="/auth/register"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 border border-blue-500/60 text-sm font-bold text-primary hover:bg-blue-500 transition-all duration-200 btn-press">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                class="btn-press hover-glow inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
                 Crear cuenta
             </a>
         </div>
     </div>
 </nav>
 
-<!-- ═══ HERO ═══════════════════════════════════════════════════════════ -->
-<section
-    class="min-h-screen bg-app matrix-bg flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center relative overflow-hidden">
+<!-- ═══════════════ HERO ═══════════════ -->
+<section #heroEl class="spotlight relative pt-36 pb-24 px-6 overflow-hidden">
+    <div class="matrix-bg absolute inset-0"></div>
+    <div class="aurora-bg"></div>
 
-    <div
-        class="anim-1 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-gold/25 text-primary-light text-sm font-medium mb-8">
-        <svg class="w-3.5 h-3.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                d="M6 12h3m-1.5-1.5v3M14.5 13.5h.01M17 11.5h.01M8 8h8a4 4 0 014 4v2a3 3 0 01-3 3c-.7 0-1.36-.32-1.8-.86L14 15h-4l-1.2 1.64A2.25 2.25 0 016.99 17.5 3 3 0 014 14.5v-2a4 4 0 014-4z" />
-        </svg>
-        <span>Educación Financiera Gamificada</span>
-        <span class="w-1.5 h-1.5 rounded-full bg-gold block"></span>
-    </div>
+    <div class="relative max-w-4xl mx-auto text-center">
+        <div
+            class="anim-1 inline-flex items-center gap-2 bg-card border border-default/60 rounded-full px-4 py-1.5 text-xs text-muted mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse-soft"></span>
+            Educación financiera gamificada
+        </div>
 
-    <h1
-        class="anim-2 text-5xl sm:text-6xl lg:text-7xl font-extrabold text-primary max-w-3xl leading-[1.06] tracking-tight">
-        Aprende finanzas.<br>
-        <span class="relative inline-block text-gold">
-            Gana logros.
-            <svg class="gold-underline absolute left-0 -bottom-1 w-full h-2.5 text-gold/80" viewBox="0 0 200 12"
-                preserveAspectRatio="none" fill="none" aria-hidden="true">
-                <path d="M2 8 Q 50 2 100 6 T 198 5" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-            </svg>
-        </span><br>
-        Domina tu dinero.
-    </h1>
-
-    <p class="anim-3 text-muted text-lg sm:text-xl max-w-lg mt-6 leading-relaxed">
-        Academia financiera · Simulador de inversiones · Gestión real de tus finanzas.<br>
-        Todo en un solo lugar, sin costo.
-    </p>
-
-    <div class="anim-4 mt-9 flex flex-col sm:flex-row gap-3 justify-center">
-        <a routerLink="/auth/register"
-            class="flex items-center gap-3 px-6 py-3.5 rounded-xl bg-blue-600 border border-blue-500/60 text-primary font-bold text-base transition-all duration-200 hover:bg-blue-500 hover:scale-[1.02] btn-press hover-glow">
-            <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <h1 class="anim-2 font-display text-4xl sm:text-5xl md:text-6xl font-semibold text-primary leading-[1.1] mb-6">
+            Aprende finanzas.
+            <span class="relative inline-block text-gold">
+                Gana logros.
+                <svg class="gold-underline absolute left-0 -bottom-2 w-full" height="10" viewBox="0 0 240 10"
+                    fill="none" preserveAspectRatio="none">
+                    <path d="M2 6C40 2 200 2 238 6" stroke="#C9A227" stroke-width="3" stroke-linecap="round" />
                 </svg>
-            </div>
-            Empieza gratis
-        </a>
-        <a routerLink="/auth/login"
-            class="flex items-center gap-3 px-6 py-3.5 rounded-xl bg-card border border-default/60 text-primary font-medium text-base transition-all duration-200 hover:bg-elevated hover:border-blue-500/40 btn-press hover-lift">
-            <div class="w-8 h-8 rounded-lg bg-elevated flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </span>
+            Domina tu dinero.
+        </h1>
+
+        <p class="anim-3 text-lg text-muted max-w-2xl mx-auto mb-9 leading-relaxed">
+            Academia financiera, simulador de decisiones y control real de tus finanzas —
+            todo en un solo lugar, sin costo.
+        </p>
+
+        <div class="anim-4 flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+            <a routerLink="/auth/register"
+                class="btn-press hover-glow w-full sm:w-auto bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-medium px-7 py-3 rounded-xl transition-colors">
+                Empieza gratis
+            </a>
+            <a routerLink="/auth/login"
+                class="hover-lift w-full sm:w-auto bg-card hover:bg-elevated border border-default/60 text-primary font-medium px-7 py-3 rounded-xl transition-colors">
+                Iniciar sesión
+            </a>
+        </div>
+
+        <div class="anim-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-subtle mb-16">
+            <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-            </div>
-            Iniciar sesión
-        </a>
+                Sin tarjeta de crédito
+            </span>
+            <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                100% gratuito
+            </span>
+            <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Acceso inmediato
+            </span>
+        </div>
     </div>
 
-    <div class="anim-4 mt-5 flex flex-wrap justify-center gap-5 text-xs text-subtle">
-        <span class="flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                stroke-width="2.4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            Sin tarjeta de crédito
-        </span>
-        <span class="flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                stroke-width="2.4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            100% gratuito
-        </span>
-        <span class="flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                stroke-width="2.4">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            Acceso inmediato
-        </span>
-    </div>
-
-    <!-- Mockup compacto del dashboard -->
-    <div class="anim-mockup mt-14 w-full max-w-3xl perspective-wrap">
-        <div class="bg-card rounded-2xl border border-default/60 overflow-hidden shadow-2xl shadow-black/60 text-left tilt-card"
-            #tiltEl>
-            <div class="flex items-center justify-between px-5 py-3.5 border-b border-default bg-app/60">
-                <div class="flex items-center gap-2.5">
+    <!-- Mockup del hero — wrapper SIN overflow:hidden para que los badges floten fuera -->
+    <div class="perspective-wrap relative max-w-lg mx-auto">
+        <div #tiltEl class="tilt-card anim-mockup relative">
+            <div class="holo-card rounded-2xl shadow-2xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div
+                            class="w-9 h-9 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400 text-xs font-semibold">
+                            UO</div>
+                        <div>
+                            <p class="text-sm font-medium text-primary">Usuario One</p>
+                            <p class="text-xs text-blue-400">Nivel 2 · ROOKIE</p>
+                        </div>
+                    </div>
                     <div
-                        class="w-7 h-7 rounded-full bg-elevated border border-default flex items-center justify-center text-primary text-xs font-bold">
-                        S</div>
-                    <div>
-                        <div class="text-primary font-bold text-sm">Usuario One</div>
-                        <div class="text-xs"><span
-                                class="bg-blue-500/15 text-blue-400 border border-blue-500/25 px-2 py-0.5 rounded-full font-semibold">Nivel
-                                2 · ROOKIE</span></div>
+                        class="flex items-center gap-1 bg-accent-orange/10 border border-accent-orange/20 rounded-full px-2.5 py-1 text-xs text-accent-orange font-medium">
+                        <img ngSrc="/llamaprendida.png" width="48" height="48" alt=""
+                            class="w-3.5 h-3.5 object-contain animate-pulse-soft">
+                        Racha 3
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span
-                        class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/25 text-xs font-semibold">
-                        <img src="/llamaprendida.png" alt="Racha" class="w-3.5 h-3.5 object-contain">
-                        Racha: 3
-                    </span>
-                    <span
-                        class="px-2.5 py-1 rounded-full bg-success/15 text-success border border-success/25 text-xs font-bold">450
-                        XP</span>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-muted mb-1.5">
+                        <span>350 / 500 XP para nivel 3</span>
+                        <span class="text-gold font-medium">70%</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-elevated overflow-hidden relative">
+                        <div class="bar-anim h-full rounded-full bg-gradient-to-r from-accent-blue to-success"
+                            style="width: 70%"></div>
+                        <div class="absolute inset-0 animate-shimmer opacity-40"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2">
+                    <div class="bg-elevated/60 rounded-xl p-2 text-center">
+                        <img ngSrc="/academia.png" width="96" height="96" alt=""
+                            class="w-6 h-6 object-contain mx-auto mb-1">
+                        <p class="text-[10px] text-muted">3/7 mód.</p>
+                    </div>
+                    <div class="bg-elevated/60 rounded-xl p-2 text-center">
+                        <img ngSrc="/billetera-premium.png" width="96" height="96" alt=""
+                            class="w-6 h-6 object-contain mx-auto mb-1">
+                        <p class="text-[10px] text-muted">$54</p>
+                    </div>
+                    <div class="bg-elevated/60 rounded-xl p-2 text-center">
+                        <img ngSrc="/simulador.png" width="96" height="96" alt=""
+                            class="w-6 h-6 object-contain mx-auto mb-1">
+                        <p class="text-[10px] text-muted">2 vict.</p>
+                    </div>
+                    <div class="bg-elevated/60 rounded-xl p-2 text-center">
+                        <img ngSrc="/logro.png" width="96" height="96" alt=""
+                            class="w-6 h-6 object-contain mx-auto mb-1">
+                        <p class="text-[10px] text-muted">5/23</p>
+                    </div>
                 </div>
             </div>
-            <div class="px-5 py-3 border-b border-default">
-                <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-muted text-xs">350 / 500 XP para Nivel 3</span>
-                    <span class="text-primary text-xs font-bold">70%</span>
-                </div>
-                <div class="h-2 bg-elevated rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-accent-blue to-success bar-anim"
-                        style="width:70%"></div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
-                <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 flex flex-col gap-1.5 hover-lift">
-                    <img src="/academia.png" class="w-7 h-7 object-contain" alt="Academia">
-                    <div class="text-primary font-semibold text-sm">Academia</div>
-                    <div class="text-muted text-xs">3/7 módulos</div>
-                </div>
-                <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 flex flex-col gap-1.5 hover-lift">
-                    <img src="/billetera-premium.png" class="w-7 h-7 object-contain" alt="Finanzas">
-                    <div class="text-primary font-semibold text-sm">Finanzas</div>
-                    <div class="text-muted text-xs">$54 balance</div>
-                </div>
-                <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 flex flex-col gap-1.5 hover-lift">
-                    <img src="/simulador.png" class="w-7 h-7 object-contain" alt="Simulador">
-                    <div class="text-primary font-semibold text-sm">Simulador</div>
-                    <div class="text-muted text-xs">2 victorias</div>
-                </div>
-                <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 flex flex-col gap-1.5 hover-lift">
-                    <img src="/logro.png" class="w-7 h-7 object-contain" alt="Logros">
-                    <div class="text-primary font-semibold text-sm">Logros</div>
-                    <div class="text-muted text-xs">5/23 logros</div>
-                </div>
-            </div>
+        </div>
+
+        <!-- Badges flotantes — hermanos del holo-card, se asoman fuera del borde -->
+        <div
+            class="float-badge f2 absolute -top-4 -right-5 bg-card border border-gold/30 rounded-xl px-3 py-1.5 shadow-lg hidden sm:flex items-center gap-1.5 text-xs font-medium text-gold">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            +130 XP
+        </div>
+        <div
+            class="float-badge f3 absolute top-1/3 -left-6 bg-card border border-success/30 rounded-xl px-3 py-1.5 shadow-lg hidden sm:flex items-center gap-1.5 text-xs font-medium text-success">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Lección completa
+        </div>
+        <div
+            class="float-badge absolute -bottom-5 right-6 bg-card border border-default/60 rounded-xl px-3 py-1.5 shadow-lg hidden md:flex items-center gap-1.5 text-xs font-medium text-primary-light">
+            <img ngSrc="/ranking.png" width="48" height="48" alt="" class="w-3.5 h-3.5 object-contain">
+            #142 ranking
         </div>
     </div>
 </section>
 
-<!-- ═══ CARRUSEL — QUÉ INCLUYE LA APP ═══════════════════════════════ -->
-<section class="bg-app py-20 px-6 border-t border-default/50">
-    <div class="max-w-5xl mx-auto">
+<!-- ═══════════════ HOOK + STATS ═══════════════ -->
+<section #statsEl class="px-6 py-16 border-y border-default/40 bg-card/40">
+    <div class="max-w-4xl mx-auto text-center">
+        <p #revealEl class="reveal text-muted text-base mb-10">
+            En América Latina, <span class="text-primary font-medium">7 de cada 10 jóvenes</span> no tiene las bases
+            para manejar su dinero. En Ecuador el panorama es igual o peor. Nosotros lo convertimos en un juego que sí
+            se aprende.
+        </p>
 
-        <div class="text-center mb-10 reveal" #revealEl>
-            <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-card border border-default/60 text-primary-light text-xs font-medium mb-4">
-                <svg class="w-3.5 h-3.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    stroke-width="1.6">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.5.4.8 1 .8 1.7v.5h5.6v-.5c0-.7.3-1.3.8-1.7A6 6 0 0012 3z" />
-                </svg>
-                ¿Qué incluye FinanzaViva?
-            </span>
-            <h2 class="text-3xl sm:text-4xl font-bold text-primary mb-3">
-                Todo lo que necesitas<br><span class="text-gold">en un solo lugar</span>
-            </h2>
-            <p class="text-muted max-w-xl mx-auto text-sm">
-                Desliza para explorar las 4 áreas principales de la app.
-            </p>
-        </div>
-
-        <!-- Tabs navegación carrusel -->
-        <div class="flex items-center justify-center gap-1 p-1 bg-card rounded-xl border border-default/60 w-fit mx-auto mb-8 reveal"
-            #revealEl>
-            @for (slide of slides; track slide.tab; let i = $index) {
-            <button (click)="goToSlide(i)" [attr.aria-pressed]="i === currentSlide()"
-                [class]="i === currentSlide()
-                  ? 'px-4 py-2 rounded-lg bg-blue-600 text-primary text-xs font-bold transition-all duration-200 flex items-center gap-1.5 btn-press'
-                  : 'px-4 py-2 rounded-lg text-xs text-muted font-medium hover:text-primary transition-all duration-200 flex items-center gap-1.5 btn-press'">
-                <img [src]="slide.img" class="w-4 h-4 object-contain" alt="">
-                {{ slide.tab }}
-            </button>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            @for (stat of stats; track stat.label; let i = $index) {
+            <div #revealEl [class]="'reveal d' + (i + 1)">
+                <p class="font-display text-3xl md:text-4xl font-semibold text-primary mb-1">{{ statValues[i]() }}</p>
+                <p class="text-xs text-subtle">{{ stat.label }}</p>
+            </div>
             }
         </div>
+    </div>
+</section>
 
-        <!-- Slide area -->
-        <div class="reveal perspective-wrap" #revealEl>
-            <div class="bg-card rounded-2xl border border-default/60 overflow-hidden shadow-2xl shadow-black/60 tilt-card"
-                #tiltEl>
-                <div class="carousel-viewport" [style.height.px]="trackHeightPx() || null">
-                    <div class="carousel-track" [style.transform]="'translateX(-' + (currentSlide() * 100) + '%)'">
+<!-- ═══════════════ CARRUSEL "QUÉ INCLUYE" ═══════════════ -->
+<section class="px-6 py-24">
+    <div class="max-w-5xl mx-auto">
+        <div #revealEl class="reveal text-center mb-12">
+            <span class="text-xs font-medium text-gold uppercase tracking-wider">¿Qué incluye FinanzaViva?</span>
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mt-3 mb-3">
+                Todo lo que necesitas <span class="text-gold">en un solo lugar</span>
+            </h2>
+            <p class="text-muted">Desliza para explorar las 4 áreas principales de la app.</p>
+        </div>
 
-                        <!-- Slide: Dashboard -->
-                        <div class="carousel-slide" #slideEl>
-                            <div class="bg-app/80 px-6 py-4 border-b border-default flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-8 h-8 rounded-full bg-elevated border border-default flex items-center justify-center text-primary font-bold text-sm">
-                                        S</div>
-                                    <div>
-                                        <div class="text-primary font-bold text-sm">Dashboard</div>
-                                        <div class="text-muted text-xs">Tu centro de control financiero</div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-orange/10 text-accent-orange border border-accent-orange/25 text-xs font-semibold">
-                                        <img src="/llamaprendida.png" alt="Racha" class="w-3.5 h-3.5 object-contain">
-                                        Racha: 5
-                                    </span>
-                                    <span
-                                        class="px-2.5 py-1 rounded-full bg-success/15 text-success border border-success/25 text-xs font-bold">1,250
-                                        XP</span>
-                                </div>
-                            </div>
-                            <div class="p-5 grid sm:grid-cols-3 gap-4">
-                                <div class="sm:col-span-1 flex flex-col gap-3">
-                                    <div class="bg-app/70 rounded-xl p-4 border border-default/60">
-                                        <div class="flex justify-between items-center mb-2">
-                                            <span class="text-primary text-xs font-semibold">Nivel 3 → 4</span>
-                                            <span class="text-primary text-xs font-bold">75%</span>
-                                        </div>
-                                        <div class="h-2 bg-elevated rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full bg-gradient-to-r from-accent-blue to-success bar-anim"
-                                                style="width:75%"></div>
-                                        </div>
-                                        <div class="text-subtle text-[10px] mt-1.5">750 / 1000 XP para siguiente nivel
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex flex-col items-center gap-1.5">
-                                            <img src="/academia.png" class="w-6 h-6 object-contain" alt="Academia">
-                                            <span class="text-primary text-[10px] font-semibold">Academia</span>
-                                        </div>
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex flex-col items-center gap-1.5">
-                                            <img src="/billetera-premium.png" class="w-6 h-6 object-contain"
-                                                alt="Finanzas">
-                                            <span class="text-primary text-[10px] font-semibold">Finanzas</span>
-                                        </div>
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex flex-col items-center gap-1.5">
-                                            <img src="/simulador.png" class="w-6 h-6 object-contain" alt="Simulador">
-                                            <span class="text-primary text-[10px] font-semibold">Simulador</span>
-                                        </div>
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex flex-col items-center gap-1.5">
-                                            <img src="/logro.png" class="w-6 h-6 object-contain" alt="Logros">
-                                            <span class="text-primary text-[10px] font-semibold">Logros</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="sm:col-span-2 flex flex-col gap-3">
-                                    <div class="text-xs text-subtle font-semibold uppercase tracking-widest">Actividad
-                                        Reciente</div>
-                                    <div class="flex flex-col gap-2">
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-elevated border border-default flex items-center justify-center flex-shrink-0 p-1">
-                                                <img src="/academia.png" class="w-full h-full object-contain"
-                                                    alt="Academia"></div>
-                                            <div class="flex-1 min-w-0">
-                                                <div class="text-primary text-xs font-semibold">Módulo 3 completado
-                                                </div>
-                                                <div class="text-subtle text-[10px]">Crédito y Deuda · hace 2h</div>
-                                            </div>
-                                            <span class="text-success text-xs font-bold">+130 XP</span>
-                                        </div>
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-elevated border border-default flex items-center justify-center flex-shrink-0 p-1">
-                                                <img src="/simulador.png" class="w-full h-full object-contain"
-                                                    alt="Simulador"></div>
-                                            <div class="flex-1 min-w-0">
-                                                <div class="text-primary text-xs font-semibold">Victoria en Simulador
-                                                </div>
-                                                <div class="text-subtle text-[10px]">Modo Solo · hace 5h</div>
-                                            </div>
-                                            <span class="text-success text-xs font-bold">+80 XP</span>
-                                        </div>
-                                        <div
-                                            class="bg-app/70 rounded-xl p-3 border border-default/60 flex items-center gap-3">
-                                            <div
-                                                class="w-8 h-8 rounded-lg bg-elevated border border-default flex items-center justify-center flex-shrink-0 p-1">
-                                                <img src="/logro.png" class="w-full h-full object-contain" alt="Logros">
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <div class="text-primary text-xs font-semibold">Logro desbloqueado</div>
-                                                <div class="text-subtle text-[10px]">"Estudiante" · ayer</div>
-                                            </div>
-                                            <span class="text-success text-xs font-bold">+50 XP</span>
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="bg-app/70 rounded-xl p-3.5 border border-default/60 flex items-center justify-between">
-                                        <div class="text-center">
-                                            <div class="text-success font-bold text-sm">$2,450</div>
-                                            <div class="text-subtle text-[10px]">Ingresos</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-danger font-bold text-sm">$1,320</div>
-                                            <div class="text-subtle text-[10px]">Gastos</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-primary font-bold text-sm">$1,130</div>
-                                            <div class="text-subtle text-[10px]">Ahorro</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="text-primary font-bold text-sm">5/23</div>
-                                            <div class="text-subtle text-[10px]">Logros</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Slide: Academia -->
-                        <div class="carousel-slide" #slideEl>
-                            <div class="bg-app/80 px-6 py-4 border-b border-default">
-                                <div class="text-primary font-bold text-sm">Academia Financiera</div>
-                                <div class="text-muted text-xs">7 módulos · 28 lecciones · Aprende a tu ritmo</div>
-                            </div>
-                            <div class="p-5 flex flex-col gap-3">
-                                @for (mod of academyModules; track mod.name; let i = $index) {
-                                <div
-                                    class="bg-app/60 rounded-xl p-4 border border-default/60 flex items-center gap-4 hover-lift">
-                                    <div
-                                        class="w-9 h-9 rounded-lg bg-elevated border border-default flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                                        {{ i + 1 }}</div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-primary text-sm font-semibold">{{ mod.name }}</div>
-                                        <div class="text-muted text-xs mt-0.5">4 lecciones · {{ mod.pct }}%</div>
-                                        <div class="h-1 bg-elevated rounded-full mt-2 overflow-hidden">
-                                            <div class="h-1 rounded-full bg-gradient-to-r from-accent-blue to-success bar-anim"
-                                                [style.width.%]="mod.pct"></div>
-                                        </div>
-                                    </div>
-                                    @if (mod.done) {
-                                    <span
-                                        class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/15 text-success text-[11px] font-semibold flex-shrink-0">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                            stroke-width="3">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        +{{ mod.xp }} XP
-                                    </span>
-                                    } @else {
-                                    <span
-                                        class="px-2 py-0.5 rounded-full bg-elevated border border-default text-primary-light text-[11px] font-semibold flex-shrink-0">
-                                        +{{ mod.xp }} XP
-                                    </span>
-                                    }
-                                </div>
-                                }
-                            </div>
-                        </div>
-
-                        <!-- Slide: Simulador -->
-                        <div class="carousel-slide" #slideEl>
-                            <div class="bg-app/80 px-6 py-4 border-b border-default">
-                                <div class="text-primary font-bold text-sm">Simulador de Decisiones Financieras</div>
-                                <div class="text-muted text-xs">Practica sin arriesgar dinero real · Bots IA ·
-                                    Multijugador</div>
-                            </div>
-                            <div class="p-5">
-                                <div class="text-xs text-subtle font-semibold uppercase tracking-widest mb-4">Elige tu
-                                    modo de juego</div>
-                                <div class="grid grid-cols-2 gap-3 mb-5">
-                                    <div
-                                        class="px-4 py-4 rounded-xl border border-gold/30 bg-gold/5 relative hover-lift">
-                                        <div
-                                            class="absolute top-2 right-2 px-1.5 py-0.5 rounded border border-gold/50 text-gold text-[9px] font-bold">
-                                            RECOMENDADO</div>
-                                        <div
-                                            class="w-9 h-9 rounded-lg bg-elevated border border-default flex items-center justify-center mb-3">
-                                            <svg class="w-5 h-5 text-primary-light" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-primary font-semibold text-sm">Solo</div>
-                                        <div class="text-muted text-xs mt-0.5">Tú vs bots IA</div>
-                                    </div>
-                                    <div class="px-4 py-4 rounded-xl border border-default/60 hover-lift">
-                                        <div
-                                            class="w-9 h-9 rounded-lg bg-elevated border border-default flex items-center justify-center mb-3">
-                                            <svg class="w-5 h-5 text-primary-light" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-primary font-semibold text-sm">Multijugador</div>
-                                        <div class="text-muted text-xs mt-0.5">Contra amigos</div>
-                                    </div>
-                                    <div class="px-4 py-4 rounded-xl border border-default/60 hover-lift">
-                                        <div
-                                            class="w-9 h-9 rounded-lg bg-elevated border border-default flex items-center justify-center mb-3">
-                                            <svg class="w-5 h-5 text-primary-light" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-primary font-semibold text-sm">Mixto</div>
-                                        <div class="text-muted text-xs mt-0.5">Humanos y bots</div>
-                                    </div>
-                                    <div class="px-4 py-4 rounded-xl border border-default/60 hover-lift">
-                                        <div
-                                            class="w-9 h-9 rounded-lg bg-elevated border border-default flex items-center justify-center mb-3">
-                                            <svg class="w-5 h-5 text-primary-light" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </div>
-                                        <div class="text-primary font-semibold text-sm">Observar</div>
-                                        <div class="text-muted text-xs mt-0.5">Mira las IAs jugar</div>
-                                    </div>
-                                </div>
-                                <div class="text-primary-light text-xs font-semibold mb-3">Duración de la partida</div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <div class="py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 text-center">
-                                        <div class="text-blue-400 text-xs font-semibold">Rápido</div>
-                                        <div class="text-muted text-[10px]">3 rondas</div>
-                                    </div>
-                                    <div class="py-2.5 rounded-xl border border-default/60 text-center">
-                                        <div class="text-primary-light text-xs font-medium">Estándar</div>
-                                        <div class="text-subtle text-[10px]">5 rondas</div>
-                                    </div>
-                                    <div class="py-2.5 rounded-xl border border-default/60 text-center">
-                                        <div class="text-primary-light text-xs font-medium">Intensivo</div>
-                                        <div class="text-subtle text-[10px]">8 rondas</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Slide: Finanzas -->
-                        <div class="carousel-slide" #slideEl>
-                            <div class="bg-app/80 px-6 py-4 border-b border-default">
-                                <div class="text-primary font-bold text-sm">Mis Finanzas</div>
-                                <div class="text-muted text-xs">Ingresos · Gastos · Presupuestos · Metas de ahorro · PDF
-                                </div>
-                            </div>
-                            <div class="p-5">
-                                <div class="grid grid-cols-3 gap-3 mb-4">
-                                    <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 text-center">
-                                        <div class="text-success font-bold text-base">$2,450</div>
-                                        <div class="text-subtle text-xs mt-0.5">Ingresos</div>
-                                    </div>
-                                    <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 text-center">
-                                        <div class="text-danger font-bold text-base">$1,320</div>
-                                        <div class="text-subtle text-xs mt-0.5">Gastos</div>
-                                    </div>
-                                    <div class="bg-app/60 rounded-xl p-3.5 border border-default/60 text-center">
-                                        <div class="text-primary font-bold text-base">$1,130</div>
-                                        <div class="text-subtle text-xs mt-0.5">Ahorro</div>
-                                    </div>
-                                </div>
-                                <div class="text-xs text-subtle font-semibold uppercase tracking-widest mb-3">Últimas
-                                    transacciones</div>
-                                <div class="flex flex-col gap-2 mb-4">
-                                    <div
-                                        class="flex items-center gap-3 py-2.5 px-3 bg-app/60 border border-default/60 rounded-xl">
-                                        <div
-                                            class="w-7 h-7 rounded-full bg-accent-purple/10 border border-accent-purple/30 flex items-center justify-center text-accent-purple text-xs font-bold flex-shrink-0">
-                                            *</div>
-                                        <div class="flex-1">
-                                            <div class="text-primary text-xs font-medium">Balance JEP</div>
-                                            <div class="text-subtle text-[10px]">23 Jun · Ajuste inicial</div>
-                                        </div>
-                                        <span class="text-accent-purple text-xs font-semibold">+$2.00</span>
-                                    </div>
-                                    <div
-                                        class="flex items-center gap-3 py-2.5 px-3 bg-app/60 border border-default/60 rounded-xl">
-                                        <div
-                                            class="w-7 h-7 rounded-full bg-accent-purple/10 border border-accent-purple/30 flex items-center justify-center text-accent-purple text-xs font-bold flex-shrink-0">
-                                            *</div>
-                                        <div class="flex-1">
-                                            <div class="text-primary text-xs font-medium">Balance billetera digital
-                                            </div>
-                                            <div class="text-subtle text-[10px]">23 Jun · Ajuste inicial</div>
-                                        </div>
-                                        <span class="text-accent-purple text-xs font-semibold">$52.00</span>
-                                    </div>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between px-4 py-3 rounded-xl bg-accent-pink/10 border border-accent-pink/25">
-                                    <div>
-                                        <div class="text-primary text-xs font-medium">Meta: Fondo de emergencia</div>
-                                        <div class="text-muted text-[10px] mt-0.5">$0 / $1,000 · 0% completado</div>
-                                    </div>
-                                    <button
-                                        class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-primary text-[10px] font-bold rounded-lg transition-all duration-200 btn-press">Ahorrar
-                                        →</button>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div><!-- /carousel-track -->
-                </div><!-- /carousel-viewport -->
-            </div><!-- /card -->
-
-            <!-- Dots y controles -->
-            <div class="flex items-center justify-center gap-3 mt-6">
-                <button (click)="prevSlide()" aria-label="Slide anterior"
-                    class="w-8 h-8 rounded-full bg-card border border-default/60 flex items-center justify-center text-muted hover:text-primary hover:bg-elevated transition-all duration-200 btn-press hover-lift">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </button>
-                <div class="flex items-center gap-2">
-                    @for (s of slides; track s.tab; let i = $index) {
-                    <button (click)="goToSlide(i)" [class]="'carousel-dot' + (i === currentSlide() ? ' active' : '')"
-                        [attr.aria-label]="'Ver slide ' + s.tab"></button>
+        <div #revealEl class="reveal d1 holo-card rounded-2xl p-1.5 max-w-2xl mx-auto">
+            <div class="bg-card/60 rounded-xl p-2">
+                <div class="flex gap-1 mb-1">
+                    @for (slide of slides; track slide.tab; let i = $index) {
+                    <button (click)="goToSlide(i)"
+                        class="btn-press flex-1 relative overflow-hidden flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-medium transition-colors"
+                        [class.bg-elevated]="currentSlide() === i" [class.text-primary]="currentSlide() === i"
+                        [class.text-subtle]="currentSlide() !== i">
+                        <img [ngSrc]="slide.img" width="96" height="96" alt="" class="w-4 h-4 object-contain">
+                        {{ slide.tab }}
+                        @if (currentSlide() === i) {
+                        <div #tabProgressEl class="tab-progress-fill absolute bottom-0 left-0 h-0.5 bg-gold"
+                            [style.animationDuration.ms]="AUTO_SLIDE_INTERVAL_MS"></div>
+                        }
+                    </button>
                     }
                 </div>
-                <button (click)="nextSlide()" aria-label="Slide siguiente"
-                    class="w-8 h-8 rounded-full bg-card border border-default/60 flex items-center justify-center text-muted hover:text-primary hover:bg-elevated transition-all duration-200 btn-press hover-lift">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
+
+                <div class="carousel-viewport" [style.height.px]="trackHeightPx()">
+                    <div class="carousel-track" [style.transform]="'translateX(-' + (currentSlide() * 100) + '%)'">
+                        @for (slide of slides; track slide.tab; let i = $index) {
+                        <div #slideEl class="carousel-slide p-4">
+                            @switch (slide.tab) {
+                            @case ('Dashboard') {
+                            <div class="bg-elevated/50 rounded-xl p-4">
+                                <p class="text-xs text-muted mb-3">Resumen de hoy</p>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="bg-card rounded-lg p-3">
+                                        <p class="text-[10px] text-subtle mb-1">Balance</p>
+                                        <p class="text-success font-semibold text-sm">$1,250.00</p>
+                                    </div>
+                                    <div class="bg-card rounded-lg p-3">
+                                        <p class="text-[10px] text-subtle mb-1">Nivel</p>
+                                        <p class="text-blue-400 font-semibold text-sm">2 · ROOKIE</p>
+                                    </div>
+                                    <div class="bg-card rounded-lg p-3">
+                                        <p class="text-[10px] text-subtle mb-1">Ranking</p>
+                                        <p class="text-gold font-semibold text-sm">#142</p>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                            @case ('Academia') {
+                            <div class="bg-elevated/50 rounded-xl p-4 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-primary font-medium">Crédito y Deuda</p>
+                                        <p class="text-[10px] text-subtle">Módulo 3 de 7 · completado</p>
+                                    </div>
+                                    <span class="text-xs text-success">+130 XP</span>
+                                </div>
+                                <div class="h-1.5 rounded-full bg-card overflow-hidden">
+                                    <div class="h-full rounded-full bg-success" style="width: 100%"></div>
+                                </div>
+                                <div class="flex items-center justify-between opacity-60">
+                                    <p class="text-sm text-primary font-medium">Inversiones Básicas</p>
+                                    <span class="text-xs text-subtle">25%</span>
+                                </div>
+                            </div>
+                            }
+                            @case ('Simulador') {
+                            <div class="bg-elevated/50 rounded-xl p-4">
+                                <p class="text-xs text-muted mb-3">Simulador de decisiones financieras</p>
+                                <p class="text-[10px] text-subtle mb-2">Elige tu modo de juego</p>
+                                <div class="grid grid-cols-2 gap-2 mb-3">
+                                    <div class="bg-card border border-blue-500/30 rounded-lg p-2.5">
+                                        <p class="text-xs text-primary font-medium">Solo</p>
+                                        <p class="text-[10px] text-subtle">Practica a tu ritmo</p>
+                                    </div>
+                                    <div class="bg-card rounded-lg p-2.5">
+                                        <p class="text-xs text-primary font-medium">Multijugador</p>
+                                        <p class="text-[10px] text-subtle">Con amigos</p>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-subtle mb-2">Duración de la partida</p>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div
+                                        class="bg-card border border-blue-500/30 rounded-lg py-1.5 text-center text-[10px] text-primary">
+                                        Rápido<br><span class="text-subtle">3 rondas</span></div>
+                                    <div class="bg-card rounded-lg py-1.5 text-center text-[10px] text-primary">
+                                        Estándar<br><span class="text-subtle">5 rondas</span></div>
+                                    <div class="bg-card rounded-lg py-1.5 text-center text-[10px] text-primary">
+                                        Intensivo<br><span class="text-subtle">8 rondas</span></div>
+                                </div>
+                            </div>
+                            }
+                            @case ('Finanzas') {
+                            <div class="bg-elevated/50 rounded-xl p-4 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-7 h-7 rounded-full bg-danger/10 flex items-center justify-center text-danger text-xs">
+                                            −</div>
+                                        <div>
+                                            <p class="text-xs text-primary">Supermercado</p>
+                                            <p class="text-[10px] text-subtle">Alimentación · hoy</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-danger">-$32.50</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-7 h-7 rounded-full bg-success/10 flex items-center justify-center text-success text-xs">
+                                            +</div>
+                                        <div>
+                                            <p class="text-xs text-primary">Freelance</p>
+                                            <p class="text-[10px] text-subtle">Salario · ayer</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-success">+$180.00</span>
+                                </div>
+                                <div class="pt-1">
+                                    <div class="flex justify-between text-[10px] text-subtle mb-1">
+                                        <span>Meta: Fondo de emergencia</span>
+                                        <span>62%</span>
+                                    </div>
+                                    <div class="h-1.5 rounded-full bg-card overflow-hidden">
+                                        <div class="h-full rounded-full bg-accent-pink" style="width: 62%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center gap-2 pt-3">
+                    @for (slide of slides; track slide.tab; let i = $index) {
+                    <button (click)="goToSlide(i)" [class]="'carousel-dot' + (currentSlide() === i ? ' active' : '')"
+                        [attr.aria-label]="'Ir a ' + slide.tab"></button>
+                    }
+                </div>
             </div>
         </div>
 
-        <!-- CTA debajo del carrusel -->
-        <div class="mt-10 text-center reveal" #revealEl>
+        <div #revealEl class="reveal d2 text-center mt-8">
             <a routerLink="/auth/register"
-                class="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl bg-blue-600 border border-blue-500/60 text-primary font-bold text-base transition-all duration-200 hover:bg-blue-500 hover:scale-[1.02] btn-press hover-glow">
-                <div class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
+                class="btn-press hover-glow inline-block bg-blue-600 hover:bg-blue-500 text-white font-medium px-7 py-3 rounded-xl transition-colors">
                 Comenzar gratis ahora
             </a>
-            <p class="mt-3 text-subtle text-xs">Sin tarjeta de crédito · Sin costo · Acceso inmediato</p>
         </div>
     </div>
 </section>
 
-<!-- ═══ ICONOS / ACCESOS ══════════════════════════════════════════════ -->
-<section class="bg-card py-16 px-6 border-t border-default">
-    <div class="max-w-4xl mx-auto">
-        <div class="text-center mb-10 reveal" #revealEl>
-            <h2 class="text-2xl sm:text-3xl font-bold text-primary mb-2">Accede a todo desde un solo lugar</h2>
-            <p class="text-muted text-sm">Cuatro módulos que trabajan juntos para tu libertad financiera.</p>
+<!-- ═══════════════ CÓMO FUNCIONA ═══════════════ -->
+<section id="como-funciona" class="px-6 py-24 bg-card/40 border-y border-default/40">
+    <div class="max-w-5xl mx-auto">
+        <div #revealEl class="reveal text-center mb-14">
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mb-3">Cómo funciona</h2>
+            <p class="text-muted">Tres pasos, sin fricción.</p>
         </div>
-        <div class="grid grid-cols-3 sm:grid-cols-6 gap-4">
-            @for (feature of featureGrid; track feature.label) {
-            <div [class]="'nav-card holo-card rounded-2xl p-5 flex flex-col items-center gap-3 cursor-default reveal ' + feature.revealDelay"
-                #revealEl>
+
+        <div class="grid md:grid-cols-3 gap-8 relative">
+            <svg class="hidden md:block absolute top-6 left-[16.5%] right-[16.5%] h-px" viewBox="0 0 100 1"
+                preserveAspectRatio="none">
+                <line x1="0" y1="0.5" x2="100" y2="0.5" stroke="#3A3A3C" stroke-width="1" />
+                <line class="path-flow" x1="0" y1="0.5" x2="100" y2="0.5" stroke="#C9A227" stroke-width="1"
+                    vector-effect="non-scaling-stroke" />
+            </svg>
+
+            <div #revealEl class="reveal d1 relative text-center">
                 <div
-                    class="w-12 h-12 rounded-2xl bg-elevated border border-default flex items-center justify-center group">
-                    <img [src]="feature.img" [alt]="feature.label"
-                        class="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-110">
+                    class="w-12 h-12 rounded-full bg-app border-2 border-gold flex items-center justify-center text-gold font-display font-semibold mx-auto mb-4 relative z-10">
+                    1</div>
+                <h3 class="text-primary font-medium mb-1.5">Crea tu cuenta</h3>
+                <p class="text-sm text-muted">Regístrate gratis y arma tu perfil financiero en minutos.</p>
+            </div>
+
+            <div #revealEl class="reveal d2 relative text-center">
+                <div
+                    class="w-12 h-12 rounded-full bg-app border-2 border-gold flex items-center justify-center text-gold font-display font-semibold mx-auto mb-4 relative z-10">
+                    2</div>
+                <h3 class="text-primary font-medium mb-1.5">Aprende jugando</h3>
+                <p class="text-sm text-muted">Completa módulos, quizzes y partidas del simulador para ganar XP.</p>
+            </div>
+
+            <div #revealEl class="reveal d3 relative text-center">
+                <div
+                    class="w-12 h-12 rounded-full bg-app border-2 border-gold flex items-center justify-center text-gold font-display font-semibold mx-auto mb-4 relative z-10">
+                    3</div>
+                <h3 class="text-primary font-medium mb-1.5">Controla tu dinero</h3>
+                <p class="text-sm text-muted">Registra tus finanzas reales y aplica lo aprendido desde el día uno.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════ FEATURE GRID ═══════════════ -->
+<section class="px-6 py-24">
+    <div class="max-w-5xl mx-auto">
+        <div #revealEl class="reveal text-center mb-14">
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mb-3">Accede a todo desde un solo
+                lugar</h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            @for (item of featureGrid; track item.label) {
+            <div #revealEl [class]="'reveal ' + item.revealDelay"
+                class="hover-lift nav-card holo-card rounded-2xl p-5 text-center">
+                <div class="w-12 h-12 rounded-xl bg-elevated/60 flex items-center justify-center mx-auto mb-3">
+                    <img [ngSrc]="item.img" width="96" height="96" alt="" class="w-6 h-6 object-contain">
                 </div>
-                <div class="text-center">
-                    <div class="text-primary font-bold text-xs">{{ feature.label }}</div>
-                    <div class="text-muted text-[10px] mt-0.5">{{ feature.hint }}</div>
-                </div>
+                <p class="text-sm font-medium text-primary mb-0.5">{{ item.label }}</p>
+                <p class="text-xs text-subtle">{{ item.hint }}</p>
             </div>
             }
         </div>
     </div>
 </section>
 
-<!-- ═══ NIVELES ══════════════════════════════════════════════════════ -->
-<section class="bg-app py-16 px-6 border-t border-default/50">
-    <div class="max-w-4xl mx-auto">
-        <div class="text-center mb-10 reveal" #revealEl>
-            <span
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-medium mb-4">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.6">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 3.5l2.6 5.4 5.9.7-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.7z" />
-                </svg>
-                Tu Progresión
-            </span>
-            <h2 class="text-2xl sm:text-3xl font-bold text-primary">Tu camino hacia la libertad financiera</h2>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            @for (tier of progressionTiers; track tier.name; let i = $index) {
-            <div [class]="'flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border relative reveal holo-card hover-lift d' + (i + 1) + ' ' + (tier.current ? 'border-gold/40 current-tier-ring' : 'border-default/60')"
-                #revealEl>
-                @if (tier.current) {
-                <div
-                    class="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gold text-app text-[9px] font-bold whitespace-nowrap">
-                    TÚ AQUÍ</div>
-                }
-                @if (tier.size === 'sm') {
-                <div class="h-28 flex items-center justify-center mt-2">
-                    <img [src]="tier.img" class="w-20 h-20 object-contain" [alt]="tier.name">
-                </div>
-                } @else {
-                <img [src]="tier.img" class="w-28 h-28 object-contain mt-2" [alt]="tier.name">
-                }
-                <div
-                    [class]="(tier.current ? 'text-gold' : 'text-primary-light') + ' text-xs font-semibold text-center'">
-                    {{ tier.name }}</div>
-                <div class="text-[9px] text-muted text-center">{{ tier.subtitle }}</div>
-            </div>
-            }
-        </div>
-    </div>
-</section>
-
-<!-- ═══ CTA FINAL ════════════════════════════════════════════════════ -->
-<section class="border-t border-default relative overflow-hidden" style="min-height:520px">
-    <!-- Video de fondo -->
-    <video #videoEl src="/video.mp4" loop playsinline aria-hidden="true"
-        class="absolute inset-0 w-full h-full object-cover"
-        style="z-index:0; transform:scale(1.18); transform-origin:center center"></video>
-    <!-- Overlay con el mismo token bg-app que usa auth-layout, no un azul marino inventado -->
-    <div class="absolute inset-0 bg-gradient-to-b from-app/60 via-app/80 to-app/95" style="z-index:1"></div>
-    <div class="relative flex items-center justify-center px-6" style="z-index:3; min-height:520px">
-        <div class="max-w-2xl mx-auto text-center reveal" #revealEl>
-            <h2 class="text-4xl sm:text-5xl font-extrabold text-primary leading-tight">
-                ¿Listo para subir<br><span class="text-gold">de nivel?</span>
+<!-- ═══════════════ SIMULADOR SPOTLIGHT ═══════════════ -->
+<section class="px-6 py-24 bg-card/40 border-y border-default/40">
+    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div #revealEl class="reveal">
+            <span class="text-xs font-medium text-gold uppercase tracking-wider">Simulador financiero</span>
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mt-3 mb-4">
+                Tus decisiones, <span class="text-gold">sin riesgo real</span>
             </h2>
-            <p class="mt-5 text-primary-light text-lg max-w-md mx-auto">
-                Crea tu cuenta, empieza tu primer módulo y gana tus primeros XP en menos de 5 minutos.
+            <p class="text-muted mb-6 leading-relaxed">
+                Un tablero de 10×10 con eventos financieros reales: inversiones, seguros, deudas y gastos
+                sorpresa. Practica antes de que el dinero sea de verdad.
             </p>
-            <div class="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-                <a routerLink="/auth/register"
-                    class="flex items-center gap-3 px-7 py-4 rounded-xl bg-blue-600 border border-blue-500/60 text-primary font-bold text-lg transition-all duration-200 hover:bg-blue-500 hover:scale-[1.02] btn-press hover-glow">
-                    <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    Crear cuenta gratis
-                </a>
-                <a routerLink="/auth/login"
-                    class="flex items-center gap-3 px-7 py-4 rounded-xl bg-card border border-default/60 text-primary font-medium text-lg transition-all duration-200 hover:bg-elevated hover:border-blue-500/40 btn-press hover-lift">
-                    <div class="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                    </div>
-                    Ya tengo una cuenta
-                </a>
-            </div>
-            <p class="mt-6 text-muted text-sm flex items-center justify-center gap-4 flex-wrap">
-                <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        stroke-width="2.4">
+            <ul class="space-y-3 text-sm text-primary-light">
+                <li class="flex items-center gap-2.5">
+                    <svg class="dice-idle w-5 h-5 text-gold shrink-0" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="3" />
+                        <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" />
+                        <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" />
+                        <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+                    </svg>
+                    4 modos: Solo, Multijugador, Mixto, Observar
+                </li>
+                <li class="flex items-center gap-2.5">
+                    <svg class="w-5 h-5 text-gold shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3" />
+                        <circle cx="12" cy="12" r="9" />
+                    </svg>
+                    3 duraciones: rápida, estándar o intensiva
+                </li>
+                <li class="flex items-center gap-2.5">
+                    <svg class="w-5 h-5 text-gold shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Sin tarjeta de crédito
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        stroke-width="2.4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Sin costo
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        stroke-width="2.4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Acceso inmediato
-                </span>
-            </p>
+                    Ranking final por partida
+                </li>
+            </ul>
+        </div>
+
+        <div #tiltEl #revealEl class="reveal d1 tilt-card">
+            <img ngSrc="/tablero.png" width="768" height="512" alt="Tablero del simulador financiero de FinanzaViva"
+                class="w-full h-auto drop-shadow-2xl">
         </div>
     </div>
 </section>
 
-<!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
-<footer class="bg-app border-t border-default/50 py-8 px-6">
-    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-subtle">
-        <div class="flex items-center gap-2">
-            <img src="/logo-oficial.png" alt="FinanzaViva" class="w-6 h-6 object-contain opacity-80">
-            <span class="font-extrabold tracking-tight">
-                <span class="text-gold">Finanza</span><span class="text-muted">Viva</span>
-            </span>
+<!-- ═══════════════ PROGRESIÓN ═══════════════ -->
+<section id="progresion" class="px-6 py-24">
+    <div class="max-w-5xl mx-auto">
+        <div #revealEl class="reveal text-center mb-14">
+            <span class="text-xs font-medium text-gold uppercase tracking-wider">Tu progresión</span>
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mt-3">Sube de rango con cada logro
+            </h2>
         </div>
-        <span class="text-center text-xs">© 2026 FinanzaViva · Hecho para jóvenes ecuatorianos</span>
+
+        <div class="relative">
+            <svg class="hidden md:block absolute top-14 left-[10%] right-[10%] h-px" viewBox="0 0 100 1"
+                preserveAspectRatio="none">
+                <line x1="0" y1="0.5" x2="100" y2="0.5" stroke="#3A3A3C" stroke-width="1" />
+                <line class="path-flow" x1="0" y1="0.5" x2="100" y2="0.5" stroke="#C9A227" stroke-width="1"
+                    vector-effect="non-scaling-stroke" />
+            </svg>
+
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                @for (rank of ranks; track rank.tag) {
+                <div #revealEl class="reveal relative hover-lift bg-card border rounded-2xl p-4 text-center"
+                    [class.border-gold]="rank.current" [class.current-tier-ring]="rank.current"
+                    [class.border-default/60]="!rank.current">
+                    @if (rank.current) {
+                    <span
+                        class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gold text-app text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">TÚ
+                        AQUÍ</span>
+                    }
+                    <div class="h-28 flex items-center justify-center mx-auto mb-2">
+                        <img [ngSrc]="rank.img" [width]="rank.width" [height]="rank.height" alt=""
+                            class="max-h-28 w-auto object-contain">
+                    </div>
+                    <p class="text-sm font-medium text-primary">{{ rank.name }}</p>
+                    <p class="text-[10px] text-gold tracking-wide">{{ rank.tag }}</p>
+                    <p class="text-[10px] text-subtle mt-0.5">{{ rank.xpLabel }}</p>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════ CTA FINAL ═══════════════ -->
+<section class="relative px-6 py-28 overflow-hidden">
+    <video #videoEl class="absolute inset-0 w-full h-full object-cover scale-105" src="/video.mp4" autoplay loop muted
+        playsinline oncanplay="this.play()" onloadedmetadata="this.muted=true"></video>
+    <div class="absolute inset-0 bg-gradient-to-b from-app/50 via-app/80 to-app/95"></div>
+
+    <div #revealEl class="reveal relative max-w-2xl mx-auto text-center">
+        <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary mb-4">
+            ¿Listo para subir <span class="text-gold">de nivel</span>?
+        </h2>
+        <p class="text-muted mb-8">Crea tu cuenta, empieza tu primer módulo y gana tus primeros XP en menos de 5
+            minutos.</p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+            <a routerLink="/auth/register"
+                class="btn-press hover-glow w-full sm:w-auto bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-medium px-7 py-3 rounded-xl transition-colors">
+                Crear cuenta gratis
+            </a>
+            <a routerLink="/auth/login"
+                class="hover-lift w-full sm:w-auto backdrop-blur-xl bg-card/60 hover:bg-card border border-default/60 text-primary font-medium px-7 py-3 rounded-xl transition-colors">
+                Ya tengo una cuenta
+            </a>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-subtle">
+            <span>Sin tarjeta de crédito</span>
+            <span>Sin costo</span>
+            <span>Acceso inmediato</span>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════ FAQ ═══════════════ -->
+<section class="px-6 py-24 bg-card/40 border-y border-default/40">
+    <div class="max-w-2xl mx-auto">
+        <div #revealEl class="reveal text-center mb-12">
+            <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary">Preguntas frecuentes</h2>
+        </div>
+
+        <div class="space-y-3">
+            @for (faq of faqs; track faq.question; let i = $index) {
+            <div #revealEl class="reveal bg-card border border-default/60 rounded-xl overflow-hidden">
+                <button (click)="toggleFaq(i)"
+                    class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left">
+                    <span class="text-sm font-medium text-primary">{{ faq.question }}</span>
+                    <svg class="w-4 h-4 text-subtle shrink-0 transition-transform duration-300"
+                        [class.rotate-180]="openFaq() === i" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                @if (openFaq() === i) {
+                <p class="px-5 pb-4 text-sm text-muted leading-relaxed">{{ faq.answer }}</p>
+                }
+            </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="px-6 py-10 border-t border-default/40">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <img ngSrc="/logo-oficial.png" width="48" height="48" alt="" class="w-6 h-6 object-contain">
+            <span class="text-sm text-muted">FinanzaViva</span>
+        </div>
+        <p class="text-xs text-subtle">© 2026 FinanzaViva · Hecho para jóvenes ecuatorianos</p>
     </div>
 </footer>
