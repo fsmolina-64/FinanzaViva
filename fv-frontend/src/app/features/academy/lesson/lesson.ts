@@ -139,15 +139,6 @@ export class LessonComponent implements OnInit {
 
   goNext(): void {
     const next = this.result()?.nextLesson;
-    if (next) {
-      this.router.navigate(['/academy/lesson', next.id]);
-      this.result.set(null);
-      this.lesson.set(next);
-      this.revealedHints.set(new Set());
-      this.scrollProgress.set(0);
-      window.scrollTo(0, 0);
-    } else {
-      this.router.navigate([this.backLink]);
-    }
+    this.router.navigate(next ? ['/academy/lesson', next.id] : [this.backLink]);
   }
 }

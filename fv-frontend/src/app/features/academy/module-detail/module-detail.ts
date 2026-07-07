@@ -113,15 +113,21 @@ export class ModuleDetail implements OnInit {
   }
 
   getLessonStatusColor(status: string): string {
-    return ({
+    const map: Record<string, string> = {
       COMPLETED: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
       AVAILABLE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      LOCKED: 'bg-elevated text-subtle border-strong'
-    } as any)[status] ?? 'bg-elevated text-subtle';
+      LOCKED: 'bg-elevated text-subtle border-strong',
+    };
+    return map[status] ?? 'bg-elevated text-subtle';
   }
 
   getLessonStatusLabel(status: string): string {
-    return ({ COMPLETED: 'Completada', AVAILABLE: 'Disponible', LOCKED: 'Bloqueada' } as any)[status] ?? status;
+    const map: Record<string, string> = {
+      COMPLETED: 'Completada',
+      AVAILABLE: 'Disponible',
+      LOCKED: 'Bloqueada',
+    };
+    return map[status] ?? status;
   }
 
   canOpen(l: Lesson): boolean {

@@ -200,7 +200,7 @@ export class AcademyService {
         });
 
         const moduleXpRecord = await tx.xpTransaction.findFirst({
-          where: { userId, source: XpSource.LESSON_COMPLETED, referenceId: module.id },
+          where: { userId, source: XpSource.MODULE_COMPLETED, referenceId: module.id },
         });
 
         if (!moduleXpRecord) {
@@ -208,7 +208,7 @@ export class AcademyService {
             data: {
               userId,
               amount: module.xpReward,
-              source: XpSource.LESSON_COMPLETED,
+              source: XpSource.MODULE_COMPLETED,
               referenceId: module.id,
               description: `Módulo completado: ${module.title}`,
             },
@@ -279,11 +279,45 @@ export class AcademyService {
       throw new BadRequestException('La lección no está completada');
     }
 
-    await this.prisma.userLessonProgress.update({
-      where: { userId_lessonId: { userId, lessonId } },
-      data: { status: 'NOT_STARTED', completedAt: null },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      await tx.userLessonProgress.update({
+        where: { userId_lessonId: { userId, lessonId } },
+        data: { status: 'NOT_STARTED', completedAt: null },
+      });
 
-    return { success: true };
+      await tx.userStatistics.update({
+        where: { userId },
+        data: { lessonsCompleted: { decrement: 1 } },
+      });
+
+      const lesson = await tx.lesson.findUnique({
+        where: { id: lessonId },
+        include: { module: true },
+      });
+      if (!lesson) throw new NotFoundException('Lección no encontrada');
+
+      const completedCount = await tx.userLessonProgress.count({
+        where: { userId, status: 'COMPLETED', lesson: { moduleId: lesson.moduleId } },
+      });
+      const totalLessons = await tx.lesson.count({
+        where: { moduleId: lesson.moduleId },
+      });
+      const readingProgress = Math.round((completedCount / totalLessons) * 100);
+
+      const isNowCompletingModule = totalLessons > 0 && completedCount === totalLessons;
+
+      await tx.userModuleProgress.upsert({
+        where: { userId_moduleId: { userId, moduleId: lesson.moduleId } },
+        update: {
+          readingProgress,
+          ...(isNowCompletingModule
+            ? { status: 'COMPLETED', completedAt: new Date() }
+            : { status: 'IN_PROGRESS', completedAt: null }),
+        },
+        create: { userId, moduleId: lesson.moduleId, readingProgress },
+      });
+
+      return { success: true };
+    });
   }
 }
