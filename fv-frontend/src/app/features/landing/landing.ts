@@ -237,10 +237,7 @@ export class Landing implements OnInit, AfterViewInit, OnDestroy {
 
     this.observer = new IntersectionObserver(
       entries => entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('show');
-          this.observer!.unobserve(entry.target);
-        }
+        entry.target.classList.toggle('show', entry.isIntersecting);
       }),
       { threshold: 0.12 }
     );
@@ -248,10 +245,7 @@ export class Landing implements OnInit, AfterViewInit, OnDestroy {
 
     this.tiltObserver = new IntersectionObserver(
       entries => entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('tilt-in');
-          this.tiltObserver!.unobserve(entry.target);
-        }
+        entry.target.classList.toggle('tilt-in', entry.isIntersecting);
       }),
       { threshold: 0.18 }
     );
@@ -260,10 +254,8 @@ export class Landing implements OnInit, AfterViewInit, OnDestroy {
     if (this.statsEl) {
       this.statsObserver = new IntersectionObserver(
         entries => entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            this.startCountUp();
-            this.statsObserver!.unobserve(entry.target);
-          }
+          if (entry.isIntersecting) this.startCountUp();
+          else this.statsAnimated = false;
         }),
         { threshold: 0.4 }
       );
