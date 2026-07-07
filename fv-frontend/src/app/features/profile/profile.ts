@@ -1,8 +1,11 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
+import { trigger, transition, style, animate } from '@angular/animations';
+import { forkJoin, of, Observable } from 'rxjs';
+import { staggerCards } from '../../core/animations/animations';
+import { AvatarIdentityService } from '../../core/services/avatar-identity.service';
+import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
@@ -12,6 +15,7 @@ import { Achievement, Reward } from '../../core/models/achievement.model';
 import { ToastService } from '../../core/services/toast.service';
 import { RewardVisualsService } from '../../core/services/reward-visuals.service';
 import { getPasswordStrength, PasswordStrengthResult } from '../../core/utils/password-strength.util';
+import { CountUpDirective } from '../../shared/directives/count-up.directive';
 import { RouterModule } from '@angular/router';
 
 type Tab = 'perfil' | 'estadisticas' | 'cuenta' | 'actividad';
@@ -25,9 +29,21 @@ interface ActivityEvent {
 
 @Component({
   selector: 'app-profile',
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, CountUpDirective],
   templateUrl: './profile.html',
-  styleUrl: './profile.css'
+  styleUrl: './profile.css',
+  animations: [
+    staggerCards,
+    trigger('tabTransition', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(8px)' }),
+        animate('220ms cubic-bezier(0.16, 1, 0.3, 1)', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+      transition(':leave', [
+        animate('120ms ease-in', style({ opacity: 0 })),
+      ]),
+    ]),
+  ],
 })
 export class Profile implements OnInit {
   // Estado principal
@@ -37,16 +53,18 @@ export class Profile implements OnInit {
   editing = signal(false);
 
   // Recompensas y logros
-  rewards = signal<Reward[]>([]);
   achievements = signal<Achievement[]>([]);
-  equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
-  equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
-  equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
-  equippedTitle = computed(() => this.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
-  equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
+  equippedAvatar = computed(() => this.achievementService.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
+  equippedFrame = computed(() => this.achievementService.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
+  equippedBadge = computed(() => this.achievementService.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
+  equippedTitle = computed(() => this.achievementService.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
+  equippedAura = computed(() => this.achievementService.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
 
   // Ranking
   rankingSummary = signal<{ position: number; total: number } | null>(null);
+
+  // Actividad
+  activitySortOrder = signal<'desc' | 'asc'>('desc');
 
   // Edición de perfil
   form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
@@ -103,6 +121,7 @@ export class Profile implements OnInit {
     private toastService: ToastService,
     private rewardVisuals: RewardVisualsService,
     private api: ApiService,
+    private avatarIdentity: AvatarIdentityService,
   ) { }
 
   ngOnInit(): void {
@@ -111,7 +130,7 @@ export class Profile implements OnInit {
       error: () => { this.loading.set(false); this.toastService.error('Error al cargar el perfil'); }
     });
     this.achievementService.getRewards().subscribe({
-      next: d => this.rewards.set(d),
+      next: r => this.achievementService.rewards.set(r),
       error: () => this.toastService.error('Error al cargar recompensas')
     });
     this.achievementService.getAchievements().subscribe({
@@ -147,14 +166,26 @@ export class Profile implements OnInit {
   saveProfile(): void {
     if (this.saving()) return;
     this.saving.set(true);
-    this.userService.updateProfile(this.form).subscribe({
-      next: _ => {
+
+    const shouldUnequipAvatarReward = !!this.form.avatarUrl && !!this.equippedAvatar();
+    const avatarRewardId = this.equippedAvatar()?.id;
+
+    const calls: Observable<unknown>[] = [this.userService.updateProfile(this.form)];
+    if (shouldUnequipAvatarReward && avatarRewardId) {
+      calls.push(this.achievementService.equipReward(avatarRewardId));
+    }
+
+    forkJoin(calls).subscribe({
+      next: () => {
         this.userService.getProfile().subscribe({
           next: fresh => {
             this.user.set(fresh);
             this.authService.refreshProfile(fresh.profile);
           }
         });
+        if (shouldUnequipAvatarReward) {
+          this.achievementService.refreshRewards();
+        }
         this.saving.set(false);
         this.editing.set(false);
         this.toastService.success('Perfil actualizado correctamente');
@@ -289,7 +320,7 @@ export class Profile implements OnInit {
   // ── Probador de apariencia ──
 
   unlockedByType(type: string): Reward[] {
-    return this.rewards().filter(r => r.type === type && r.unlocked);
+    return this.achievementService.rewards().filter(r => r.type === type && r.unlocked);
   }
 
   toggleCustomization(): void {
@@ -347,6 +378,9 @@ export class Profile implements OnInit {
     if (this.customizing() || !this.hasPreviewChanges()) return;
     this.customizing.set(true);
 
+    const avatarChangedToReward = this.previewAvatar() !== null
+      && this.previewAvatar()?.id !== this.equippedAvatar()?.id;
+
     const slots: Array<[Reward | null, Reward | null]> = [
       [this.equippedAvatar(), this.previewAvatar()],
       [this.equippedFrame(), this.previewFrame()],
@@ -372,10 +406,28 @@ export class Profile implements OnInit {
 
     forkJoin(calls).subscribe({
       next: () => {
-        this.achievementService.getRewards().subscribe({ next: r => this.rewards.set(r) });
-        this.customizing.set(false);
-        this.showCustomization.set(false);
-        this.toastService.success('Apariencia actualizada');
+        const u = this.user();
+        const needsUrlClear = avatarChangedToReward && !!u?.profile.avatarUrl;
+        const cleanup: Observable<unknown> = needsUrlClear
+          ? this.avatarIdentity.clearAvatarUrl({ displayName: u!.profile.displayName, bio: u!.profile.bio })
+          : of(null);
+
+        cleanup.subscribe({
+          next: () => {
+            this.achievementService.refreshRewards();
+            this.userService.getProfile().subscribe({ next: fresh => {
+              this.user.set(fresh);
+              this.authService.refreshProfile(fresh.profile);
+            }});
+            this.customizing.set(false);
+            this.showCustomization.set(false);
+            this.toastService.success('Apariencia actualizada');
+          },
+          error: () => {
+            this.customizing.set(false);
+            this.toastService.error('Recompensa equipada, pero no se pudo limpiar la URL de avatar anterior');
+          }
+        });
       },
       error: () => {
         this.customizing.set(false);
@@ -411,6 +463,10 @@ export class Profile implements OnInit {
 
   // ── Actividad ──
 
+  toggleActivitySort(): void {
+    this.activitySortOrder.update(v => v === 'desc' ? 'asc' : 'desc');
+  }
+
   getActivityTimeline(): ActivityEvent[] {
     const u = this.user();
     if (!u) return [];
@@ -439,7 +495,8 @@ export class Profile implements OnInit {
       }
     }
 
-    return events.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const direction = this.activitySortOrder() === 'desc' ? -1 : 1;
+    return events.sort((a, b) => (a.date.getTime() - b.date.getTime()) * direction);
   }
 
   // ── Estadísticas / helpers generales ──
@@ -469,8 +526,8 @@ export class Profile implements OnInit {
 
   getPassRate(): number {
     const s = this.user()?.statistics;
-    if (!s?.quizzesCompleted) return 0;
-    return Math.round((s.distinctPassedQuizzes ?? 0) / s.quizzesCompleted * 100);
+    if (!s?.totalQuizzes) return 0;
+    return Math.round((s.distinctPassedQuizzes ?? 0) / s.totalQuizzes * 100);
   }
 
   getWinRate(): number {

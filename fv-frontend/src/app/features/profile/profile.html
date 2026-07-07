@@ -120,7 +120,7 @@
     </div>
 
     @if (activeTab() === 'perfil') {
-    <div class="animate-tab-in space-y-4">
+    <div @tabTransition class="space-y-4">
 
       @if (editing()) {
       <div class="form-slide bg-card rounded-2xl p-5 border border-blue-500/30 space-y-4 card-hover shadow-sm"
@@ -160,22 +160,20 @@
       </div>
       }
 
-      <div class="grid grid-cols-3 gap-3">
-        <a routerLink="/streak-calendar"
-          class="stat-card text-center no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors">
+      <div @staggerCards class="grid grid-cols-3 gap-3">
+        <a routerLink="/streak-calendar" class="stat-card text-center no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors">
           <p class="text-muted text-xs mb-1">Racha actual</p>
-          <p class="text-primary font-bold text-2xl">{{ user()!.gameStats.currentStreak }}</p>
+          <p class="text-primary font-bold text-2xl" [appCountUp]="user()!.gameStats.currentStreak">{{ user()!.gameStats.currentStreak }}</p>
           <p class="text-subtle text-xs mt-0.5">días</p>
         </a>
-        <a routerLink="/streak-calendar"
-          class="stat-card text-center no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors">
+        <a routerLink="/streak-calendar" class="stat-card text-center no-underline cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-colors">
           <p class="text-muted text-xs mb-1">Racha máxima</p>
-          <p class="text-amber-400 font-bold text-2xl">{{ user()!.gameStats.longestStreak }}</p>
+          <p class="text-amber-400 font-bold text-2xl" [appCountUp]="user()!.gameStats.longestStreak">{{ user()!.gameStats.longestStreak }}</p>
           <p class="text-subtle text-xs mt-0.5">días</p>
         </a>
         <div class="stat-card text-center">
           <p class="text-muted text-xs mb-1">Logros</p>
-          <p class="text-emerald-400 font-bold text-2xl">{{ user()!.statistics.achievementsCount }}</p>
+          <p class="text-emerald-400 font-bold text-2xl" [appCountUp]="user()!.statistics.achievementsCount" [countUpSuffix]="''">{{ user()!.statistics.achievementsCount }}</p>
           <p class="text-subtle text-xs mt-0.5">ganados</p>
         </div>
       </div>
@@ -212,12 +210,21 @@
                 &mdash;
               </button>
               @for (r of unlockedByType(slot.type); track r.id) {
-              <button (click)="selectPreview(slot.type, r)"
-                class="flex-shrink-0 w-10 h-10 rounded-xl border-2 flex items-center justify-center text-lg transition-all btn-press"
-                [class]="getPreviewValue(slot.type)?.id === r.id ? 'border-primary bg-elevated' : 'border-strong'"
-                [title]="r.name">
-                {{ r.icon }}
-              </button>
+                @if (slot.type === 'TITLE') {
+                <button (click)="selectPreview(slot.type, r)"
+                  class="flex-shrink-0 flex items-center gap-1.5 h-10 px-3 rounded-xl border-2 text-sm font-medium transition-all btn-press"
+                  [class]="getPreviewValue(slot.type)?.id === r.id ? 'border-primary bg-elevated text-primary' : 'border-strong text-muted'">
+                  <span class="text-base">{{ r.icon }}</span>
+                  <span class="whitespace-nowrap">{{ r.name }}</span>
+                </button>
+                } @else {
+                <button (click)="selectPreview(slot.type, r)"
+                  class="flex-shrink-0 w-10 h-10 rounded-xl border-2 flex items-center justify-center text-lg transition-all btn-press"
+                  [class]="getPreviewValue(slot.type)?.id === r.id ? 'border-primary bg-elevated' : 'border-strong'"
+                  [title]="r.name">
+                  {{ r.icon }}
+                </button>
+                }
               }
             </div>
           </div>
@@ -244,7 +251,7 @@
     }
 
     @if (activeTab() === 'estadisticas') {
-    <div class="animate-tab-in space-y-4">
+    <div @tabTransition class="space-y-4">
 
       @if (rankingSummary() && rankingSummary()!.total >= 5) {
       <div
@@ -265,15 +272,15 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="stat-card">
             <p class="text-muted text-xs">Módulos completados</p>
-            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.modulesCompleted }}</p>
+            <p class="text-primary font-bold text-xl mt-1" [appCountUp]="user()!.statistics.modulesCompleted">{{ user()!.statistics.modulesCompleted }}</p>
           </div>
           <div class="stat-card">
             <p class="text-muted text-xs">Lecciones completadas</p>
-            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.lessonsCompleted }}</p>
+            <p class="text-primary font-bold text-xl mt-1" [appCountUp]="user()!.statistics.lessonsCompleted">{{ user()!.statistics.lessonsCompleted }}</p>
           </div>
           <div class="stat-card">
             <p class="text-muted text-xs">Quizzes completados</p>
-            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.quizzesCompleted }}</p>
+            <p class="text-primary font-bold text-xl mt-1" [appCountUp]="user()!.statistics.quizzesCompleted">{{ user()!.statistics.quizzesCompleted }}</p>
           </div>
           <div class="stat-card">
             <p class="text-muted text-xs">Tasa de aprobación</p>
@@ -289,11 +296,11 @@
         <div class="grid grid-cols-3 gap-3">
           <div class="stat-card text-center">
             <p class="text-muted text-xs">Partidas</p>
-            <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.gamesPlayed }}</p>
+            <p class="text-primary font-bold text-xl mt-1" [appCountUp]="user()!.statistics.gamesPlayed">{{ user()!.statistics.gamesPlayed }}</p>
           </div>
           <div class="stat-card text-center">
             <p class="text-muted text-xs">Ganadas</p>
-            <p class="text-emerald-400 font-bold text-xl mt-1">{{ user()!.statistics.gamesWon }}</p>
+            <p class="text-emerald-400 font-bold text-xl mt-1" [appCountUp]="user()!.statistics.gamesWon">{{ user()!.statistics.gamesWon }}</p>
           </div>
           <div class="stat-card text-center">
             <p class="text-muted text-xs">Tasa victoria</p>
@@ -308,14 +315,28 @@
         <h3 class="section-title">Finanzas</h3>
         <div class="stat-card">
           <p class="text-muted text-xs">Total transacciones registradas</p>
-          <p class="text-primary font-bold text-xl mt-1">{{ user()!.statistics.totalTransactions }}</p>
+          <p class="text-primary font-bold text-xl mt-1" [appCountUp]="user()!.statistics.totalTransactions">{{ user()!.statistics.totalTransactions }}</p>
         </div>
       </div>
+
     </div>
     }
 
     @if (activeTab() === 'actividad') {
-    <div class="animate-tab-in space-y-3">
+    <div @tabTransition class="space-y-3">
+      <div class="flex justify-end">
+        <button (click)="toggleActivitySort()"
+          class="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1 btn-press">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            @if (activitySortOrder() === 'desc') {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+            } @else {
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+            }
+          </svg>
+          {{ activitySortOrder() === 'desc' ? 'Más reciente' : 'Más antiguo' }}
+        </button>
+      </div>
       @if (getActivityTimeline().length === 0) {
       <p class="text-subtle text-sm text-center py-10">Aún no hay actividad registrada</p>
       }
@@ -353,7 +374,7 @@
     }
 
     @if (activeTab() === 'cuenta') {
-    <div class="animate-tab-in space-y-4">
+    <div @tabTransition class="space-y-4">
 
       <div class="section-card">
         <h3 class="section-title">Información de cuenta</h3>

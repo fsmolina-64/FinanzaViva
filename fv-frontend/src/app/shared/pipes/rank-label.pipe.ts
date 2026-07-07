@@ -1,13 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-
-export const RANK_LABEL_MAP: Record<string, string> = {
-  ROOKIE: 'Novato',
-  APPRENTICE: 'Aprendiz',
-  INTERMEDIATE: 'Intermedio',
-  ADVANCED: 'Avanzado',
-  EXPERT: 'Experto',
-  MASTER: 'Maestro',
-};
+import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
 
 @Pipe({
   name: 'rankLabel',

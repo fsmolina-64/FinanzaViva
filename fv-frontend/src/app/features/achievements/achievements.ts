@@ -3,9 +3,11 @@ import { staggerCards } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { AuthService } from '../../core/services/auth.service';
 import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AvatarIdentityService } from '../../core/services/avatar-identity.service';
 import { Achievement, Reward } from '../../core/models/achievement.model';
 import { UserProfile } from '../../core/models/user.model';
 
@@ -41,7 +43,6 @@ const METRIC_MAP: Record<string, (u: UserProfile) => number> = {
 export class Achievements implements OnInit {
   activeTab = signal<Tab>('logros');
   achievements = signal<Achievement[]>([]);
-  rewards = signal<Reward[]>([]);
   userProfile = signal<UserProfile | null>(null);
   loading = signal(true);
   equipping = signal<string | null>(null);
@@ -54,7 +55,7 @@ export class Achievements implements OnInit {
   groupedLocked = computed(() => this.groupByCategory(this.locked()));
   categories = computed(() => Object.keys(CATEGORY_META));
 
-  equippedCount = computed(() => this.rewards().filter(r => r.isEquipped).length);
+  equippedCount = computed(() => this.achievementService.rewards().filter(r => r.isEquipped).length);
 
   tabs: { key: Tab; label: string }[] = [
     { key: 'logros', label: 'Logros' },
@@ -62,10 +63,12 @@ export class Achievements implements OnInit {
   ];
 
   constructor(
-    private achievementService: AchievementService,
+    public achievementService: AchievementService,
     private api: ApiService,
     private toast: ToastService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private avatarIdentity: AvatarIdentityService,
   ) { }
 
   ngOnInit(): void {
@@ -80,7 +83,7 @@ export class Achievements implements OnInit {
       error: () => { check(); this.toast.error('Error al cargar logros'); }
     });
     this.achievementService.getRewards().subscribe({
-      next: d => { this.rewards.set(d); check(); },
+      next: d => { this.achievementService.rewards.set(d); check(); },
       error: () => { check(); this.toast.error('Error al cargar recompensas'); }
     });
     this.api.get<UserProfile>('/users/me').subscribe({
@@ -114,16 +117,22 @@ export class Achievements implements OnInit {
     if (this.equipping()) return;
     this.equipping.set(rewardId);
 
+    const target = this.achievementService.rewards().find(r => r.id === rewardId);
+
     this.achievementService.equipReward(rewardId).subscribe({
       next: res => {
-        const target = this.rewards().find(r => r.id === rewardId);
-        this.rewards.update(list => list.map(r => {
+        this.achievementService.rewards.update(list => list.map(r => {
           if (r.id === rewardId) return { ...r, isEquipped: res.isEquipped };
           if (res.isEquipped && r.type === target?.type) return { ...r, isEquipped: false };
           return r;
         }));
-        this.equipping.set(null);
-        this.toast.success(res.isEquipped ? 'Recompensa equipada' : 'Recompensa desequipada');
+
+        if (target?.type === 'AVATAR' && res.isEquipped) {
+          this.clearAvatarUrlAfterEquip();
+        } else {
+          this.equipping.set(null);
+          this.toast.success(res.isEquipped ? 'Recompensa equipada' : 'Recompensa desequipada');
+        }
       },
       error: () => {
         this.equipping.set(null);
@@ -132,23 +141,47 @@ export class Achievements implements OnInit {
     });
   }
 
+  // Equipar un avatar de recompensa borra avatarUrl del perfil, para que no
+  // quede una URL huérfana que reaparezca si luego se desequipa el avatar.
+  private clearAvatarUrlAfterEquip(): void {
+    const u = this.userProfile();
+    if (!u?.profile.avatarUrl) {
+      this.equipping.set(null);
+      this.toast.success('Recompensa equipada');
+      return;
+    }
+
+    this.avatarIdentity.clearAvatarUrl({ displayName: u.profile.displayName, bio: u.profile.bio }).subscribe({
+      next: () => {
+        this.userProfile.update(user => user ? { ...user, profile: { ...user.profile, avatarUrl: '' } } : user);
+        this.authService.refreshProfile({ displayName: u.profile.displayName, avatarUrl: '' });
+        this.equipping.set(null);
+        this.toast.success('Recompensa equipada');
+      },
+      error: () => {
+        // El equip sí funcionó (ya está reflejado arriba); solo falló limpiar
+        // la URL vieja. No se revierte el equip por esto.
+        this.equipping.set(null);
+        this.toast.success('Recompensa equipada');
+      }
+    });
+  }
+
   unequipAll(): void {
     if (this.unequippingAll()) return;
-    const equipped = this.rewards().filter(r => r.isEquipped);
+    const equipped = this.achievementService.rewards().filter(r => r.isEquipped);
     if (!equipped.length) return;
 
     this.unequippingAll.set(true);
     forkJoin(equipped.map(r => this.achievementService.equipReward(r.id))).subscribe({
       next: () => {
-        this.rewards.update(list => list.map(r => ({ ...r, isEquipped: false })));
+        this.achievementService.rewards.update(list => list.map(r => ({ ...r, isEquipped: false })));
         this.unequippingAll.set(false);
         this.toast.success('Todas las recompensas desequipadas');
       },
       error: () => {
-        this.achievementService.getRewards().subscribe({
-          next: d => { this.rewards.set(d); this.unequippingAll.set(false); },
-          error: () => this.unequippingAll.set(false)
-        });
+        this.achievementService.refreshRewards();
+        this.unequippingAll.set(false);
         this.toast.error('Error al desequipar algunas recompensas');
       }
     });

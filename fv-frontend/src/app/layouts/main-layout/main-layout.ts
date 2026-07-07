@@ -8,7 +8,7 @@ import { AchievementService } from '../../core/services/achievement.service';
 import { RewardVisualsService } from '../../core/services/reward-visuals.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Reward } from '../../core/models/achievement.model';
-import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
+import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
 import { ToastComponent } from '../../shared/components/toast/toast';
 
 @Component({
@@ -19,14 +19,13 @@ import { ToastComponent } from '../../shared/components/toast/toast';
 })
 export class MainLayout implements OnInit {
   sidebarOpen = signal(true);
-  rewards = signal<Reward[]>([]);
   deletionScheduledAt = signal<string | null>(null);
   cancelingDeletion = signal(false);
 
-  equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
-  equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
-  equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
-  equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
+  equippedAvatar = computed(() => this.achievementService.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
+  equippedFrame = computed(() => this.achievementService.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
+  equippedBadge = computed(() => this.achievementService.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
+  equippedAura = computed(() => this.achievementService.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
 
   daysUntilDeletion = computed(() => {
     const scheduled = this.deletionScheduledAt();
@@ -63,9 +62,7 @@ export class MainLayout implements OnInit {
           this.deletionScheduledAt.set(p.deletionScheduledAt ?? null);
         },
       });
-      this.achievementService.getRewards().subscribe({
-        next: r => this.rewards.set(r),
-      });
+      this.achievementService.refreshRewards();
     }
   }
 
