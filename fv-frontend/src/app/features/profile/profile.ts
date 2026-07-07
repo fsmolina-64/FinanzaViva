@@ -1,18 +1,27 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { RANK_LABEL_MAP } from '../../shared/pipes/rank-label.pipe';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 import { UserProfile, UpdateProfileRequest } from '../../core/models/user.model';
 import { AchievementService } from '../../core/services/achievement.service';
-import { Reward } from '../../core/models/achievement.model';
+import { Achievement, Reward } from '../../core/models/achievement.model';
 import { ToastService } from '../../core/services/toast.service';
 import { RewardVisualsService } from '../../core/services/reward-visuals.service';
 import { getPasswordStrength, PasswordStrengthResult } from '../../core/utils/password-strength.util';
 import { RouterModule } from '@angular/router';
 
-type Tab = 'perfil' | 'estadisticas' | 'cuenta';
+type Tab = 'perfil' | 'estadisticas' | 'cuenta' | 'actividad';
+
+interface ActivityEvent {
+  type: 'achievement' | 'password' | 'account';
+  date: Date;
+  title: string;
+  description: string;
+}
 
 @Component({
   selector: 'app-profile',
@@ -21,40 +30,79 @@ type Tab = 'perfil' | 'estadisticas' | 'cuenta';
   styleUrl: './profile.css'
 })
 export class Profile implements OnInit {
+  // Estado principal
   user = signal<UserProfile | null>(null);
   loading = signal(true);
   saving = signal(false);
   editing = signal(false);
-  deleting = signal(false);
-  cancelingDeletion = signal(false);
 
+  // Recompensas y logros
   rewards = signal<Reward[]>([]);
+  achievements = signal<Achievement[]>([]);
   equippedAvatar = computed(() => this.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
   equippedFrame = computed(() => this.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
   equippedBadge = computed(() => this.rewards().find(r => r.type === 'BADGE' && r.isEquipped) ?? null);
   equippedTitle = computed(() => this.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
   equippedAura = computed(() => this.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
 
-  activeTab = signal<Tab>('perfil');
+  // Ranking
+  rankingSummary = signal<{ position: number; total: number } | null>(null);
+
+  // Edición de perfil
+  form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
+
+  // Cambio de contraseña
+  showPasswordSection = signal(false);
+  changingPassword = signal(false);
+  showCurrentPwd = signal(false);
+  showNewPwd = signal(false);
+  showConfirmPwd = signal(false);
+  passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
+  passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+
+  // Eliminación de cuenta
+  deleting = signal(false);
   showDeleteModal = signal(false);
   deleteConfirmText = signal('');
   deletePassword = signal('');
   showDeletePassword = signal(false);
+  cancelingDeletion = signal(false);
 
-  readonly tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: 'perfil', label: 'Perfil', icon: '👤' },
-    { key: 'estadisticas', label: 'Estadísticas', icon: '📊' },
-    { key: 'cuenta', label: 'Cuenta', icon: '⚙️' },
+  // Probador de apariencia
+  showCustomization = signal(false);
+  customizing = signal(false);
+  previewAvatar = signal<Reward | null>(null);
+  previewFrame = signal<Reward | null>(null);
+  previewBadge = signal<Reward | null>(null);
+  previewTitle = signal<Reward | null>(null);
+  previewAura = signal<Reward | null>(null);
+
+  activeTab = signal<Tab>('perfil');
+
+  readonly tabs: { key: Tab; label: string }[] = [
+    { key: 'perfil', label: 'Perfil' },
+    { key: 'estadisticas', label: 'Estadísticas' },
+    { key: 'cuenta', label: 'Cuenta' },
+    { key: 'actividad', label: 'Actividad' },
   ];
 
-  form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
+  readonly strengthBars = [0, 1, 2, 3];
+
+  readonly customizationSlots: { type: string; label: string }[] = [
+    { type: 'AVATAR', label: 'Avatar' },
+    { type: 'FRAME', label: 'Marco' },
+    { type: 'BADGE', label: 'Insignia' },
+    { type: 'TITLE', label: 'Título' },
+    { type: 'AURA', label: 'Aura' },
+  ];
 
   constructor(
     private userService: UserService,
     private authService: AuthService,
     private achievementService: AchievementService,
     private toastService: ToastService,
-    private rewardVisuals: RewardVisualsService
+    private rewardVisuals: RewardVisualsService,
+    private api: ApiService,
   ) { }
 
   ngOnInit(): void {
@@ -63,22 +111,30 @@ export class Profile implements OnInit {
       error: () => { this.loading.set(false); this.toastService.error('Error al cargar el perfil'); }
     });
     this.achievementService.getRewards().subscribe({
-      next: d => this.rewards.set(d)
+      next: d => this.rewards.set(d),
+      error: () => this.toastService.error('Error al cargar recompensas')
     });
+    this.achievementService.getAchievements().subscribe({
+      next: d => this.achievements.set(d),
+      error: () => this.toastService.error('Error al cargar logros')
+    });
+    this.loadRankingSummary();
   }
 
+  // ── Tabs ──
 
   setTab(tab: Tab): void {
     this.activeTab.set(tab);
     if (this.editing()) this.cancelEdit();
   }
 
+  // ── Edición de perfil ──
+
   startEdit(): void {
     if (this.editing()) { this.cancelEdit(); return; }
     this.activeTab.set('perfil');
     this.editing.set(true);
   }
-
 
   private syncForm(u: UserProfile): void {
     this.form = {
@@ -116,111 +172,8 @@ export class Profile implements OnInit {
     this.editing.set(false);
   }
 
+  // ── Contraseña ──
 
-  openDeleteModal(): void {
-    this.deleteConfirmText.set('');
-    this.deletePassword.set('');
-    this.showDeleteModal.set(true);
-  }
-
-  closeDeleteModal(): void {
-    this.showDeleteModal.set(false);
-    this.deleteConfirmText.set('');
-    this.deletePassword.set('');
-  }
-  showPasswordSection = signal(false);
-  changingPassword = signal(false);
-  showCurrentPwd = signal(false);
-  showNewPwd = signal(false);
-  showConfirmPwd = signal(false);
-  passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
-  passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
-  confirmDelete(): void {
-    if (this.deleteConfirmText() !== 'ELIMINAR' || !this.deletePassword() || this.deleting()) return;
-    this.deleting.set(true);
-    this.userService.deleteAccount(this.deletePassword()).subscribe({
-      next: () => {
-        this.deleting.set(false);
-        this.closeDeleteModal();
-        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
-        this.toastService.success('Cuenta programada para eliminación en 30 días. Puedes cancelarla cuando quieras.');
-      },
-      error: (err) => {
-        this.deleting.set(false);
-        this.toastService.error(err?.error?.message ?? 'Error al eliminar la cuenta. Intenta de nuevo.');
-      }
-    });
-  }
-
-  cancelDeletion(): void {
-    if (this.cancelingDeletion()) return;
-    this.cancelingDeletion.set(true);
-    this.userService.cancelDeletion().subscribe({
-      next: () => {
-        this.cancelingDeletion.set(false);
-        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
-        this.toastService.success('Eliminación cancelada');
-      },
-      error: (err) => {
-        this.cancelingDeletion.set(false);
-        this.toastService.error(err?.error?.message ?? 'Error al cancelar la eliminación');
-      }
-    });
-  }
-
-  getDaysUntilDeletion(): number {
-    const scheduled = this.user()?.deletionScheduledAt;
-    if (!scheduled) return 0;
-    const diff = new Date(scheduled).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  }
-
-
-  getXpProgress(): number {
-    return (this.user()?.gameStats.xp ?? 0) % 100;
-  }
-
-  getRankLabel(rank: string): string {
-    return RANK_LABEL_MAP[rank] ?? rank;
-  }
-
-  getRankColor(rank: string): string {
-    return ({
-      ROOKIE: 'bg-subtle/20 text-muted border-subtle/30',
-      APPRENTICE: 'bg-success/20  text-success  border-success/30',
-      INTERMEDIATE: 'bg-primary/20   text-primary   border-primary/30',
-      ADVANCED: 'bg-primary-muted/20 text-primary-light border-primary-muted/30',
-      EXPERT: 'bg-warning/20  text-warning  border-warning/30',
-      MASTER: 'bg-danger/20    text-danger    border-danger/30'
-    } as Record<string, string>)[rank] ?? 'bg-subtle/20 text-muted border-subtle/30';
-  }
-
-  getInitials(name: string): string {
-    return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  }
-
-  getPassRate(): number {
-    const s = this.user()?.statistics;
-    if (!s?.quizzesCompleted) return 0;
-    return Math.round((s.distinctPassedQuizzes ?? 0) / s.quizzesCompleted * 100);
-  }
-
-  getWinRate(): number {
-    const s = this.user()?.statistics;
-    if (!s?.gamesPlayed) return 0;
-    return Math.round((s.gamesWon / s.gamesPlayed) * 100);
-  }
-
-  getFrameClass(): string {
-    return this.rewardVisuals.getFrameClass(this.equippedFrame());
-  }
-  getAuraClass(): string {
-    return this.rewardVisuals.getAuraClass(this.equippedAura());
-  }
-
-  logout(): void {
-    this.authService.logout();
-  }
   togglePasswordSection(): void {
     this.showPasswordSection.update(v => !v);
     if (!this.showPasswordSection()) {
@@ -228,8 +181,6 @@ export class Profile implements OnInit {
       this.passwordErrors.set({});
     }
   }
-
-  readonly strengthBars = [0, 1, 2, 3];
 
   changePassword(): void {
     const e: { current?: string; new?: string; confirm?: string } = {};
@@ -279,5 +230,264 @@ export class Profile implements OnInit {
     if (score === 2) return 'text-amber-400';
     if (score === 3) return 'text-blue-400';
     return 'text-emerald-400';
+  }
+
+  // ── Eliminación de cuenta ──
+
+  openDeleteModal(): void {
+    this.deleteConfirmText.set('');
+    this.deletePassword.set('');
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.deleteConfirmText.set('');
+    this.deletePassword.set('');
+  }
+
+  confirmDelete(): void {
+    if (this.deleteConfirmText() !== 'ELIMINAR' || !this.deletePassword() || this.deleting()) return;
+    this.deleting.set(true);
+    this.userService.deleteAccount(this.deletePassword()).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.closeDeleteModal();
+        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
+        this.toastService.success('Cuenta programada para eliminación en 30 días. Puedes cancelarla cuando quieras.');
+      },
+      error: (err) => {
+        this.deleting.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al eliminar la cuenta. Intenta de nuevo.');
+      }
+    });
+  }
+
+  cancelDeletion(): void {
+    if (this.cancelingDeletion()) return;
+    this.cancelingDeletion.set(true);
+    this.userService.cancelDeletion().subscribe({
+      next: () => {
+        this.cancelingDeletion.set(false);
+        this.userService.getProfile().subscribe({ next: fresh => this.user.set(fresh) });
+        this.toastService.success('Eliminación cancelada');
+      },
+      error: (err) => {
+        this.cancelingDeletion.set(false);
+        this.toastService.error(err?.error?.message ?? 'Error al cancelar la eliminación');
+      }
+    });
+  }
+
+  getDaysUntilDeletion(): number {
+    const scheduled = this.user()?.deletionScheduledAt;
+    if (!scheduled) return 0;
+    const diff = new Date(scheduled).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  // ── Probador de apariencia ──
+
+  unlockedByType(type: string): Reward[] {
+    return this.rewards().filter(r => r.type === type && r.unlocked);
+  }
+
+  toggleCustomization(): void {
+    if (!this.showCustomization()) this.resetPreview();
+    this.showCustomization.update(v => !v);
+  }
+
+  selectPreview(type: string, reward: Reward | null): void {
+    const setters: Record<string, (r: Reward | null) => void> = {
+      AVATAR: (r) => this.previewAvatar.set(r),
+      FRAME: (r) => this.previewFrame.set(r),
+      BADGE: (r) => this.previewBadge.set(r),
+      TITLE: (r) => this.previewTitle.set(r),
+      AURA: (r) => this.previewAura.set(r),
+    };
+    setters[type]?.(reward);
+  }
+
+  getPreviewValue(type: string): Reward | null {
+    const map: Record<string, () => Reward | null> = {
+      AVATAR: () => this.previewAvatar(),
+      FRAME: () => this.previewFrame(),
+      BADGE: () => this.previewBadge(),
+      TITLE: () => this.previewTitle(),
+      AURA: () => this.previewAura(),
+    };
+    return map[type]?.() ?? null;
+  }
+
+  getPreviewFrameClass(): string {
+    return this.rewardVisuals.getFrameClass(this.previewFrame());
+  }
+
+  getPreviewAuraClass(): string {
+    return this.rewardVisuals.getAuraClass(this.previewAura());
+  }
+
+  hasPreviewChanges(): boolean {
+    return this.previewAvatar()?.id !== this.equippedAvatar()?.id
+      || this.previewFrame()?.id !== this.equippedFrame()?.id
+      || this.previewBadge()?.id !== this.equippedBadge()?.id
+      || this.previewTitle()?.id !== this.equippedTitle()?.id
+      || this.previewAura()?.id !== this.equippedAura()?.id;
+  }
+
+  resetPreview(): void {
+    this.previewAvatar.set(this.equippedAvatar());
+    this.previewFrame.set(this.equippedFrame());
+    this.previewBadge.set(this.equippedBadge());
+    this.previewTitle.set(this.equippedTitle());
+    this.previewAura.set(this.equippedAura());
+  }
+
+  saveCustomization(): void {
+    if (this.customizing() || !this.hasPreviewChanges()) return;
+    this.customizing.set(true);
+
+    const slots: Array<[Reward | null, Reward | null]> = [
+      [this.equippedAvatar(), this.previewAvatar()],
+      [this.equippedFrame(), this.previewFrame()],
+      [this.equippedBadge(), this.previewBadge()],
+      [this.equippedTitle(), this.previewTitle()],
+      [this.equippedAura(), this.previewAura()],
+    ];
+
+    // No hay certeza de que el backend desequipe solo el reward anterior
+    // del mismo tipo. Por eso, si cambia A → B, se llama equipReward para
+    // AMBOS (desequipar A, equipar B) en vez de asumir el efecto colateral.
+    const calls = slots
+      .filter(([current, next]) => current?.id !== next?.id)
+      .flatMap(([current, next]) => {
+        const ids: string[] = [];
+        if (current) ids.push(current.id);
+        if (next) ids.push(next.id);
+        return ids;
+      })
+      .map(id => this.achievementService.equipReward(id));
+
+    if (!calls.length) { this.customizing.set(false); return; }
+
+    forkJoin(calls).subscribe({
+      next: () => {
+        this.achievementService.getRewards().subscribe({ next: r => this.rewards.set(r) });
+        this.customizing.set(false);
+        this.showCustomization.set(false);
+        this.toastService.success('Apariencia actualizada');
+      },
+      error: () => {
+        this.customizing.set(false);
+        this.toastService.error('Error al actualizar la apariencia');
+      }
+    });
+  }
+
+  // ── Ranking ──
+
+  private loadRankingSummary(): void {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    forkJoin({
+      position: this.api.get<{ position: number }>('/ranking/user/' + userId),
+      list: this.api.get<{ meta: { total: number } }>('/ranking?page=1&limit=1'),
+    }).subscribe({
+      next: ({ position, list }) => {
+        this.rankingSummary.set({ position: position.position, total: list.meta.total });
+      },
+      error: () => {
+        // Dato decorativo: si falla, la card de percentil simplemente no se muestra.
+      }
+    });
+  }
+
+  getTopPercent(): number {
+    const s = this.rankingSummary();
+    if (!s || !s.total) return 0;
+    return Math.max(1, Math.round((s.position / s.total) * 100));
+  }
+
+  // ── Actividad ──
+
+  getActivityTimeline(): ActivityEvent[] {
+    const u = this.user();
+    if (!u) return [];
+
+    const events: ActivityEvent[] = [
+      { type: 'account', date: new Date(u.createdAt), title: 'Cuenta creada', description: 'Te uniste a FinanzaViva' },
+    ];
+
+    if (u.passwordChangedAt) {
+      events.push({
+        type: 'password',
+        date: new Date(u.passwordChangedAt),
+        title: 'Contraseña actualizada',
+        description: 'Cambiaste tu contraseña',
+      });
+    }
+
+    for (const a of this.achievements()) {
+      if (a.unlocked && a.unlockedAt) {
+        events.push({
+          type: 'achievement',
+          date: new Date(a.unlockedAt),
+          title: a.name,
+          description: `Logro desbloqueado · +${a.xpReward} XP`,
+        });
+      }
+    }
+
+    return events.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
+  // ── Estadísticas / helpers generales ──
+
+  getXpProgress(): number {
+    return (this.user()?.gameStats.xp ?? 0) % 100;
+  }
+
+  getRankLabel(rank: string): string {
+    return RANK_LABEL_MAP[rank] ?? rank;
+  }
+
+  getRankColor(rank: string): string {
+    return ({
+      ROOKIE: 'bg-subtle/20 text-muted border-subtle/30',
+      APPRENTICE: 'bg-success/20  text-success  border-success/30',
+      INTERMEDIATE: 'bg-primary/20   text-primary   border-primary/30',
+      ADVANCED: 'bg-primary-muted/20 text-primary-light border-primary-muted/30',
+      EXPERT: 'bg-warning/20  text-warning  border-warning/30',
+      MASTER: 'bg-danger/20    text-danger    border-danger/30'
+    } as Record<string, string>)[rank] ?? 'bg-subtle/20 text-muted border-subtle/30';
+  }
+
+  getInitials(name: string): string {
+    return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  }
+
+  getPassRate(): number {
+    const s = this.user()?.statistics;
+    if (!s?.quizzesCompleted) return 0;
+    return Math.round((s.distinctPassedQuizzes ?? 0) / s.quizzesCompleted * 100);
+  }
+
+  getWinRate(): number {
+    const s = this.user()?.statistics;
+    if (!s?.gamesPlayed) return 0;
+    return Math.round((s.gamesWon / s.gamesPlayed) * 100);
+  }
+
+  getFrameClass(): string {
+    return this.rewardVisuals.getFrameClass(this.equippedFrame());
+  }
+
+  getAuraClass(): string {
+    return this.rewardVisuals.getAuraClass(this.equippedAura());
+  }
+
+  logout(): void {
+    this.authService.logout();
   }
 }
