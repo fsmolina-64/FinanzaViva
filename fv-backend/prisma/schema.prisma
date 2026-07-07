@@ -188,6 +188,8 @@ model User {
   passwordHash String
   isActive     Boolean  @default(true)
   isVerified   Boolean  @default(false)
+  passwordChangedAt   DateTime?
+  deletionScheduledAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

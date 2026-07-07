@@ -23,7 +23,7 @@ export class ApiService {
     return this.http.patch<T>(`${this.baseUrl}${path}`, body);
   }
 
-  delete<T>(path: string): Observable<T> {
-    return this.http.delete<T>(`${this.baseUrl}${path}`);
+  delete<T>(path: string, options?: { body?: any }): Observable<T> {
+    return this.http.delete<T>(`${this.baseUrl}${path}`, options);
   }
 }   

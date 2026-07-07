@@ -6,6 +6,7 @@ import { trigger, transition, style, animate, query, stagger } from '@angular/an
 import { RankLabelPipe } from '../../shared/pipes/rank-label.pipe';
 import { fadeInUp } from '../../core/animations/animations';
 import { environment } from '../../../environments/environment';
+import { RewardVisualsService } from '../../core/services/reward-visuals.service';
 
 interface Breakdown {
   academic: number;
@@ -68,6 +69,7 @@ interface RankingResponse {
 export class RankingComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly rewardVisuals = inject(RewardVisualsService);
 
   rankingData = signal<RankingUser[]>([]);
   loading = signal(true);
@@ -153,21 +155,10 @@ export class RankingComponent implements OnInit {
   }
 
   getFrameClass(frame: EquippedReward | null): string {
-    if (!frame) return 'border-strong';
-    const map: Record<string, string> = {
-      '🥉': 'border-amber-700 shadow-amber-700/40 shadow-md',
-      '🥈': 'border-muted shadow-muted/40 shadow-md',
-      '🥇': 'border-warning shadow-warning/50 shadow-lg',
-      '💠': 'border-primary shadow-primary/50 shadow-lg',
-    };
-    return map[frame.icon] ?? 'border-strong';
+    return this.rewardVisuals.getFrameClass(frame);
   }
 
   getAuraClass(aura: EquippedReward | null): string {
-    if (!aura) return '';
-    if (aura.icon === '💙') return 'aura-blue';
-    if (aura.icon === '✨') return 'aura-gold';
-    if (aura.icon === '🔮') return 'aura-legendary';
-    return '';
+    return this.rewardVisuals.getAuraClass(aura);
   }
 }
