@@ -45,6 +45,7 @@ export class MainLayout implements OnInit {
   ngOnInit(): void {
     if (this.authService.currentUser()) {
       this.gamificationService.loadStats().subscribe();
+      this.gamificationService.registerStreak().subscribe();
       this.userService.getProfile().subscribe({
         next: p => this.authService.refreshProfile(p.profile),
       });

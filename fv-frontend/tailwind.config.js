@@ -21,13 +21,15 @@ module.exports = {
         success: '#34C759',
         danger: '#FF3B30',
         warning: '#FFCC00',
+        gold: '#C9A227',
         accent: {
-          blue: '#3B82F6',
+          blue: '#3477e3ff',
           emerald: '#10B981',
           amber: '#F59E0B',
           purple: '#A855F7',
           violet: '#8B5CF6',
           orange: '#F97316',
+          pink: '#F9A8D4',
         },
       },
     }

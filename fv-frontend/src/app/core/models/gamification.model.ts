@@ -19,10 +19,13 @@ export interface GamificationStats {
 }
 
 export type StreakStatus = 'ACTIVE' | 'AT_RISK' | 'LOST';
+export type StreakEvent = 'FIRST_STREAK' | 'STREAK_INCREASED' | 'STREAK_RECOVERED' | 'STREAK_LOST';
 
 export interface StreakResponse {
   currentStreak: number;
   streakStatus: StreakStatus | null;
+  previousStreak: number;
+  streakEvent: StreakEvent | null;
 }
 
 export interface XpRequest {

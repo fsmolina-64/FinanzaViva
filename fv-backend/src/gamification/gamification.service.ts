@@ -104,6 +104,7 @@ export class GamificationService {
 
     const now = new Date();
     const last = stats.lastActivityAt;
+    const previousStreak = stats.currentStreak;
 
     const todayCalendar = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const lastCalendar = last
@@ -120,24 +121,31 @@ export class GamificationService {
       return {
         currentStreak: stats.currentStreak,
         streakStatus: null,
+        previousStreak,
+        streakEvent: null,
       };
     }
 
     let newStreak: number;
     let streakStatus: 'ACTIVE' | 'AT_RISK' | 'LOST';
+    let streakEvent: 'FIRST_STREAK' | 'STREAK_INCREASED' | 'STREAK_RECOVERED' | 'STREAK_LOST';
 
     if (diffDays === null) {
       newStreak = 1;
       streakStatus = 'ACTIVE';
+      streakEvent = 'FIRST_STREAK';
     } else if (diffDays === 1) {
       newStreak = stats.currentStreak + 1;
       streakStatus = 'ACTIVE';
+      streakEvent = 'STREAK_INCREASED';
     } else if (diffDays === 2) {
       newStreak = stats.currentStreak;
       streakStatus = 'AT_RISK';
+      streakEvent = 'STREAK_RECOVERED';
     } else {
       newStreak = 1;
       streakStatus = 'LOST';
+      streakEvent = 'STREAK_LOST';
     }
 
     const longestStreak = Math.max(newStreak, stats.longestStreak);
@@ -164,7 +172,7 @@ export class GamificationService {
       },
     });
 
-    return { currentStreak: newStreak, streakStatus };
+    return { currentStreak: newStreak, streakStatus, previousStreak, streakEvent };
   }
 
   async getStreakHistory(userId: string, month: number, year: number) {

@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { GamificationService } from './gamification.service';
 import { OnboardingService } from './onboarding.service';
 import { LoginRequest, RegisterRequest, AuthResponse, AuthUser } from '../models/auth.model';
 
@@ -18,18 +19,25 @@ export class AuthService {
   constructor(
     private api: ApiService,
     private router: Router,
-    private onboardingService: OnboardingService
+    private onboardingService: OnboardingService,
+    private gamificationService: GamificationService
   ) {}
 
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/auth/login', data).pipe(
-      tap(response => this.saveSession(response))
+      tap(response => this.saveSession(response)),
+      switchMap(response => this.gamificationService.registerStreak().pipe(
+        map(() => response)
+      ))
     );
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/auth/register', data).pipe(
-      tap(response => this.saveSession(response))
+      tap(response => this.saveSession(response)),
+      switchMap(response => this.gamificationService.registerStreak().pipe(
+        map(() => response)
+      ))
     );
   }
 
@@ -51,7 +59,7 @@ export class AuthService {
     this.isLoggedIn.set(false);
     this.currentUser.set(null);
     this.onboardingService.clearAll();
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/']);
   }
 
   getToken(): string | null {
