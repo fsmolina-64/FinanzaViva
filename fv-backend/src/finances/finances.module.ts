@@ -4,11 +4,13 @@ import { AccountsService } from './accounts.service';
 import { TransactionsService } from './transactions.service';
 import { FinancesController } from './finances.controller';
 import { GamificationModule } from '../gamification/gamification.module';
+import { PdfReportDataService } from './pdf/pdf-report-data.service';
+import { PdfReportService } from './pdf/pdf-report.service';
 
 @Module({
   imports: [GamificationModule],
   controllers: [FinancesController],
-  providers: [FinancesService, AccountsService, TransactionsService],
+  providers: [FinancesService, AccountsService, TransactionsService, PdfReportDataService, PdfReportService],
   exports: [FinancesService],
 })
 export class FinancesModule {}
