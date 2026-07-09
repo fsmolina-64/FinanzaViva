@@ -1,12 +1,14 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { getPasswordStrength, PasswordStrengthResult } from '../../../core/utils/password-strength.util';
+import { IconComponent } from '../../../shared/components/icon/icon';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, CommonModule, RouterLink],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, IconComponent],
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
@@ -15,6 +17,13 @@ export class Register {
   loading = signal(false);
   error = signal<string | null>(null);
   showPassword = signal(false);
+  passwordValue = signal('');
+
+  readonly strengthSegments = [0, 1, 2, 3];
+
+  passwordStrength = computed<PasswordStrengthResult>(() =>
+    getPasswordStrength(this.passwordValue())
+  );
 
   constructor(
     private fb: FormBuilder,
@@ -24,7 +33,7 @@ export class Register {
     this.form = this.fb.group({
       displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
+      password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/)]],
       confirmPassword: ['', [Validators.required]]
     }, { validators: this.passwordMatch });
   }
@@ -40,6 +49,22 @@ export class Register {
     return pass === confirm ? null : { mismatch: true };
   }
 
+  onPasswordInput(value: string): void {
+    this.passwordValue.set(value);
+  }
+
+  getStrengthBarColor(score: number): string {
+    if (score <= 1) return 'bg-danger';
+    if (score === 2) return 'bg-warning';
+    return 'bg-success';
+  }
+
+  getStrengthLabelColor(score: number): string {
+    if (score <= 1) return 'text-danger';
+    if (score === 2) return 'text-warning';
+    return 'text-success';
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -53,7 +78,8 @@ export class Register {
     this.authService.register({ displayName, email, password }).subscribe({
       next: () => this.router.navigate(['/onboarding']),
       error: (err) => {
-        this.error.set(err.error?.message || 'Error al registrarse');
+        const msg = err.error?.message;
+        this.error.set(Array.isArray(msg) ? msg[0] : msg || 'Error al registrarse');
         this.loading.set(false);
       }
     });

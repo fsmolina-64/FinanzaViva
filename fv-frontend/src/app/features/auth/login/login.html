@@ -1,80 +1,87 @@
 <div class="animate-slide-up">
-  
+
   <img src="/logo-oficial.png" alt="Logo de FinanzaViva" class="w-32 h-32 object-contain mx-auto mb-6">
 
   <h2 class="text-primary text-2xl font-bold text-center mb-1">Bienvenido de vuelta</h2>
   <p class="text-muted text-sm mb-8">Ingresa a tu cuenta para continuar</p>
 
   @if (error()) {
-    <div class="bg-danger/10 border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl mb-6 animate-shake flex items-center gap-2">
-      <span>⚠️</span>
-      <span>{{ error() }}</span>
-    </div>
+  <div role="alert"
+    class="bg-danger/10 border border-danger/30 text-danger text-sm px-4 py-3 rounded-xl mb-6 animate-shake flex items-center gap-2">
+    <app-icon name="alert-triangle" [size]="16" />
+    <span>{{ error() }}</span>
+  </div>
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
 
     <div class="form-group">
-      <label class="text-primary text-sm font-medium mb-2 block">
+      <label for="login-email" class="text-primary text-sm font-medium mb-2 block">
         Correo electrónico
       </label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">📧</span>
-        <input
-          formControlName="email"
-          type="email"
-          placeholder="tu@email.com"
-          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong"
-        />
+      <div class="relative group transition-transform duration-200 focus-within:-translate-y-0.5">
+        <span
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent-blue transition-colors duration-200">
+          <app-icon name="mail" />
+        </span>
+        <input id="login-email" formControlName="email" type="email" autocomplete="email" placeholder="tu@email.com" [ngClass]="{
+            'border-danger focus:border-danger focus:ring-danger focus:shadow-danger/10': email.touched && email.invalid,
+            'border-success focus:border-success focus:ring-success focus:shadow-success/10': email.touched && email.valid,
+            'border-default focus:border-accent-blue focus:ring-accent-blue focus:shadow-accent-blue/10': !email.touched
+          }"
+          class="w-full bg-input border text-primary placeholder-subtle rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:shadow-sm transition-all duration-200 hover:border-strong" />
       </div>
       @if (email.touched && email.errors?.['required']) {
-        <p class="text-danger text-xs mt-1.5 animate-fade-in">El correo es requerido</p>
+      <p class="text-danger text-xs mt-1.5 animate-fade-in">El correo es requerido</p>
       }
       @if (email.touched && email.errors?.['email']) {
-        <p class="text-danger text-xs mt-1.5 animate-fade-in">Correo inválido</p>
+      <p class="text-danger text-xs mt-1.5 animate-fade-in">Correo inválido</p>
       }
     </div>
 
     <div class="form-group">
-      <label class="text-primary text-sm font-medium mb-2 block">
+      <label for="login-password" class="text-primary text-sm font-medium mb-2 block">
         Contraseña
       </label>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">🔒</span>
-        <input
-          formControlName="password"
-          [type]="showPassword() ? 'text' : 'password'"
-          placeholder="••••••••"
-          class="w-full bg-input border border-default text-primary placeholder-subtle rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue focus:shadow-sm focus:shadow-accent-blue/10 transition-all duration-200 hover:border-strong"
-        />
-        <button
-          type="button"
-          (click)="togglePassword()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary btn-press transition-all duration-200"
-        >
-          {{ showPassword() ? '🙈' : '👁️' }}
+      <div class="relative group transition-transform duration-200 focus-within:-translate-y-0.5">
+        <span
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent-blue transition-colors duration-200">
+          <app-icon name="lock" />
+        </span>
+        <input id="login-password" formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="current-password"
+          placeholder="••••••••" [ngClass]="{
+            'border-danger focus:border-danger focus:ring-danger focus:shadow-danger/10': password.touched && password.invalid,
+            'border-success focus:border-success focus:ring-success focus:shadow-success/10': password.touched && password.valid,
+            'border-default focus:border-accent-blue focus:ring-accent-blue focus:shadow-accent-blue/10': !password.touched
+          }"
+          class="w-full bg-input border text-primary placeholder-subtle rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:ring-1 focus:shadow-sm transition-all duration-200 hover:border-strong" />
+        <button type="button" (click)="togglePassword()"
+          [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary btn-press transition-all duration-200">
+          @if (showPassword()) {
+          <app-icon name="eye-off" />
+          } @else {
+          <app-icon name="eye" />
+          }
         </button>
       </div>
       @if (password.touched && password.errors?.['required']) {
-        <p class="text-danger text-xs mt-1.5 animate-fade-in">La contraseña es requerida</p>
+      <p class="text-danger text-xs mt-1.5 animate-fade-in">La contraseña es requerida</p>
       }
       @if (password.touched && password.errors?.['minlength']) {
-        <p class="text-danger text-xs mt-1.5 animate-fade-in">Mínimo 6 caracteres</p>
+      <p class="text-danger text-xs mt-1.5 animate-fade-in">Mínimo 6 caracteres</p>
       }
     </div>
 
-    <button
-      type="submit"
-      [disabled]="loading()"
-      class="w-full bg-accent-blue hover:bg-accent-blue/90 text-primary font-semibold py-3 rounded-xl btn-press transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-blue/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
-    >
+    <button type="submit" [disabled]="loading()"
+      class="w-full bg-accent-blue hover:bg-accent-blue/90 text-primary font-semibold py-3 rounded-xl btn-press transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-accent-blue/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2">
       @if (loading()) {
-        <span class="flex items-center justify-center gap-2">
-          <span class="animate-spin">⏳</span>
-          Ingresando...
-        </span>
+      <span class="flex items-center justify-center gap-2">
+        <app-icon name="loader" [size]="16" class="animate-spin" />
+        Ingresando...
+      </span>
       } @else {
-        Ingresar
+      Ingresar
       }
     </button>
 
@@ -82,7 +89,8 @@
 
   <p class="text-muted text-sm text-center mt-6 group">
     ¿No tienes cuenta?
-    <a routerLink="/auth/register" class="text-accent-blue group-hover:text-accent-blue/80 font-medium transition-all duration-200 hover:underline">
+    <a routerLink="/auth/register"
+      class="text-accent-blue group-hover:text-accent-blue/80 font-medium transition-all duration-200 hover:underline">
       Regístrate gratis
     </a>
   </p>

@@ -26,4 +26,8 @@ export class CreateTransactionDto {
   @IsOptional()
   @IsBoolean()
   allowNegative?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isInitialBalance?: boolean;
 }
