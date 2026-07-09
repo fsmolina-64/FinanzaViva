@@ -1,0 +1,20 @@
+@keyframes bg-video-zoom {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.08);
+    }
+}
+
+.bg-video-zoom {
+    animation: bg-video-zoom 24s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bg-video-zoom {
+        animation: none;
+    }
+}

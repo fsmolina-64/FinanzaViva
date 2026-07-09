@@ -109,6 +109,15 @@ export class EditTransactionModal implements OnInit {
       this.transferGroupId = td.groupId;
     } else {
       const t = tx as Transaction;
+      const isAdjustmentTx = !t.isInitialBalance && (
+        t.description?.startsWith('Ajuste de balance') ||
+        t.description?.startsWith('Balance inicial')
+      );
+      if (t.isInitialBalance || isAdjustmentTx) {
+        this.toast.warning('No puedes editar un ajuste de balance');
+        this.editTxService.close();
+        return;
+      }
       this.txId = t.id;
       this.isBalanceTx = !!t.isInitialBalance;
       this.originalType = t.type as 'INCOME' | 'EXPENSE';

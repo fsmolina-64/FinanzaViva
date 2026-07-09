@@ -1,0 +1,27 @@
+form .form-group {
+    opacity: 0;
+    animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+form .form-group:nth-of-type(1) {
+    animation-delay: 0.05s;
+}
+
+form .form-group:nth-of-type(2) {
+    animation-delay: 0.12s;
+}
+
+form button[type="submit"] {
+    opacity: 0;
+    animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: 0.19s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    form .form-group,
+    form button[type="submit"] {
+        opacity: 1;
+        animation: none;
+    }
+}

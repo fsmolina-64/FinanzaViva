@@ -3,10 +3,11 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { IconComponent } from '../../../shared/components/icon/icon';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, CommonModule, RouterLink],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, IconComponent],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -42,7 +43,8 @@ export class Login {
     this.authService.login(this.form.value).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
-        this.error.set(err.error?.message || 'Credenciales incorrectas');
+        const msg = err.error?.message;
+        this.error.set(Array.isArray(msg) ? msg[0] : msg || 'Credenciales incorrectas');
         this.loading.set(false);
       }
     });

@@ -19,6 +19,12 @@ export function getPasswordStrength(password: string): PasswordStrengthResult {
   const hasUpper = /[A-Z]/.test(password);
   const hasDigit = /\d/.test(password);
   const hasSymbol = /[^a-zA-Z0-9]/.test(password);
+
+  if (!hasLower) suggestions.push('Falta una minúscula');
+  if (!hasUpper) suggestions.push('Falta una mayúscula');
+  if (!hasDigit) suggestions.push('Falta un número');
+  if (!hasSymbol) suggestions.push('Falta un carácter especial');
+
   const variety = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length;
 
   if (password.length >= 8) score++;
@@ -27,7 +33,6 @@ export function getPasswordStrength(password: string): PasswordStrengthResult {
   if (password.length >= 12) score++;
 
   if (variety >= 3) score++;
-  else suggestions.push('Combina mayúsculas, minúsculas, números y símbolos');
 
   if (!/(.)\1{2,}/.test(password)) score++;
   else suggestions.push('Evita repetir el mismo carácter varias veces');
