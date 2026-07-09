@@ -37,7 +37,7 @@ export class TransactionsService {
     });
     if (!account || account.userId !== userId) throw new ForbiddenException();
 
-    if (dto.type === 'EXPENSE' && !dto.allowNegative) {
+    if (dto.type === 'EXPENSE' && !dto.allowNegative && !dto.isInitialBalance) {
       if (Number(account.balance) < dto.amount) {
         throw new BadRequestException(
           `Saldo insuficiente. Tienes $${Number(account.balance).toFixed(2)} y quieres gastar $${dto.amount.toFixed(2)}`,
@@ -57,6 +57,7 @@ export class TransactionsService {
           type: dto.type,
           description: dto.description,
           date: new Date(dto.date),
+          isInitialBalance: dto.isInitialBalance ?? false,
         },
       }),
       this.prisma.financialAccount.update({
@@ -123,6 +124,10 @@ export class TransactionsService {
     if (!tx) throw new NotFoundException('Transacción no encontrada');
     if (tx.userId !== userId) throw new ForbiddenException();
 
+    if (tx.isInitialBalance || tx.description?.startsWith('Ajuste de balance') || tx.description?.startsWith('Balance inicial')) {
+      throw new BadRequestException('No puedes editar un ajuste de balance');
+    }
+
     const newAccountId = dto.accountId ?? tx.accountId;
     const newType = dto.type ?? tx.type;
     const newAmount = dto.amount ?? Number(tx.amount);
@@ -176,7 +181,7 @@ export class TransactionsService {
     return this.prisma.transaction.findMany({
       where: { userId },
       include: { category: true, account: true },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     });
   }
 

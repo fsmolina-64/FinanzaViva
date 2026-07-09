@@ -131,6 +131,7 @@ export interface CreateTransactionPayload {
   description?: string;
   date: string;
   allowNegative?: boolean;
+  isInitialBalance?: boolean;
 }
 
 export interface CreateBudgetPayload {

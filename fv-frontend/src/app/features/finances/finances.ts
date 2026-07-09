@@ -19,7 +19,7 @@ import { EditTransactionModalService } from '../../core/services/edit-transactio
 import { filterAmountKey, sanitizeNumberInput, parseAmount, validateAmount, formatCurrency } from '../../shared/utils/amount.utils';
 import { buildTransferDisplay } from './transfer-group.util';
 import {
-  formatDateLabel, isInitBalanceTx, getCategoryName, getAccountName,
+  formatDateLabel, isInitBalanceTx, isBalanceAdjustmentTx, getCategoryName, getAccountName,
   getTransactionBg, getTransactionColor, getTransactionSign, getTransactionLabel,
   getAccountTypeLabel, getAccountTypeColor, getGoalProgress,
   computeSpent, getBudgetPct, getRecurrenceLabel, extractError,
@@ -490,16 +490,29 @@ export class Finances implements OnInit {
 
     const afterNameUpdate = () => {
       if (mode === 'adjustment') {
-        this.financeService.updateAccount(acc.id, { balance: newBalance }).subscribe({
-          next: updated => {
-            this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
-            this.financeService.getTransactions().subscribe({ next: d => this.transactions.set(d) });
+        if (diff === 0) { this.cancelEditAccount(); this.pendingAccountEdit = null; return; }
+        const cat = diff > 0
+          ? this.categories().find(c => c.type === 'INCOME')
+          : this.categories().find(c => c.type === 'EXPENSE');
+        if (!cat) { this.toast.error(`No hay categoría de ${diff > 0 ? 'ingreso' : 'gasto'} disponible`); return; }
+        this.financeService.createTransaction({
+          accountId: acc.id,
+          categoryId: cat.id,
+          amount: Math.abs(diff),
+          type: diff > 0 ? 'INCOME' : 'EXPENSE',
+          description: `Ajuste directo de ${acc.name}`,
+          date: new Date().toISOString().split('T')[0],
+          isInitialBalance: true,
+        }).subscribe({
+          next: res => {
+            this.transactions.update(l => [res.transaction, ...l]);
+            this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
             this.refreshSummary();
             this.pendingAccountEdit = null;
             this.cancelEditAccount();
-            this.toast.success('Balance actualizado');
+            this.toast.success('Ajuste directo registrado');
           },
-          error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+          error: err => this.toast.error(this.extractError(err, 'Error al registrar el ajuste directo'))
         });
       } else {
         if (diff === 0) { this.cancelEditAccount(); this.pendingAccountEdit = null; return; }
@@ -1032,6 +1045,7 @@ export class Finances implements OnInit {
   }
 
   isInitBalanceTx(tx: any): boolean { return isInitBalanceTx(tx); }
+  isBalanceAdjustmentTx(tx: any): boolean { return isBalanceAdjustmentTx(tx); }
 
   editBudgetCategoryDeleted(): boolean {
     return !!this.editingBudgetId() && !!this.editBudget.categoryId && !this.categories().some(c => c.id === this.editBudget.categoryId);
