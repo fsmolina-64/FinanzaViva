@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed, effect, untracked, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { tabSlideAnimation } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -1157,49 +1158,70 @@ export class Finances implements OnInit {
       return;
     }
     this.exporting.set(true);
-    try {
-      const transferGroups: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[] = [];
-      const transferMap = new Map<string, Transaction[]>();
-      for (const tx of this.transactions()) {
-        if (tx.type === 'TRANSFER' && tx.transferGroupId) {
-          const g = transferMap.get(tx.transferGroupId) || [];
-          g.push(tx);
-          transferMap.set(tx.transferGroupId, g);
-        }
-      }
-      for (const [, g] of transferMap) {
-        if (g.length >= 2) {
-          const from = g.find(t => {
-            const other = g.find(o => o.id !== t.id);
-            return other && t.accountId !== other.accountId;
-          }) ?? g[0];
-          const to = g.find(t => t.id !== from.id)!;
-          transferGroups.push({ groupId: from.transferGroupId!, fromAccountId: from.accountId, toAccountId: to.accountId, amount: parseFloat(String(from.amount)), description: from.description || to.description, date: from.date });
-        }
-      }
+    const from = this.exportDateFrom();
+    const to = this.exportDateTo();
 
-      await this.pdfExport.generateReport(
-        {
-          userName: this.authService.currentUser()?.displayName ?? 'Usuario',
-          transactions: this.transactions(),
-          accounts: this.accounts(),
-          budgets: this.budgets(),
-          goals: this.goals(),
-          categories: this.categories(),
-          summary: this.summary()!,
-          health: this.health()!,
-          transferGroups,
-        },
-        { from: this.exportDateFrom(), to: this.exportDateTo() }
-      );
+    try {
+      const blob = await firstValueFrom(this.financeService.exportPdfServerSide(from, to));
+      if (!blob || blob.size === 0) throw new Error('PDF vacío recibido del backend');
+      this.downloadBlob(blob, `FinanzaViva_${from}_${to}.pdf`);
       this.showExportModal.set(false);
       this.toast.success('PDF generado correctamente');
-    } catch (e) {
-      this.toast.error('Error al generar el PDF');
-      console.error(e);
+    } catch (backendError) {
+      console.error('export-pdf backend falló, usando fallback local', backendError);
+      try {
+        const transferGroups: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[] = [];
+        const transferMap = new Map<string, Transaction[]>();
+        for (const tx of this.transactions()) {
+          if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+            const g = transferMap.get(tx.transferGroupId) || [];
+            g.push(tx);
+            transferMap.set(tx.transferGroupId, g);
+          }
+        }
+        for (const [, g] of transferMap) {
+          if (g.length >= 2) {
+            const fromLeg = g.find(t => {
+              const other = g.find(o => o.id !== t.id);
+              return other && t.accountId !== other.accountId;
+            }) ?? g[0];
+            const toLeg = g.find(t => t.id !== fromLeg.id)!;
+            transferGroups.push({ groupId: fromLeg.transferGroupId!, fromAccountId: fromLeg.accountId, toAccountId: toLeg.accountId, amount: parseFloat(String(fromLeg.amount)), description: fromLeg.description || toLeg.description, date: fromLeg.date });
+          }
+        }
+
+        await this.pdfExport.generateReport(
+          {
+            userName: this.authService.currentUser()?.displayName ?? 'Usuario',
+            transactions: this.transactions(),
+            accounts: this.accounts(),
+            budgets: this.budgets(),
+            goals: this.goals(),
+            categories: this.categories(),
+            summary: this.summary()!,
+            health: this.health()!,
+            transferGroups,
+          },
+          { from, to }
+        );
+        this.showExportModal.set(false);
+        this.toast.success('PDF generado correctamente');
+      } catch (frontendError) {
+        this.toast.error('Error al generar el PDF');
+        console.error(frontendError);
+      }
     } finally {
       this.exporting.set(false);
     }
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   getTransferDestinations(): Account[] {
