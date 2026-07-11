@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Delete, Patch, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Patch, Body, Param, Query, UseGuards, Request, BadRequestException, Res, StreamableFile } from '@nestjs/common';
+import type { Response } from 'express';
 import { FinancesService } from './finances.service';
 import { AccountsService } from './accounts.service';
 import { TransactionsService } from './transactions.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
+import { PdfReportDataService } from './pdf/pdf-report-data.service';
+import { PdfReportService } from './pdf/pdf-report.service';
+import { ExportPdfDto } from './dto/export-pdf.dto';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -22,6 +26,8 @@ export class FinancesController {
     private financesService: FinancesService,
     private accountsService: AccountsService,
     private transactionsService: TransactionsService,
+    private pdfReportDataService: PdfReportDataService,
+    private pdfReportService: PdfReportService,
   ) {}
 
   @Get('summary')
@@ -98,4 +104,20 @@ export class FinancesController {
 
   @Delete('transfers/:groupId')
   deleteTransfer(@Request() req: any, @Param('groupId') groupId: string) { return this.transactionsService.deleteTransferByGroup(req.user.id, groupId); }
+
+  @Post('export-pdf')
+  async exportPdf(@Request() req: any, @Body() dto: ExportPdfDto, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {
+    if (dto.from > dto.to) {
+      throw new BadRequestException('"from" no puede ser posterior a "to"');
+    }
+
+    const data = await this.pdfReportDataService.buildReportData(req.user.id);
+    const buffer = await this.pdfReportService.generateReportBuffer(data, { from: dto.from, to: dto.to });
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="FinanzaViva_${dto.from}_${dto.to}.pdf"`,
+    });
+    return new StreamableFile(buffer);
+  }
 }
