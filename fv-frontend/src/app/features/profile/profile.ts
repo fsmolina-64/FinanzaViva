@@ -6,6 +6,7 @@ import { forkJoin, of, Observable } from 'rxjs';
 import { staggerCards } from '../../core/animations/animations';
 import { AvatarIdentityService } from '../../core/services/avatar-identity.service';
 import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
+import { getRankColors } from '../../core/constants/rank-colors.const';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
@@ -489,14 +490,7 @@ export class Profile implements OnInit {
   }
 
   getRankColor(rank: string): string {
-    return ({
-      ROOKIE: 'bg-subtle/20 text-muted border-subtle/30',
-      APPRENTICE: 'bg-success/20  text-success  border-success/30',
-      INTERMEDIATE: 'bg-primary/20   text-primary   border-primary/30',
-      ADVANCED: 'bg-primary-muted/20 text-primary-light border-primary-muted/30',
-      EXPERT: 'bg-warning/20  text-warning  border-warning/30',
-      MASTER: 'bg-danger/20    text-danger    border-danger/30'
-    } as Record<string, string>)[rank] ?? 'bg-subtle/20 text-muted border-subtle/30';
+    return getRankColors(rank).badge;
   }
 
   getInitials(name: string): string {

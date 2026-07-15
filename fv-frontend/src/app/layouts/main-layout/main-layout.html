@@ -16,11 +16,14 @@
         <span class="font-medium text-primary">{{ gamificationService.stats()!.xp }} XP</span>
       </div>
       <div class="h-1.5 bg-elevated rounded-full overflow-hidden">
-        <div class="h-full bg-gradient-to-r from-primary-light to-success rounded-full transition-all duration-700"
-          [style.width.%]="gamificationService.stats()!.xp % 100"></div>
+        <div class="h-full bg-gradient-to-r rounded-full transition-all duration-700"
+          [ngClass]="[getRankColors(gamificationService.stats()!.rank).barFrom, getRankColors(gamificationService.stats()!.rank).barTo]"
+          [style.width.%]="gamificationService.stats()!.xpProgress"></div>
       </div>
-      <div class="mt-1.5 text-xs text-success font-medium flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse-soft"></span>
+      <div class="mt-1.5 text-xs font-medium flex items-center gap-1.5"
+        [ngClass]="getRankColors(gamificationService.stats()!.rank).badge.split(' ').find(c => c.startsWith('text-')) ?? 'text-muted'">
+        <span class="w-1.5 h-1.5 rounded-full animate-pulse-soft"
+          [ngClass]="getRankColors(gamificationService.stats()!.rank).dot"></span>
         {{ getRankLabel(gamificationService.stats()!.rank) }}
       </div>
     </div>

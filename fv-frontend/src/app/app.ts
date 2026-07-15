@@ -6,7 +6,7 @@ import { routeAnimation, fabMenuAnimation } from './core/animations/animations';
 import { QuickTransactionModal } from './shared/components/quick-transaction-modal/quick-transaction-modal';
 import { EditTransactionModal } from './features/finances/edit-transaction-modal/edit-transaction-modal';
 import { ToastComponent } from './shared/components/toast/toast';
-import { QuickTransactionService, QuickTransactionResult } from './core/services/quick-transaction.service';
+import { QuickTransactionService, QuickTransactionResult, QuickTransferResult } from './core/services/quick-transaction.service';
 import { EditTransactionModalService } from './core/services/edit-transaction-modal.service';
 
 @Component({
@@ -27,7 +27,7 @@ import { EditTransactionModalService } from './core/services/edit-transaction-mo
         [initialType]="quickTx.modalType()"
         (closed)="quickTx.close()"
         (transactionCreated)="onCreated($event)"
-        (transferCreated)="onTransferCreated()">
+        (transferCreated)="onTransferCreated($event)">
       </app-quick-transaction-modal>
       }
 
@@ -95,9 +95,9 @@ export class App {
     setTimeout(() => this.quickTx.resetLastCreated(), 200);
   }
 
-  onTransferCreated(): void {
-    this.quickTx.notifyReload();
+  onTransferCreated(res: QuickTransferResult): void {
+    this.quickTx.notifyTransferCreated(res);
     this.quickTx.close();
-    setTimeout(() => this.quickTx.resetReload(), 200);
+    setTimeout(() => this.quickTx.resetLastTransferCreated(), 200);
   }
 }

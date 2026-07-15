@@ -7,7 +7,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../core/services/finance.service';
 import { ToastService } from '../../core/services/toast.service';
-import { QuickTransactionService } from '../../core/services/quick-transaction.service';
+import { QuickTransactionService, QuickTransferResult } from '../../core/services/quick-transaction.service';
 import { PdfExportService } from '../../shared/services/pdf-export.service';
 import { AuthService } from '../../core/services/auth.service';
 import { GamificationService } from '../../core/services/gamification.service';
@@ -310,6 +310,16 @@ export class Finances implements OnInit {
     });
 
     effect(() => {
+      const res = this.quickTxService.lastTransferCreated();
+      if (!res) return;
+      // Check if either transaction already exists
+      if (this.transactions().some(t => t.id === res.fromTransaction.id)) return;
+      // Add both transactions from the transfer
+      this.transactions.update(l => [res.fromTransaction, res.toTransaction, ...l]);
+      this.refreshSummary();
+    });
+
+    effect(() => {
       const tick = this.quickTxService.reloadTick();
       if (tick === 0) return;
       this.reloadAll();
@@ -592,6 +602,7 @@ export class Finances implements OnInit {
         this.transactions.update(l => [res.transaction, ...l]);
         if (res.alert) this.lastAlert.set(res.alert);
         this.gamificationService.registerStreak().subscribe();
+        this.gamificationService.loadStats().subscribe();
 
         const rec = this.newTransaction.recurrence;
         if (rec !== 'NONE' && payload.type !== 'TRANSFER') {

@@ -5,6 +5,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { SimulatorService } from '../../../core/services/simulator.service';
+import { GamificationService } from '../../../core/services/gamification.service';
 import {
   GameStateResponse, BackendPlayer, BoardCell,
   BotMove, DecisionOption, DecideOptionResponse,
@@ -179,6 +180,7 @@ export class Game implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     public router: Router,
     private svc: SimulatorService,
+    private gamificationService: GamificationService
   ) { }
 
   ngOnInit(): void {
@@ -297,6 +299,7 @@ export class Game implements OnInit, OnDestroy {
     this.loading.set(false);
     if (prevPhase !== 'FINISHED' && s.game.gamePhase === 'FINISHED' && s.game.mode !== 'SIMULATION') {
       this.generateConfetti();
+      this.gamificationService.loadStats().subscribe();
     }
   }
 

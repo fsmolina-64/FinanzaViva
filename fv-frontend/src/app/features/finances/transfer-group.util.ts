@@ -36,9 +36,9 @@ export function buildTransferDisplay(transactions: Transaction[], accounts: Acco
         fromTxId: from.id,
         toTxId: to.id,
       });
-    } else if (group.length === 1) {
-      result.push(group[0]);
     }
+    // Orphaned transfer legs (group.length === 1) are ignored to avoid UI crashes
+    // They represent incomplete/invalid transfers and should be fixed in backend
   }
 
   return result.sort((a, b) => {
