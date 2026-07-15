@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, firstValueFrom, of } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { SimulatorService } from '../../../core/services/simulator.service';
 import {
   GameStateResponse, BackendPlayer, BoardCell,
@@ -17,7 +17,7 @@ import {
 import {
   playerHex, playerBg, playerText, playerToken, abbr,
   cellTypeIcon, phaseLabel, modeLabel, fmt, calcXP,
-  fichaImg, healthPercent, healthColor, diceDots,
+  fichaImg, healthPercent, healthColor, diceDots, playerRgba,
 } from './game-display.utils';
 
 interface Toast { id: string; msg: string; type: 'info' | 'success' | 'warning' | 'error'; }
@@ -93,16 +93,16 @@ export class Game implements OnInit, OnDestroy {
   showWildcardModal = signal(false);
   wildcardText = signal('');
   wildcardExpl = signal('');
-  showDecisionModal  = signal(false);
+  showDecisionModal = signal(false);
   showDecisionResult = signal(false);
-  decisionOptions    = signal<DecisionOption[]>([]);
-  decisionCellDesc   = signal('');
-  decisionResult     = signal<{ correct: boolean; amount: number; explanation: string } | null>(null);
+  decisionOptions = signal<DecisionOption[]>([]);
+  decisionCellDesc = signal('');
+  decisionResult = signal<{ correct: boolean; amount: number; explanation: string } | null>(null);
   showExitModal = signal(false);
   showTooltip = signal<BoardCell | null>(null);
   tooltipPos = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   actionLog = signal<string[]>([]);
-  landedCellPos    = signal<number | null>(null);
+  landedCellPos = signal<number | null>(null);
   confettiParticles = signal<Array<{ left: string; color: string; delay: string; dur: string }>>([]);
   showCellExplain = signal<{
     cellName: string;
@@ -116,13 +116,27 @@ export class Game implements OnInit, OnDestroy {
 
   toasts = signal<Toast[]>([]);
 
-  isSimulating      = signal(false);
-  simSpeed          = signal<'normal' | 'fast'>('normal');
-  eliminatedCount   = computed(() => this.players().filter(p => p.isEliminated).length);
+  isSimulating = signal(false);
+  isLeaving = signal(false);
+  simSpeed = signal<'normal' | 'fast'>('normal');
+  eliminatedCount = computed(() => this.players().filter(p => p.isEliminated).length);
   private simulationActive = false;
+
+  private readonly TIMING = {
+    DICE_RESULT_DELAY: 350,
+    DICE_REVEAL_DELAY: 100,
+    TOKEN_STEP_NORMAL: 260,
+    TOKEN_STEP_FAST: 75,
+    BOT_THINK: 500,
+    BOT_ROLL: 650,
+    BOT_POST_ROLL: 250,
+    BOT_RESULT_TOAST: 400,
+    BOT_TURN_END: 600,
+  };
 
   private leaveCallback: ((v: boolean) => void) | null = null;
   private diceInterval: ReturnType<typeof setInterval> | null = null;
+  private destroyed = false;
 
   gameId!: string;
 
@@ -194,12 +208,14 @@ export class Game implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.clearDiceInterval();
+    this.simulationActive = false;
   }
 
   @HostListener('window:beforeunload', ['$event'])
   onBeforeUnload(e: BeforeUnloadEvent): void {
-    if (this.isGameActive()) e.preventDefault();
+    if (this.isGameActive()) { e.preventDefault(); e.returnValue = ''; }
   }
 
   canLeave(): boolean | Observable<boolean> {
@@ -211,13 +227,28 @@ export class Game implements OnInit, OnDestroy {
   }
 
   confirmLeave(): void {
-    this.showExitModal.set(false);
-    this.svc.abandonGame(this.gameId).subscribe({ error: () => { } });
-    this.leaveCallback?.(true);
-    this.leaveCallback = null;
+    this.simulationActive = false;
+    this.isLeaving.set(true);
+
+    this.svc.abandonGame(this.gameId).subscribe({
+      next: () => {
+        this.showExitModal.set(false);
+        this.isLeaving.set(false);
+        this.leaveCallback?.(true);
+        this.leaveCallback = null;
+      },
+      error: (err) => {
+        this.showExitModal.set(false);
+        this.isLeaving.set(false);
+        this.leaveCallback?.(true);
+        this.leaveCallback = null;
+        this.toast(err?.error?.message ?? 'Error al abandonar la partida', 'error');
+      },
+    });
   }
 
   cancelLeave(): void {
+    if (this.isLeaving()) return;
     this.showExitModal.set(false);
     this.leaveCallback?.(false);
     this.leaveCallback = null;
@@ -225,11 +256,17 @@ export class Game implements OnInit, OnDestroy {
 
   private init(): void {
     this.svc.startGame(this.gameId).subscribe({
-      next: s => this.applyState(s),
+      next: s => {
+        this.applyState(s);
+        if (s.game.mode === 'SIMULATION' && s.game.status === 'IN_PROGRESS') this.runObserverLoop();
+      },
       error: err => {
         if (err?.status === 400) {
           this.svc.getGameState(this.gameId).subscribe({
-            next: s => this.applyState(s),
+            next: s => {
+              this.applyState(s);
+              if (s.game.mode === 'SIMULATION' && s.game.status === 'IN_PROGRESS') this.runObserverLoop();
+            },
             error: () => { this.error.set('Error al cargar la partida'); this.loading.set(false); },
           });
         } else {
@@ -242,7 +279,10 @@ export class Game implements OnInit, OnDestroy {
 
   handleStartGame(): void {
     this.svc.startGame(this.gameId).subscribe({
-      next: s => this.applyState(s),
+      next: s => {
+        this.applyState(s);
+        if (s.game.mode === 'SIMULATION' && s.game.status === 'IN_PROGRESS') this.runObserverLoop();
+      },
       error: err => this.toast(err?.error?.message ?? 'Error', 'error'),
     });
   }
@@ -260,7 +300,6 @@ export class Game implements OnInit, OnDestroy {
     }
   }
 
-  // ──── Lanzar dados ────────────────────────────────────────────────────
 
   async rollDice(): Promise<void> {
     if (this.isAnimating() || this.isDiceRolling()) return;
@@ -273,9 +312,9 @@ export class Game implements OnInit, OnDestroy {
     try {
       const res = await firstValueFrom(this.svc.rollDice(this.gameId));
 
-      await this.delay(700);
+      await this.delay(this.TIMING.DICE_RESULT_DELAY);
       this.stopDiceAnim(res.dice1, res.dice2);
-      await this.delay(200);
+      await this.delay(this.TIMING.DICE_REVEAL_DELAY);
       this.diceRevealed.set(true);
 
       const cp = this.currentPlayer();
@@ -361,11 +400,14 @@ export class Game implements OnInit, OnDestroy {
     } catch (err: any) {
       this.stopDiceAnim(null, null);
       this.toast(err?.error?.message ?? 'Error al lanzar dados', 'error');
+    } finally {
+      this.animatingId.set(null);
+      this.isAnimating.set(false);
     }
   }
 
   decideBuy(buy: boolean): void {
-    const cellName   = this.buyCell()?.name ?? '?';
+    const cellName = this.buyCell()?.name ?? '?';
     const playerName = this.currentPlayer()?.displayName ?? '?';
     this.showBuyModal.set(false);
     this.buyCell.set(null);
@@ -414,6 +456,9 @@ export class Game implements OnInit, OnDestroy {
 
     } catch (err: any) {
       this.toast(err?.error?.message ?? 'Error al terminar turno', 'error');
+    } finally {
+      this.animatingId.set(null);
+      this.isAnimating.set(false);
     }
   }
 
@@ -422,13 +467,42 @@ export class Game implements OnInit, OnDestroy {
     this.router.navigate(['/simulator']);
   }
 
+  private async runObserverLoop(): Promise<void> {
+    if (this.simulationActive) return;
+    this.simulationActive = true;
+    this.isSimulating.set(true);
+
+    while (this.simulationActive && !this.destroyed) {
+      let res;
+      try {
+        res = await firstValueFrom(this.svc.botStep(this.gameId));
+      } catch (err: any) {
+        this.toast(err?.error?.message ?? 'Error al avanzar la simulacion', 'error');
+        break;
+      }
+
+      if (this.destroyed) break;
+      if (res.botMove) await this.animateBotMove(res.botMove, res.gameState.players);
+      if (this.destroyed) break;
+      this.applyState(res.gameState);
+      this.animatingId.set(null);
+      this.isAnimating.set(false);
+      if (res.finished) break;
+      await this.delay(200);
+    }
+
+    this.botMsg.set(null);
+    this.isSimulating.set(false);
+    this.simulationActive = false;
+  }
+
   pickDecisionOption(optionId: string): void {
     this.showDecisionModal.set(false);
     this.svc.decideOption(this.gameId, optionId).subscribe({
       next: res => {
         this.decisionResult.set({
-          correct:     res.correct,
-          amount:      res.amount,
+          correct: res.correct,
+          amount: res.amount,
           explanation: res.explanation,
         });
         this.showDecisionResult.set(true);
@@ -452,25 +526,24 @@ export class Game implements OnInit, OnDestroy {
 
   goToLobby(): void { this.router.navigate(['/simulator']); }
 
-  // ──── Animacion bot ──────────────────────────────────────────────────
 
   private async animateBotMove(m: BotMove, currentPlayers: BackendPlayer[]): Promise<void> {
     const fast = this.simSpeed() === 'fast';
     const d = (ms: number) => this.delay(fast ? Math.round(ms * 0.28) : ms);
 
     this.botMsg.set(`${m.playerName} pensando...`);
-    await d(800);
+    await d(this.TIMING.BOT_THINK);
 
     this.botMsg.set(`${m.playerName} lanzando dados...`);
     this.diceRevealed.set(false);
     this.startDiceAnim();
-    await d(1000);
+    await d(this.TIMING.BOT_ROLL);
     this.stopDiceAnim(m.dice1, m.dice2);
-    await d(400);
+    await d(this.TIMING.BOT_POST_ROLL);
     this.diceRevealed.set(true);
 
     this.toast(`${m.playerName}: ${m.dice1} + ${m.dice2} = ${m.diceSum}`, 'info', fast ? 1500 : 3000);
-    await d(600);
+    await d(this.TIMING.BOT_RESULT_TOAST);
 
     const botPlayer = currentPlayers.find(p => p.displayName === m.playerName);
     if (botPlayer) await this.animateToken(botPlayer.id, m.fromPosition, m.diceSum);
@@ -482,7 +555,7 @@ export class Game implements OnInit, OnDestroy {
       this.toast(`${m.playerName}: ${m.actionDetail}`, 'info', fast ? 1200 : 3500);
       this.addToLog(m.actionDetail);
     }
-    await d(1000);
+    await d(this.TIMING.BOT_TURN_END);
   }
 
   private async animateToken(playerId: string, fromPos: number, steps: number): Promise<void> {
@@ -490,8 +563,8 @@ export class Game implements OnInit, OnDestroy {
     this.animatingId.set(playerId);
     this.animatingPos.set(fromPos);
 
-    const fast   = this.simSpeed() === 'fast';
-    const stepMs = fast ? 75 : 380;
+    const fast = this.simSpeed() === 'fast';
+    const stepMs = fast ? this.TIMING.TOKEN_STEP_FAST : this.TIMING.TOKEN_STEP_NORMAL;
 
     for (let i = 1; i <= steps; i++) {
       const next = (fromPos + i) % 40;
@@ -501,12 +574,8 @@ export class Game implements OnInit, OnDestroy {
       this.bouncingId.set(null);
       await this.delay(10);
     }
-
-    this.animatingId.set(null);
-    this.isAnimating.set(false);
   }
 
-  // ──── Dados ──────────────────────────────────────────────────────────
 
   private startDiceAnim(): void {
     this.isDiceRolling.set(true);
@@ -527,7 +596,6 @@ export class Game implements OnInit, OnDestroy {
     if (this.diceInterval) { clearInterval(this.diceInterval); this.diceInterval = null; }
   }
 
-  // ──── Toasts ─────────────────────────────────────────────────────────
 
   toast(msg: string, type: Toast['type'] = 'info', ms = 3500): void {
     const id = Math.random().toString(36).slice(2);
@@ -537,7 +605,6 @@ export class Game implements OnInit, OnDestroy {
 
   dismissToast(id: string): void { this.toasts.update(t => t.filter(x => x.id !== id)); }
 
-  // ──── Helpers tablero ────────────────────────────────────────────────
 
   getTokenPos(p: BackendPlayer): number {
     return getTokenPos(p, this.animatingId(), this.animatingPos());
@@ -561,11 +628,12 @@ export class Game implements OnInit, OnDestroy {
   playerToken = playerToken;
   playerText = playerText;
   playerHex = playerHex;
-  playerBg      = playerBg;
-  fichaImg      = fichaImg;
+  playerBg = playerBg;
+  fichaImg = fichaImg;
   healthPercent = healthPercent;
-  healthColor   = healthColor;
-  diceDots      = diceDots;
+  healthColor = healthColor;
+  diceDots = diceDots;
+  playerRgba = playerRgba;
 
   getOwner(pos: number): BackendPlayer | null {
     return getOwner(this.players(), pos);
@@ -627,21 +695,21 @@ export class Game implements OnInit, OnDestroy {
   private setLandedCell(pos: number): void {
     this.landedCellPos.set(pos);
     setTimeout(() => {
-      if (this.landedCellPos() === pos) this.landedCellPos.set(null);
+      if (!this.destroyed && this.landedCellPos() === pos) this.landedCellPos.set(null);
     }, 2400);
   }
 
   private generateConfetti(): void {
-    const colors = ['#3B82F6','#10B981','#EAB308','#EF4444','#8B5CF6','#EC4899','#06B6D4','#F97316'];
+    const colors = ['#3B82F6', '#10B981', '#EAB308', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
     this.confettiParticles.set(
       Array.from({ length: 48 }, () => ({
         left: `${Math.random() * 100}%`,
         color: colors[Math.floor(Math.random() * colors.length)],
         delay: `${(Math.random() * 1.8).toFixed(2)}s`,
-        dur:   `${(2.2 + Math.random() * 2.2).toFixed(2)}s`,
+        dur: `${(2.2 + Math.random() * 2.2).toFixed(2)}s`,
       }))
     );
-    setTimeout(() => this.confettiParticles.set([]), 6500);
+    setTimeout(() => { if (!this.destroyed) this.confettiParticles.set([]); }, 6500);
   }
 
   private delay(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }

@@ -46,13 +46,11 @@ interface ActivityEvent {
   ],
 })
 export class Profile implements OnInit {
-  // Estado principal
   user = signal<UserProfile | null>(null);
   loading = signal(true);
   saving = signal(false);
   editing = signal(false);
 
-  // Recompensas y logros
   achievements = signal<Achievement[]>([]);
   equippedAvatar = computed(() => this.achievementService.rewards().find(r => r.type === 'AVATAR' && r.isEquipped) ?? null);
   equippedFrame = computed(() => this.achievementService.rewards().find(r => r.type === 'FRAME' && r.isEquipped) ?? null);
@@ -60,16 +58,12 @@ export class Profile implements OnInit {
   equippedTitle = computed(() => this.achievementService.rewards().find(r => r.type === 'TITLE' && r.isEquipped) ?? null);
   equippedAura = computed(() => this.achievementService.rewards().find(r => r.type === 'AURA' && r.isEquipped) ?? null);
 
-  // Ranking
   rankingSummary = signal<{ position: number; total: number } | null>(null);
 
-  // Actividad
   activitySortOrder = signal<'desc' | 'asc'>('desc');
 
-  // Edición de perfil
   form: UpdateProfileRequest = { displayName: '', bio: '', avatarUrl: '' };
 
-  // Cambio de contraseña
   showPasswordSection = signal(false);
   changingPassword = signal(false);
   showCurrentPwd = signal(false);
@@ -78,7 +72,6 @@ export class Profile implements OnInit {
   passwordErrors = signal<{ current?: string; new?: string; confirm?: string }>({});
   passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
-  // Eliminación de cuenta
   deleting = signal(false);
   showDeleteModal = signal(false);
   deleteConfirmText = signal('');
@@ -86,7 +79,6 @@ export class Profile implements OnInit {
   showDeletePassword = signal(false);
   cancelingDeletion = signal(false);
 
-  // Probador de apariencia
   showCustomization = signal(false);
   customizing = signal(false);
   previewAvatar = signal<Reward | null>(null);
@@ -140,14 +132,12 @@ export class Profile implements OnInit {
     this.loadRankingSummary();
   }
 
-  // ── Tabs ──
 
   setTab(tab: Tab): void {
     this.activeTab.set(tab);
     if (this.editing()) this.cancelEdit();
   }
 
-  // ── Edición de perfil ──
 
   startEdit(): void {
     if (this.editing()) { this.cancelEdit(); return; }
@@ -203,7 +193,6 @@ export class Profile implements OnInit {
     this.editing.set(false);
   }
 
-  // ── Contraseña ──
 
   togglePasswordSection(): void {
     this.showPasswordSection.update(v => !v);
@@ -263,8 +252,6 @@ export class Profile implements OnInit {
     return 'text-emerald-400';
   }
 
-  // ── Eliminación de cuenta ──
-
   openDeleteModal(): void {
     this.deleteConfirmText.set('');
     this.deletePassword.set('');
@@ -316,8 +303,6 @@ export class Profile implements OnInit {
     const diff = new Date(scheduled).getTime() - Date.now();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
-
-  // ── Probador de apariencia ──
 
   unlockedByType(type: string): Reward[] {
     return this.achievementService.rewards().filter(r => r.type === type && r.unlocked);
@@ -389,9 +374,6 @@ export class Profile implements OnInit {
       [this.equippedAura(), this.previewAura()],
     ];
 
-    // No hay certeza de que el backend desequipe solo el reward anterior
-    // del mismo tipo. Por eso, si cambia A → B, se llama equipReward para
-    // AMBOS (desequipar A, equipar B) en vez de asumir el efecto colateral.
     const calls = slots
       .filter(([current, next]) => current?.id !== next?.id)
       .flatMap(([current, next]) => {
@@ -415,10 +397,12 @@ export class Profile implements OnInit {
         cleanup.subscribe({
           next: () => {
             this.achievementService.refreshRewards();
-            this.userService.getProfile().subscribe({ next: fresh => {
-              this.user.set(fresh);
-              this.authService.refreshProfile(fresh.profile);
-            }});
+            this.userService.getProfile().subscribe({
+              next: fresh => {
+                this.user.set(fresh);
+                this.authService.refreshProfile(fresh.profile);
+              }
+            });
             this.customizing.set(false);
             this.showCustomization.set(false);
             this.toastService.success('Apariencia actualizada');
@@ -436,7 +420,6 @@ export class Profile implements OnInit {
     });
   }
 
-  // ── Ranking ──
 
   private loadRankingSummary(): void {
     const userId = this.authService.currentUser()?.id;
@@ -450,7 +433,6 @@ export class Profile implements OnInit {
         this.rankingSummary.set({ position: position.position, total: list.meta.total });
       },
       error: () => {
-        // Dato decorativo: si falla, la card de percentil simplemente no se muestra.
       }
     });
   }
@@ -460,8 +442,6 @@ export class Profile implements OnInit {
     if (!s || !s.total) return 0;
     return Math.max(1, Math.round((s.position / s.total) * 100));
   }
-
-  // ── Actividad ──
 
   toggleActivitySort(): void {
     this.activitySortOrder.update(v => v === 'desc' ? 'asc' : 'desc');
@@ -499,7 +479,6 @@ export class Profile implements OnInit {
     return events.sort((a, b) => (a.date.getTime() - b.date.getTime()) * direction);
   }
 
-  // ── Estadísticas / helpers generales ──
 
   getXpProgress(): number {
     return (this.user()?.gameStats.xp ?? 0) % 100;

@@ -13,7 +13,7 @@ export function playerText(idx: number): string {
 }
 
 export function playerToken(p: BackendPlayer): string {
-  return (p as any).tokenSymbol ?? '★';
+  return p.tokenSymbol ?? '★';
 }
 
 export function abbr(name: string, max = 10): string {
@@ -54,7 +54,6 @@ export function calcXP(maxRounds: number, rankedPlayers: BackendPlayer[]): numbe
   return Math.max(10, Math.round(base * mult + props));
 }
 
-// ── Mapa tokenSymbol → imagen de ficha ──────────────────────────────
 export const TOKEN_TO_FICHA: Record<string, string> = {
   '★': '/ficha1.png',
   '♦': '/ficha2.png',
@@ -67,10 +66,17 @@ export const TOKEN_TO_FICHA: Record<string, string> = {
 };
 
 export function fichaImg(p: BackendPlayer): string {
-  return TOKEN_TO_FICHA[(p as any).tokenSymbol ?? '★'] ?? '/ficha1.png';
+  return TOKEN_TO_FICHA[p.tokenSymbol ?? '★'] ?? '/ficha1.png';
 }
 
-// ── Salud financiera ────────────────────────────────────────────────
+export function playerRgba(idx: number, alpha: number): string {
+  const hex = playerHex(idx);
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function healthPercent(money: number, initialMoney: number): number {
   return Math.max(0, Math.min(100, (money / initialMoney) * 100));
 }
@@ -82,7 +88,6 @@ export function healthColor(pct: number): string {
   return '#EF4444';
 }
 
-// ── Puntos de dado ──────────────────────────────────────────────────
 export function diceDots(face: number): Array<{ t: string; l: string }> {
   const P: Record<number, Array<{ t: string; l: string }>> = {
     1: [{ t: '50%', l: '50%' }],
