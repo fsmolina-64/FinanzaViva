@@ -106,10 +106,9 @@ export class Simulator implements OnInit {
     return base * 2;
   }
 
-  usedTokens = computed(() => [
-    ...this.humans.map(h => h.tokenSymbol),
-    ...this.bots.map(b => b.tokenSymbol),
-  ]);
+  get usedTokens(): string[] {
+    return [...this.humans.map(h => h.tokenSymbol), ...this.bots.map(b => b.tokenSymbol)];
+  }
 
   constructor(
     private svc: SimulatorService,
@@ -147,7 +146,7 @@ export class Simulator implements OnInit {
   }
 
   getAvailableTokens(currentSymbol: string): typeof TOKEN_OPTIONS {
-    const used = this.usedTokens().filter(s => s !== currentSymbol);
+    const used = this.usedTokens.filter(s => s !== currentSymbol);
     return TOKEN_OPTIONS.filter(t => !used.includes(t.symbol));
   }
 
@@ -185,7 +184,7 @@ export class Simulator implements OnInit {
 
   addHuman(): void {
     if (this.humans.length >= this.selectedModeOption.maxHumans) return;
-    this.humans = [...this.humans, { displayName: '', tokenSymbol: this.nextFreeToken(this.usedTokens()) }];
+    this.humans = [...this.humans, { displayName: '', tokenSymbol: this.nextFreeToken(this.usedTokens) }];
   }
 
   removeHuman(i: number): void {
@@ -196,7 +195,7 @@ export class Simulator implements OnInit {
   addBot(): void {
     if (this.bots.length >= this.selectedModeOption.maxBots) return;
     const p = (['CONSERVATIVE','RISKY','IMPULSIVE','INVESTOR','SAVER'] as BotPersonality[])[this.bots.length % 5];
-    this.bots = [...this.bots, { displayName: `Bot ${this.personalityLabel(p)}`, personality: p, tokenSymbol: this.nextFreeToken(this.usedTokens()) }];
+    this.bots = [...this.bots, { displayName: `Bot ${this.personalityLabel(p)}`, personality: p, tokenSymbol: this.nextFreeToken(this.usedTokens) }];
   }
 
   removeBot(i: number): void {
@@ -247,6 +246,7 @@ export class Simulator implements OnInit {
   statusLabel(status: string): string {
     return { FINISHED: 'Completada', ABANDONED: 'Abandonada', IN_PROGRESS: 'En progreso' }[status] ?? status;
   }
+  goToGame(id: string): void { this.router.navigate(['/simulator', id]); }
   fmt(v: number): string {
     return new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(v);
   }

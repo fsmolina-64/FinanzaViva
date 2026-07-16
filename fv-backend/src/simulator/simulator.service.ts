@@ -668,9 +668,10 @@ export class SimulatorService {
     });
 
     if (!game) throw new NotFoundException('Partida no encontrada');
+    if (game.createdByUserId !== userId) throw new BadRequestException('Solo el creador puede abandonar la partida');
 
     if (game.status === 'FINISHED' || game.status === 'ABANDONED') {
-      return { success: true, status: game.status };
+      return { success: true, status: game.status, gameState: await this.gameState.getGameState(gameId) };
     }
 
     await this.prisma.simulatorGame.update({
@@ -683,7 +684,7 @@ export class SimulatorService {
       },
     });
 
-    return { success: true, status: 'ABANDONED' };
+    return { success: true, status: 'ABANDONED', gameState: await this.gameState.getGameState(gameId) };
   }
 
   async getHistory(userId: string) {
@@ -720,7 +721,7 @@ export class SimulatorService {
     if (!currentPlayer || currentPlayer.isEliminated) {
       await this.prisma.simulatorGame.update({
         where: { id: gameId },
-        data: { currentPlayerIdx: nextIdx, currentRound: newRound },
+        data: { currentPlayerIdx: nextIdx, currentRound: newRound, gamePhase: 'ROLLING' },
       });
       return { finished: false, botMove: null, gameState: await this.gameState.getGameState(gameId) };
     }

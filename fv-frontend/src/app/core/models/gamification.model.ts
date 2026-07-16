@@ -16,6 +16,9 @@ export interface GamificationStats {
   longestStreak: number;
   lastActivityAt: string | null;
   updatedAt: string;
+  xpProgress: number;
+  xpInLevel: number;
+  xpForNextLevel: number;
 }
 
 export type StreakStatus = 'ACTIVE' | 'AT_RISK' | 'LOST';

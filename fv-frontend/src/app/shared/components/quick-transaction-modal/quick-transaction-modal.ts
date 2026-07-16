@@ -6,7 +6,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { fadeIn } from '../../../core/animations/animations';
 import {
     Account, Category, Transaction, TransactionAlert,
-    CreateTransactionPayload, CreateTransferPayload
+    CreateTransactionPayload, CreateTransferPayload, TransferResponse
 } from '../../../core/models/finance.model';
 import { NumpadComponent } from '../numpad/numpad.component';
 import { formatCurrency } from '../../utils/amount.utils';
@@ -25,7 +25,7 @@ export class QuickTransactionModal implements OnInit {
     @Input() initialType: ModalType = 'EXPENSE';
     @Output() closed = new EventEmitter<void>();
     @Output() transactionCreated = new EventEmitter<{ transaction: Transaction; alert: TransactionAlert | null }>();
-    @Output() transferCreated = new EventEmitter<void>();
+    @Output() transferCreated = new EventEmitter<TransferResponse>();
 
     accounts = signal<Account[]>([]);
     categories = signal<Category[]>([]);
@@ -180,9 +180,9 @@ export class QuickTransactionModal implements OnInit {
 
         this.submitting.set(true);
         this.financeService.createTransfer(payload).subscribe({
-            next: () => {
+            next: res => {
                 this.toast.success('Transferencia completada');
-                this.transferCreated.emit();
+                this.transferCreated.emit(res);
                 this.submitting.set(false);
                 this.reset();
             },

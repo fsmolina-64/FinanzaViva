@@ -40,6 +40,7 @@ export class GamificationService {
     return {
       xp: stats.xp,
       level: newLevel?.number ?? stats.level,
+      rank: newLevel?.rank ?? stats.rank,
       leveledUp: !!newLevel,
     };
   }
@@ -90,9 +91,30 @@ export class GamificationService {
   }
 
   async getStats(userId: string) {
-    return this.prisma.userGameStats.findUnique({
+    const stats = await this.prisma.userGameStats.findUnique({
       where: { userId },
     });
+    if (!stats) return null;
+
+    const levels = await this.prisma.level.findMany({
+      orderBy: { number: 'asc' },
+    });
+
+    const currentLevelDef = levels.find(l => l.number === stats.level);
+    const nextLevelDef = levels.find(l => l.number === stats.level + 1);
+
+    const baseXp = currentLevelDef?.xpRequired ?? 0;
+    const nextXp = nextLevelDef?.xpRequired ?? baseXp;
+    const xpInLevel = stats.xp - baseXp;
+    const xpForLevel = nextXp - baseXp;
+    const xpProgress = xpForLevel > 0 ? Math.min(100, Math.round((xpInLevel / xpForLevel) * 100)) : 100;
+
+    return {
+      ...stats,
+      xpProgress,
+      xpInLevel,
+      xpForNextLevel: xpForLevel,
+    };
   }
 
   async updateStreak(userId: string) {

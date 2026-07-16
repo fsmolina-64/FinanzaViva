@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   BackendGame, GameStateResponse, RollDiceResponse,
   DecideBuyResponse, DismissWildcardResponse, DecideOptionResponse, EndTurnResponse,
-  CreateGamePayload, HistoryEntry, BoardCell,
+  CreateGamePayload, HistoryEntry, BoardCell, BotStepResponse,
 } from '../models/simulator.model';
 
 @Injectable({ providedIn: 'root' })
@@ -37,8 +37,11 @@ export class SimulatorService {
   endTurn(gameId: string): Observable<EndTurnResponse> {
     return this.http.post<EndTurnResponse>(`${this.base}/games/${gameId}/end-turn`, {});
   }
-  abandonGame(gameId: string): Observable<void> {
-    return this.http.post<void>(`${this.base}/games/${gameId}/abandon`, {});
+  abandonGame(gameId: string): Observable<{ success: boolean; status: string; gameState: GameStateResponse }> {
+    return this.http.post<{ success: boolean; status: string; gameState: GameStateResponse }>(`${this.base}/games/${gameId}/abandon`, {});
+  }
+  botStep(gameId: string): Observable<BotStepResponse> {
+    return this.http.post<BotStepResponse>(`${this.base}/games/${gameId}/bot-step`, {});
   }
   getHistory(): Observable<HistoryEntry[]> {
     return this.http.get<HistoryEntry[]>(`${this.base}/history`);

@@ -26,4 +26,8 @@ export class ApiService {
   delete<T>(path: string, options?: { body?: any }): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${path}`, options);
   }
+
+  postBlob(path: string, body: any): Observable<Blob> {
+    return this.http.post(`${this.baseUrl}${path}`, body, { responseType: 'blob' });
+  }
 }   

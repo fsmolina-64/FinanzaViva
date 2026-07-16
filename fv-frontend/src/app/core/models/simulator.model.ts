@@ -133,6 +133,12 @@ export interface EndTurnResponse {
   botMoves: BotMove[];
 }
 
+export interface BotStepResponse {
+  finished: boolean;
+  botMove: BotMove | null;
+  gameState: GameStateResponse;
+}
+
 export interface CreateGamePayload {
   maxRounds: number;
   mode: GameMode;
@@ -140,10 +146,6 @@ export interface CreateGamePayload {
   humanPlayers: { displayName: string; tokenSymbol?: string }[];
   botPlayers?: { displayName: string; personality: BotPersonality; tokenSymbol?: string }[];
   xpRecipientId?: string;
-}
-
-export interface BackendPlayerExtended extends BackendPlayer {
-  tokenSymbol: string;
 }
 
 export interface HistoryEntry {

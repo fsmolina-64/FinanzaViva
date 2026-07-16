@@ -116,4 +116,8 @@ export class FinanceService {
   deleteTransfer(groupId: string): Observable<void> {
     return this.api.delete<void>(`/finances/transfers/${groupId}`);
   }
+
+  exportPdfServerSide(from: string, to: string): Observable<Blob> {
+    return this.api.postBlob('/finances/export-pdf', { from, to });
+  }
 }

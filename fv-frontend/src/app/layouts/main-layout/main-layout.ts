@@ -9,6 +9,7 @@ import { RewardVisualsService } from '../../core/services/reward-visuals.service
 import { ToastService } from '../../core/services/toast.service';
 import { Reward } from '../../core/models/achievement.model';
 import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
+import { getRankColors } from '../../core/constants/rank-colors.const';
 import { ToastComponent } from '../../shared/components/toast/toast';
 
 @Component({
@@ -68,6 +69,10 @@ export class MainLayout implements OnInit {
 
   getRankLabel(rank: string): string {
     return RANK_LABEL_MAP[rank] ?? rank;
+  }
+
+  getRankColors(rank: string) {
+    return getRankColors(rank);
   }
 
   toggleSidebar(): void {

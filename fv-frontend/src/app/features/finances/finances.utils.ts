@@ -54,8 +54,12 @@ export function getTransactionSign(tx: Transaction | TransferDisplay): string {
 export function getTransactionLabel(tx: Transaction | TransferDisplay, categories: { id: string; name: string }[]): string {
   if (isInitBalanceTx(tx)) return 'Balance inicial';
   if (tx.type === 'TRANSFER') {
-    const td = tx as TransferDisplay;
-    return `${td.fromAccountName} → ${td.toAccountName}`;
+    // Type guard: TransferDisplay has fromAccountName and toAccountName
+    if ('fromAccountName' in tx && 'toAccountName' in tx) {
+      return `${tx.fromAccountName} → ${tx.toAccountName}`;
+    }
+    // Fallback for orphaned raw Transaction with type TRANSFER
+    return 'Transferencia (incompleta)';
   }
   return getCategoryName(categories, tx.categoryId);
 }

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UserActionEvent } from '../common/events/user-action.event';
 import { XpSource } from '@prisma/client';
 
 @Injectable()
@@ -8,6 +10,7 @@ export class AcademyService {
   constructor(
     private prisma: PrismaService,
     private gamification: GamificationService,
+    private eventEmitter: EventEmitter2,
   ) { }
 
   async getModules(userId: string) {
@@ -126,7 +129,7 @@ export class AcademyService {
   }
 
   async completeLesson(userId: string, lessonId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const lesson = await tx.lesson.findUnique({
         where: { id: lessonId },
         include: {
@@ -287,6 +290,12 @@ export class AcademyService {
         nextLesson: nextLesson ? { ...nextLesson, status: 'AVAILABLE' as const } : null,
       };
     });
+
+    if (result.lessonXpEarned > 0 || result.moduleXpEarned > 0) {
+      this.eventEmitter.emit('user.action', new UserActionEvent(userId));
+    }
+
+    return result;
   }
 
   async getReadingProgress(userId: string, moduleId: string) {

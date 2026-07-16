@@ -141,8 +141,6 @@ export class Achievements implements OnInit {
     });
   }
 
-  // Equipar un avatar de recompensa borra avatarUrl del perfil, para que no
-  // quede una URL huérfana que reaparezca si luego se desequipa el avatar.
   private clearAvatarUrlAfterEquip(): void {
     const u = this.userProfile();
     if (!u?.profile.avatarUrl) {
@@ -159,8 +157,6 @@ export class Achievements implements OnInit {
         this.toast.success('Recompensa equipada');
       },
       error: () => {
-        // El equip sí funcionó (ya está reflejado arriba); solo falló limpiar
-        // la URL vieja. No se revierte el equip por esto.
         this.equipping.set(null);
         this.toast.success('Recompensa equipada');
       }

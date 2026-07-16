@@ -1,12 +1,13 @@
 import { Component, OnInit, signal, computed, effect, untracked, DestroyRef, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { tabSlideAnimation } from '../../core/animations/animations';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../core/services/finance.service';
 import { ToastService } from '../../core/services/toast.service';
-import { QuickTransactionService } from '../../core/services/quick-transaction.service';
+import { QuickTransactionService, QuickTransferResult } from '../../core/services/quick-transaction.service';
 import { PdfExportService } from '../../shared/services/pdf-export.service';
 import { AuthService } from '../../core/services/auth.service';
 import { GamificationService } from '../../core/services/gamification.service';
@@ -22,7 +23,7 @@ import {
   formatDateLabel, isInitBalanceTx, isBalanceAdjustmentTx, getCategoryName, getAccountName,
   getTransactionBg, getTransactionColor, getTransactionSign, getTransactionLabel,
   getAccountTypeLabel, getAccountTypeColor, getGoalProgress,
-  computeSpent, getBudgetPct, getRecurrenceLabel, extractError,
+  computeSpent, getBudgetPct, extractError,
 } from './finances.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -309,18 +310,19 @@ export class Finances implements OnInit {
     });
 
     effect(() => {
-      const tick = this.quickTxService.reloadTick();
-      if (tick === 0) return;
-      this.reloadAll();
+      const res = this.quickTxService.lastTransferCreated();
+      if (!res) return;
+      // Check if either transaction already exists
+      if (this.transactions().some(t => t.id === res.fromTransaction.id)) return;
+      // Add both transactions from the transfer
+      this.transactions.update(l => [res.fromTransaction, res.toTransaction, ...l]);
+      this.refreshSummary();
     });
 
     effect(() => {
-      this.txFilter(); this.txDateMode(); this.txViewMode();
-      this.calTypeFilter(); this.calMonth(); this.calYear();
-      this.txMonth(); this.txYear();
-      untracked(() => {
-        this.resetAllFormState();
-      });
+      const tick = this.quickTxService.reloadTick();
+      if (tick === 0) return;
+      this.reloadAll();
     });
   }
 
@@ -484,6 +486,11 @@ export class Finances implements OnInit {
     const diff = newBalance - originalBalance;
     const nameChanged = this.editAccountForm.name.trim() !== acc.name;
 
+    // Optimistic account balance update
+    if (diff !== 0) {
+      this.accounts.update(accs => accs.map(a => a.id === acc.id ? { ...a, balance: String(newBalance) } : a));
+    }
+
     const updateName$ = nameChanged
       ? this.financeService.updateAccount(acc.id, { name: this.editAccountForm.name.trim() })
       : null;
@@ -506,13 +513,15 @@ export class Finances implements OnInit {
         }).subscribe({
           next: res => {
             this.transactions.update(l => [res.transaction, ...l]);
-            this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
-            this.refreshSummary();
             this.pendingAccountEdit = null;
             this.cancelEditAccount();
             this.toast.success('Ajuste directo registrado');
           },
-          error: err => this.toast.error(this.extractError(err, 'Error al registrar el ajuste directo'))
+          error: err => {
+            // Rollback on error
+            if (diff !== 0) this.accounts.update(accs => accs.map(a => a.id === acc.id ? { ...a, balance: String(originalBalance) } : a));
+            this.toast.error(this.extractError(err, 'Error al registrar el ajuste directo'))
+          }
         });
       } else {
         if (diff === 0) { this.cancelEditAccount(); this.pendingAccountEdit = null; return; }
@@ -532,13 +541,15 @@ export class Finances implements OnInit {
         this.financeService.createTransaction(txPayload).subscribe({
           next: res => {
             this.transactions.update(l => [res.transaction, ...l]);
-            this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
-            this.refreshSummary();
             this.pendingAccountEdit = null;
             this.cancelEditAccount();
             this.toast.success('Ajuste registrado como transacción');
           },
-          error: err => this.toast.error(this.extractError(err, 'Error al registrar el ajuste'))
+          error: err => {
+            // Rollback on error
+            if (diff !== 0) this.accounts.update(accs => accs.map(a => a.id === acc.id ? { ...a, balance: String(originalBalance) } : a));
+            this.toast.error(this.extractError(err, 'Error al registrar el ajuste'))
+          }
         });
       }
     };
@@ -586,11 +597,15 @@ export class Finances implements OnInit {
 
   private executeTransaction(payload: CreateTransactionPayload): void {
     this.submittingTx.set(true);
+    // Optimistic account balance update
+    this.updateAccountBalancesForTransaction(payload, Number(payload.amount));
+    
     this.financeService.createTransaction(payload).subscribe({
       next: res => {
         this.transactions.update(l => [res.transaction, ...l]);
         if (res.alert) this.lastAlert.set(res.alert);
         this.gamificationService.registerStreak().subscribe();
+        this.gamificationService.loadStats().subscribe();
 
         const rec = this.newTransaction.recurrence;
         if (rec !== 'NONE' && payload.type !== 'TRANSFER') {
@@ -611,7 +626,6 @@ export class Finances implements OnInit {
           this.toast.success('Transacción registrada');
         }
 
-        this.refreshSummary();
         this.showTransactionForm.set(false);
         this.newTransaction = {
           accountId: '', categoryId: '', amount: 0, type: 'EXPENSE',
@@ -619,7 +633,12 @@ export class Finances implements OnInit {
         };
         this.submittingTx.set(false);
       },
-      error: err => { this.toast.error(this.extractError(err, 'Error al registrar')); this.submittingTx.set(false); }
+      error: err => {
+        // Rollback optimistic update on error
+        this.updateAccountBalancesForTransaction(payload, -Number(payload.amount));
+        this.toast.error(this.extractError(err, 'Error al registrar'));
+        this.submittingTx.set(false);
+      }
     });
   }
 
@@ -643,19 +662,61 @@ export class Finances implements OnInit {
       if (!this.editTx.accountId) { this.toast.warning('Selecciona cuenta origen'); return; }
       if (!this.editTxTransferToAccountId) { this.toast.warning('Selecciona cuenta destino'); return; }
       if (this.editTx.accountId === this.editTxTransferToAccountId) { this.toast.warning('Las cuentas deben ser diferentes'); return; }
+
+      // Find old transfer to calculate deltas
+      const oldTransfer = this.transactions().find(t => t.transferGroupId === this.editTxTransferGroupId);
+      const isTransferDisplay = oldTransfer && 'fromAccountId' in oldTransfer;
+      const oldFromAccountId = isTransferDisplay ? (oldTransfer as any).fromAccountId : oldTransfer?.accountId;
+      const oldToAccountId = isTransferDisplay ? (oldTransfer as any).toAccountId : undefined;
+      const oldAmount = oldTransfer ? parseFloat(String(oldTransfer.amount)) : 0;
+
+      const newFromAccountId = this.editTx.accountId;
+      const newToAccountId = this.editTxTransferToAccountId;
+      const newAmount = Number(this.editTx.amount);
+
+      // Optimistic updates
+      if (oldFromAccountId) {
+        this.accounts.update(accs => accs.map(a => a.id === oldFromAccountId
+          ? { ...a, balance: String(parseFloat(String(a.balance)) + oldAmount) } : a));
+      }
+      if (oldToAccountId && oldToAccountId !== oldFromAccountId) {
+        this.accounts.update(accs => accs.map(a => a.id === oldToAccountId
+          ? { ...a, balance: String(parseFloat(String(a.balance)) - oldAmount) } : a));
+      }
+      if (newFromAccountId) {
+        this.accounts.update(accs => accs.map(a => a.id === newFromAccountId
+          ? { ...a, balance: String(parseFloat(String(a.balance)) - newAmount) } : a));
+      }
+      if (newToAccountId && newToAccountId !== newFromAccountId) {
+        this.accounts.update(accs => accs.map(a => a.id === newToAccountId
+          ? { ...a, balance: String(parseFloat(String(a.balance)) + newAmount) } : a));
+      }
+
       this.financeService.updateTransfer(this.editTxTransferGroupId, {
-        fromAccountId: this.editTx.accountId,
-        toAccountId: this.editTxTransferToAccountId,
-        amount: Number(this.editTx.amount),
+        fromAccountId: newFromAccountId,
+        toAccountId: newToAccountId,
+        amount: newAmount,
         description: this.editTx.description.trim() || undefined,
         date: this.editTx.date || undefined,
       }).subscribe({
         next: () => {
           this.toast.success('Transferencia actualizada');
           this.editingTxId.set(null);
-          this.reloadAll();
+          this.editTxTransferGroupId = '';
+          this.editTxTransferToAccountId = '';
         },
-        error: err => this.toast.error(this.extractError(err, 'Error al actualizar transferencia'))
+        error: err => {
+          // Rollback optimistic updates
+          if (newFromAccountId) this.accounts.update(accs => accs.map(a => a.id === newFromAccountId
+            ? { ...a, balance: String(parseFloat(String(a.balance)) + newAmount) } : a));
+          if (newToAccountId && newToAccountId !== newFromAccountId) this.accounts.update(accs => accs.map(a => a.id === newToAccountId
+            ? { ...a, balance: String(parseFloat(String(a.balance)) - newAmount) } : a));
+          if (oldFromAccountId) this.accounts.update(accs => accs.map(a => a.id === oldFromAccountId
+            ? { ...a, balance: String(parseFloat(String(a.balance)) - oldAmount) } : a));
+          if (oldToAccountId && oldToAccountId !== oldFromAccountId) this.accounts.update(accs => accs.map(a => a.id === oldToAccountId
+            ? { ...a, balance: String(parseFloat(String(a.balance)) + oldAmount) } : a));
+          this.toast.error(this.extractError(err, 'Error al actualizar transferencia'))
+        }
       });
       return;
     }
@@ -684,6 +745,11 @@ export class Finances implements OnInit {
   cancelEditDebt(): void { this.showEditDebtConfirm.set(false); this.pendingEditId.set(null); }
 
   private executeEditTx(id: string, allowNegative: boolean): void {
+    const oldTx = this.transactions().find(t => t.id === id);
+    const oldAccountId = oldTx?.accountId;
+    const oldAmount = oldTx ? parseFloat(String(oldTx.amount)) : 0;
+    const oldType = oldTx?.type;
+
     this.financeService.updateTransaction(id, {
       accountId: this.editTx.accountId,
       categoryId: this.editTx.categoryId || undefined,
@@ -696,8 +762,42 @@ export class Finances implements OnInit {
       next: updated => {
         this.transactions.update(l => l.map(t => t.id === id ? { ...t, ...updated } : t));
         this.editingTxId.set(null);
-        this.financeService.getAccounts().subscribe({ next: d => this.accounts.set(d) });
-        this.refreshSummary();
+
+        // Optimistic account balance update
+        if (oldAccountId && oldAccountId === this.editTx.accountId) {
+          const newAmount = Number(this.editTx.amount);
+          const newType = this.editTxType();
+          let delta = 0;
+          if (oldType === 'INCOME') delta -= oldAmount;
+          else if (oldType === 'EXPENSE') delta += oldAmount;
+          if (newType === 'INCOME') delta += newAmount;
+          else if (newType === 'EXPENSE') delta -= newAmount;
+          if (delta !== 0) {
+            this.accounts.update(accs => accs.map(a => a.id === oldAccountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) + delta) } : a));
+          }
+        } else if (oldAccountId && oldAccountId !== this.editTx.accountId) {
+          // Account changed: reverse old, apply new
+          const oldAcc = this.accounts().find(a => a.id === oldAccountId);
+          const newAcc = this.accounts().find(a => a.id === this.editTx.accountId);
+          if (oldAcc) {
+            let delta = 0;
+            if (oldType === 'INCOME') delta -= oldAmount;
+            else if (oldType === 'EXPENSE') delta += oldAmount;
+            this.accounts.update(accs => accs.map(a => a.id === oldAccountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) + delta) } : a));
+          }
+          if (newAcc) {
+            const newAmount = Number(this.editTx.amount);
+            const newType = this.editTxType();
+            let delta = 0;
+            if (newType === 'INCOME') delta += newAmount;
+            else if (newType === 'EXPENSE') delta -= newAmount;
+            this.accounts.update(accs => accs.map(a => a.id === this.editTx.accountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) + delta) } : a));
+          }
+        }
+
         this.toast.success('Transacción actualizada');
       },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
@@ -711,23 +811,57 @@ export class Finances implements OnInit {
 
   deleteTransaction(idOrGroup: string, isTransferGroup = false): void {
     if (isTransferGroup) {
+      // Get the transfer legs to calculate balance changes
+      const transferLegs = this.transactions().filter(t => t.transferGroupId === idOrGroup);
+      const fromLeg = transferLegs.find(t => t.type === 'TRANSFER' && t.accountId); // from account (negative)
+      const toLeg = transferLegs.find(t => t.type === 'TRANSFER' && t.accountId !== fromLeg?.accountId); // to account (positive)
+      const fromAccountId = fromLeg?.accountId;
+      const toAccountId = toLeg?.accountId;
+      const amount = fromLeg ? parseFloat(String(fromLeg.amount)) : 0;
+
       this.financeService.deleteTransfer(idOrGroup).subscribe({
         next: () => {
           this.transactions.update(l => l.filter(t => t.transferGroupId !== idOrGroup));
           this.confirmDeleteTxId.set(null);
-          this.refreshSummary();
+
+          // Optimistic account balance update for transfer delete
+          if (fromAccountId && amount > 0) {
+            // Reverse: from account gets money back, to account loses money
+            this.accounts.update(accs => accs.map(a => {
+              if (a.id === fromAccountId) return { ...a, balance: String(parseFloat(String(a.balance)) + amount) };
+              if (a.id === toAccountId) return { ...a, balance: String(parseFloat(String(a.balance)) - amount) };
+              return a;
+            }));
+          }
+
           this.toast.success('Transferencia eliminada');
         },
         error: () => this.toast.error('Error al eliminar la transferencia')
       });
       return;
     }
+    const txToDelete = this.transactions().find(t => t.id === idOrGroup);
+    const txAccountId = txToDelete?.accountId;
+    const txAmount = txToDelete ? parseFloat(String(txToDelete.amount)) : 0;
+    const txType = txToDelete?.type;
+
     this.financeService.deleteTransaction(idOrGroup).subscribe({
       next: () => {
         this.transactions.update(l => l.filter(t => t.id !== idOrGroup));
         this.confirmDeleteTxId.set(null);
         this.calendarDayKey.set(null);
-        this.refreshSummary();
+
+        // Optimistic account balance update
+        if (txAccountId && txType) {
+          let delta = 0;
+          if (txType === 'INCOME') delta -= txAmount;
+          else if (txType === 'EXPENSE') delta += txAmount;
+          if (delta !== 0) {
+            this.accounts.update(accs => accs.map(a => a.id === txAccountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) + delta) } : a));
+          }
+        }
+
         this.toast.success('Transacción eliminada');
       },
       error: () => this.toast.error('Error al eliminar la transacción')
@@ -1140,22 +1274,46 @@ export class Finances implements OnInit {
     return getBudgetPct(b, this.transactions());
   }
 
+  extractError(err: any, fallback: string): string {
+    return extractError(err, fallback);
+  }
+
   sanitizeNumber(val: any): number { return parseAmount(val); }
   filterAmountKey = filterAmountKey;
   sanitizeStr(val: any): string { return sanitizeNumberInput(val); }
   validateAmount = validateAmount;
 
-  extractError(err: any, fallback: string): string { return extractError(err, fallback); }
+  private updateAccountBalanceOptimistic(accountId: string, amountChange: number): void {
+    this.accounts.update(accs => accs.map(a => a.id === accountId
+      ? { ...a, balance: String(Math.max(0, parseFloat(String(a.balance)) + amountChange)) } : a));
+  }
+
+  private updateAccountBalancesForTransaction(payload: CreateTransactionPayload, amount: number): void {
+    if (payload.type === 'INCOME') {
+      this.updateAccountBalanceOptimistic(payload.accountId, amount);
+    } else if (payload.type === 'EXPENSE') {
+      this.updateAccountBalanceOptimistic(payload.accountId, -amount);
+    }
+  }
 
   refreshSummary(): void {
     this.financeService.getSummary().subscribe({ next: d => this.summary.set(d) });
     this.financeService.getBudgetHealth().subscribe({ next: d => this.health.set(d) });
   }
 
+  private reloading = false;
+
   reloadAll(): void {
+    if (this.reloading) return;
+    this.reloading = true;
     this.loading.set(true);
     let loaded = 0;
-    const done = () => { if (++loaded >= 7) this.loading.set(false); };
+    const done = () => {
+      if (++loaded >= 7) {
+        this.loading.set(false);
+        this.reloading = false;
+      }
+    };
     this.financeService.getSummary().subscribe({ next: d => { this.summary.set(d); done(); }, error: done });
     this.financeService.getBudgetHealth().subscribe({ next: d => { this.health.set(d); done(); }, error: done });
     this.financeService.getAccounts().subscribe({ next: d => { this.accounts.set(d); done(); }, error: done });
@@ -1171,49 +1329,70 @@ export class Finances implements OnInit {
       return;
     }
     this.exporting.set(true);
-    try {
-      const transferGroups: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[] = [];
-      const transferMap = new Map<string, Transaction[]>();
-      for (const tx of this.transactions()) {
-        if (tx.type === 'TRANSFER' && tx.transferGroupId) {
-          const g = transferMap.get(tx.transferGroupId) || [];
-          g.push(tx);
-          transferMap.set(tx.transferGroupId, g);
-        }
-      }
-      for (const [, g] of transferMap) {
-        if (g.length >= 2) {
-          const from = g.find(t => {
-            const other = g.find(o => o.id !== t.id);
-            return other && t.accountId !== other.accountId;
-          }) ?? g[0];
-          const to = g.find(t => t.id !== from.id)!;
-          transferGroups.push({ groupId: from.transferGroupId!, fromAccountId: from.accountId, toAccountId: to.accountId, amount: parseFloat(String(from.amount)), description: from.description || to.description, date: from.date });
-        }
-      }
+    const from = this.exportDateFrom();
+    const to = this.exportDateTo();
 
-      await this.pdfExport.generateReport(
-        {
-          userName: this.authService.currentUser()?.displayName ?? 'Usuario',
-          transactions: this.transactions(),
-          accounts: this.accounts(),
-          budgets: this.budgets(),
-          goals: this.goals(),
-          categories: this.categories(),
-          summary: this.summary()!,
-          health: this.health()!,
-          transferGroups,
-        },
-        { from: this.exportDateFrom(), to: this.exportDateTo() }
-      );
+    try {
+      const blob = await firstValueFrom(this.financeService.exportPdfServerSide(from, to));
+      if (!blob || blob.size === 0) throw new Error('PDF vacío recibido del backend');
+      this.downloadBlob(blob, `FinanzaViva_${from}_${to}.pdf`);
       this.showExportModal.set(false);
       this.toast.success('PDF generado correctamente');
-    } catch (e) {
-      this.toast.error('Error al generar el PDF');
-      console.error(e);
+    } catch (backendError) {
+      console.error('export-pdf backend falló, usando fallback local', backendError);
+      try {
+        const transferGroups: { groupId: string; fromAccountId: string; toAccountId: string; amount: number; description: string | null; date: string }[] = [];
+        const transferMap = new Map<string, Transaction[]>();
+        for (const tx of this.transactions()) {
+          if (tx.type === 'TRANSFER' && tx.transferGroupId) {
+            const g = transferMap.get(tx.transferGroupId) || [];
+            g.push(tx);
+            transferMap.set(tx.transferGroupId, g);
+          }
+        }
+        for (const [, g] of transferMap) {
+          if (g.length >= 2) {
+            const fromLeg = g.find(t => {
+              const other = g.find(o => o.id !== t.id);
+              return other && t.accountId !== other.accountId;
+            }) ?? g[0];
+            const toLeg = g.find(t => t.id !== fromLeg.id)!;
+            transferGroups.push({ groupId: fromLeg.transferGroupId!, fromAccountId: fromLeg.accountId, toAccountId: toLeg.accountId, amount: parseFloat(String(fromLeg.amount)), description: fromLeg.description || toLeg.description, date: fromLeg.date });
+          }
+        }
+
+        await this.pdfExport.generateReport(
+          {
+            userName: this.authService.currentUser()?.displayName ?? 'Usuario',
+            transactions: this.transactions(),
+            accounts: this.accounts(),
+            budgets: this.budgets(),
+            goals: this.goals(),
+            categories: this.categories(),
+            summary: this.summary()!,
+            health: this.health()!,
+            transferGroups,
+          },
+          { from, to }
+        );
+        this.showExportModal.set(false);
+        this.toast.success('PDF generado correctamente');
+      } catch (frontendError) {
+        this.toast.error('Error al generar el PDF');
+        console.error(frontendError);
+      }
     } finally {
       this.exporting.set(false);
     }
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   getTransferDestinations(): Account[] {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { XpSource } from '@prisma/client';
@@ -6,6 +6,8 @@ import type { BoardCell, PlayerProperty } from '@prisma/client';
 
 @Injectable()
 export class GameStateService {
+  private readonly logger = new Logger(GameStateService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gamification: GamificationService,
@@ -148,7 +150,7 @@ export class GameStateService {
           referenceId: gameId,
           description: 'Observaste una partida completa del simulador',
         });
-      } catch {}
+      } catch (e) { this.logger.error(`Error awarding SIMULATOR_OBSERVED XP: ${e}`); }
 
       return updated;
     }
@@ -176,7 +178,7 @@ export class GameStateService {
           referenceId: gameId,
           description: `Simulador completado — Posición #${bestHumanRank} de ${game.players.length} jugadores`,
         });
-      } catch {}
+      } catch (e) { this.logger.error(`Error awarding SIMULATOR_GAME_FINISHED XP: ${e}`); }
     }
   }
 

@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { staggerCards } from '../../core/animations/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { RANK_LABEL_MAP } from '../../core/constants/rank-label.const';
+import { getRankColors } from '../../core/constants/rank-colors.const';
 import { GamificationService } from '../../core/services/gamification.service';
 import { FinanceService } from '../../core/services/finance.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -11,7 +12,6 @@ import { AchievementService } from '../../core/services/achievement.service';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FinanceSummary } from '../../core/models/finance.model';
-import { GamificationStats } from '../../core/models/gamification.model';
 import { Achievement, Reward } from '../../core/models/achievement.model';
 
 interface UserStatistics {
@@ -39,7 +39,6 @@ interface UserStatistics {
 export class Dashboard implements OnInit {
 
   summary = signal<FinanceSummary | null>(null);
-  stats = signal<GamificationStats | null>(null);
   userStats = signal<UserStatistics | null>(null);
   achievements = signal<Achievement[]>([]);
   rewards = signal<Reward[]>([]);
@@ -82,7 +81,6 @@ export class Dashboard implements OnInit {
 
   private loadStats(): void {
     this.gamificationService.loadStats().subscribe({
-      next: (data) => this.stats.set(data),
       error: () => this.toast.error('Error al cargar estadísticas')
     });
   }
@@ -117,16 +115,20 @@ export class Dashboard implements OnInit {
 
 
   isMaxLevel(): boolean {
-    return this.stats()?.rank === 'MASTER';
+    return this.gamificationService.stats()?.rank === 'MASTER';
   }
 
   getXpProgress(): number {
     if (this.isMaxLevel()) return 100;
-    return (this.stats()?.xp ?? 0) % 100;
+    return this.gamificationService.stats()?.xpProgress ?? 0;
   }
 
   getRankLabel(rank: string): string {
     return RANK_LABEL_MAP[rank] ?? rank;
+  }
+
+  getRankColors(rank: string) {
+    return getRankColors(rank);
   }
 
 

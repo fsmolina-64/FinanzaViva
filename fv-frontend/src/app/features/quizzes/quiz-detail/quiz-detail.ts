@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { GamificationService } from '../../../core/services/gamification.service';
 import { Quiz, QuizQuestion, QuizSubmitResponse } from '../../../core/models/quiz.model';
 
 @Component({
@@ -37,7 +38,8 @@ export class QuizDetail implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private quizService: QuizService,
-    private toast: ToastService
+    private toast: ToastService,
+    private gamificationService: GamificationService
   ) { }
 
   ngOnInit(): void {
@@ -86,7 +88,11 @@ export class QuizDetail implements OnInit {
       timeTaken: 0
     };
     this.quizService.submitQuiz(this.quiz()!.id, payload).subscribe({
-      next: res => { this.result.set(res); this.submitting.set(false); },
+      next: res => {
+        this.result.set(res);
+        this.submitting.set(false);
+        this.gamificationService.loadStats().subscribe();
+      },
       error: () => { this.submitting.set(false); this.toast.error('Error al enviar el quiz'); }
     });
   }

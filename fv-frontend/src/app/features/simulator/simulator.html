@@ -12,14 +12,14 @@
       @for (mode of modeOptions; track mode.value) {
       <button (click)="selectMode(mode.value)"
         class="relative rounded-2xl p-4 border text-left transition-all duration-200"
-        [ngClass]="selectedMode === mode.value ? 'bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10' : 'bg-[#1E293B] border-slate-700 hover:border-slate-500'">
+        [ngClass]="selectedMode === mode.value ? 'bg-indigo-600/15 border-indigo-500 shadow-md shadow-indigo-500/10' : 'bg-[#1E293B] border-slate-700 hover:border-slate-500'">
         @if (mode.tag) {
         <span
-          class="absolute top-2 right-2 text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full">{{
+          class="absolute top-2 right-2 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-full">{{
           mode.tag }}</span>
         }
         <div class="w-8 h-8 rounded-lg mb-2.5 flex items-center justify-center text-sm font-bold"
-          [ngClass]="selectedMode === mode.value ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'">
+          [ngClass]="selectedMode === mode.value ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-400'">
           {{ mode.label.charAt(0) }}
         </div>
         <p class="text-sm font-semibold" [ngClass]="selectedMode === mode.value ? 'text-white' : 'text-slate-300'">{{
@@ -38,12 +38,12 @@
       <button (click)="selectRounds(opt.laps)"
         class="rounded-xl py-3 px-2 border text-center transition-all duration-200"
         [ngClass]="selectedRounds === opt.laps
-          ? 'bg-blue-600 border-blue-500 shadow-md shadow-blue-500/20'
+          ? 'bg-indigo-600 border-indigo-500 shadow-md shadow-indigo-500/20'
           : 'bg-[#1E293B] border-slate-700 hover:border-slate-500'">
         <p class="font-bold text-sm"
           [ngClass]="selectedRounds === opt.laps ? 'text-white' : 'text-slate-300'">{{ opt.label }}</p>
         <p class="text-xs mt-0.5"
-          [ngClass]="selectedRounds === opt.laps ? 'text-blue-200' : 'text-slate-500'">{{ opt.sub }}</p>
+          [ngClass]="selectedRounds === opt.laps ? 'text-indigo-200' : 'text-slate-500'">{{ opt.sub }}</p>
         <p class="text-[10px] mt-1 font-semibold"
           [ngClass]="selectedRounds === opt.laps ? 'text-emerald-300' : 'text-slate-600'">${{ opt.money }}</p>
       </button>
@@ -57,7 +57,7 @@
     <div class="flex items-center justify-between">
       <p class="text-white font-semibold text-sm">Jugadores</p>
       @if (humans.length < selectedModeOption.maxHumans) { <button (click)="addHuman()"
-        class="text-blue-400 text-xs font-medium hover:text-blue-300 transition-colors">+ Agregar</button>
+        class="text-indigo-400 text-xs font-medium hover:text-indigo-300 transition-colors">+ Agregar</button>
         }
     </div>
     <div class="space-y-3">
@@ -65,10 +65,10 @@
       <div class="space-y-2">
         <div class="flex items-center gap-2">
           <div
-            class="w-8 h-8 rounded-full border-2 border-blue-500/50 flex items-center justify-center text-base flex-shrink-0 bg-blue-600/20 font-bold"
+            class="w-8 h-8 rounded-full border-2 border-indigo-500/50 flex items-center justify-center text-base flex-shrink-0 bg-indigo-600/20 font-bold"
             style="color: white;">{{ human.tokenSymbol }}</div>
           <input [(ngModel)]="humans[hidx].displayName" [placeholder]="'Jugador ' + (hidx + 1)" type="text"
-            class="flex-1 bg-slate-700/60 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 transition-colors placeholder-slate-500" />
+            class="flex-1 bg-slate-700/60 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 transition-colors placeholder-slate-500" />
           @if (humans.length > selectedModeOption.minHumans) {
           <button (click)="removeHuman(hidx)"
             class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-400 transition-colors text-lg leading-none">-</button>
@@ -78,7 +78,7 @@
           @for (tok of getAvailableTokens(human.tokenSymbol); track tok.symbol) {
           <button (click)="setHumanToken(hidx, tok.symbol)"
             class="w-8 h-8 rounded-full border-2 text-base font-bold transition-all duration-150 flex items-center justify-center"
-            [ngClass]="human.tokenSymbol === tok.symbol ? 'border-blue-400 bg-blue-600/30 text-white scale-110' : 'border-slate-600 bg-slate-800 text-slate-400 hover:border-slate-400'"
+            [ngClass]="human.tokenSymbol === tok.symbol ? 'border-indigo-400 bg-indigo-600/30 text-white scale-110' : 'border-slate-600 bg-slate-800 text-slate-400 hover:border-slate-400'"
             [title]="tok.label">
             {{ tok.symbol }}
           </button>
@@ -167,7 +167,7 @@
   }
 
   <button (click)="startGame()" [disabled]="starting()"
-    class="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/25 text-base">
+    class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all duration-200 hover:shadow-xl hover:shadow-indigo-500/25 text-base">
     {{ starting() ? 'Preparando partida...' : 'Crear partida' }}
   </button>
 
@@ -178,7 +178,7 @@
       <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Historial</p>
       <div class="flex items-center gap-2">
         <input type="date" [ngModel]="historyDateFilter()" (ngModelChange)="historyDateFilter.set($event)"
-          class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 transition-colors" />
+          class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500 transition-colors" />
         @if (historyDateFilter()) {
         <button (click)="clearDateFilter()"
           class="text-slate-500 hover:text-white text-sm transition-colors">&times;</button>
@@ -211,6 +211,9 @@
           @if (h.status === 'ABANDONED') {
           <span class="text-red-400 text-[10px] font-medium bg-red-500/10 border border-red-500/25 px-1.5 py-0.5 rounded-full flex-shrink-0">Abandonada</span>
           }
+          @if (h.status === 'IN_PROGRESS') {
+          <span class="text-indigo-400 text-[10px] font-medium bg-indigo-500/10 border border-indigo-500/25 px-1.5 py-0.5 rounded-full flex-shrink-0">En progreso</span>
+          }
         </div>
         <div class="flex items-center gap-2 flex-shrink-0 ml-2">
           <span class="text-slate-600 text-xs">{{ h.finishedAt | date:'dd/MM/yy' }}</span>
@@ -242,6 +245,12 @@
           <span class="text-slate-500">Fecha</span>
           <span class="text-slate-300">{{ h.finishedAt | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
+        @if (h.status === 'IN_PROGRESS') {
+        <button (click)="goToGame(h.id); $event.stopPropagation()"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 rounded-lg transition-all mt-1">
+          Reanudar partida
+        </button>
+        }
       </div>
       }
       </div>
