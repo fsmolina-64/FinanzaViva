@@ -55,9 +55,9 @@
             'border-default focus:border-accent-blue focus:ring-accent-blue focus:shadow-accent-blue/10': !password.touched
           }"
           class="w-full bg-input border text-primary placeholder-subtle rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:ring-1 focus:shadow-sm transition-all duration-200 hover:border-strong" />
-        <button type="button" (click)="togglePassword()"
+<button type="button" (click)="togglePassword()"
           [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary btn-press transition-all duration-200">
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition-colors duration-200 active:opacity-70">
           @if (showPassword()) {
           <app-icon name="eye-off" />
           } @else {

@@ -1,4 +1,4 @@
-<!-- ═══════════════ NAVBAR ═══════════════ -->
+<!-- NAVBAR -->
 <nav class="fixed top-0 inset-x-0 z-50 transition-all duration-300" [class.bg-app/80]="scrolled()"
     [class.backdrop-blur-xl]="scrolled()" [class.border-b]="scrolled()" [class.border-default/60]="scrolled()">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -11,6 +11,7 @@
         <div class="hidden md:flex items-center gap-8 text-sm text-muted">
             <a href="#como-funciona" class="hover:text-primary transition-colors">Cómo funciona</a>
             <a href="#progresion" class="hover:text-primary transition-colors">Progresión</a>
+            <a href="#faq" class="hover:text-primary transition-colors">Preguntas frecuentes</a>
             <a href="https://github.com/fsmolina-64/FinanzaViva" target="_blank" rel="noopener"
                 class="hover:text-primary transition-colors">GitHub</a>
         </div>
@@ -27,7 +28,7 @@
     </div>
 </nav>
 
-<!-- ═══════════════ HERO ═══════════════ -->
+<!-- HERO -->
 <section #heroEl class="spotlight relative pt-36 pb-24 px-6 overflow-hidden">
     <div class="matrix-bg absolute inset-0"></div>
     <div class="aurora-bg"></div>
@@ -103,7 +104,7 @@
                             UO</div>
                         <div>
                             <p class="text-sm font-medium text-primary">Usuario One</p>
-                            <p class="text-xs text-blue-400">Nivel 2 · ROOKIE</p>
+                            <p class="text-xs text-blue-400">Nivel 2 — ROOKIE</p>
                         </div>
                     </div>
                     <div
@@ -174,7 +175,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ HOOK + STATS ═══════════════ -->
+<!-- HOOK + STATS -->
 <section #statsEl class="px-6 py-16 border-y border-default/40 bg-card/40">
     <div class="max-w-4xl mx-auto text-center">
         <p #revealEl class="reveal text-muted text-base mb-10">
@@ -194,7 +195,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ CARRUSEL "QUÉ INCLUYE" ═══════════════ -->
+<!-- CARRUSEL "QUÉ INCLUYE" -->
 <section class="px-6 py-24">
     <div class="max-w-5xl mx-auto">
         <div #revealEl class="reveal text-center mb-12">
@@ -238,7 +239,7 @@
                                     </div>
                                     <div class="bg-card rounded-lg p-3">
                                         <p class="text-[10px] text-subtle mb-1">Nivel</p>
-                                        <p class="text-blue-400 font-semibold text-sm">2 · ROOKIE</p>
+                                        <p class="text-blue-400 font-semibold text-sm">2 — ROOKIE</p>
                                     </div>
                                     <div class="bg-card rounded-lg p-3">
                                         <p class="text-[10px] text-subtle mb-1">Ranking</p>
@@ -252,7 +253,7 @@
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <p class="text-sm text-primary font-medium">Crédito y Deuda</p>
-                                        <p class="text-[10px] text-subtle">Módulo 3 de 7 · completado</p>
+                                        <p class="text-[10px] text-subtle">Módulo 3 de 7 — completado</p>
                                     </div>
                                     <span class="text-xs text-success">+130 XP</span>
                                 </div>
@@ -300,7 +301,7 @@
                                             −</div>
                                         <div>
                                             <p class="text-xs text-primary">Supermercado</p>
-                                            <p class="text-[10px] text-subtle">Alimentación · hoy</p>
+                                            <p class="text-[10px] text-subtle">Alimentación — hoy</p>
                                         </div>
                                     </div>
                                     <span class="text-xs text-danger">-$32.50</span>
@@ -312,7 +313,7 @@
                                             +</div>
                                         <div>
                                             <p class="text-xs text-primary">Freelance</p>
-                                            <p class="text-[10px] text-subtle">Salario · ayer</p>
+                                            <p class="text-[10px] text-subtle">Salario — ayer</p>
                                         </div>
                                     </div>
                                     <span class="text-xs text-success">+$180.00</span>
@@ -352,7 +353,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ CÓMO FUNCIONA ═══════════════ -->
+<!-- CÓMO FUNCIONA -->
 <section id="como-funciona" class="px-6 py-24 bg-card/40 border-y border-default/40">
     <div class="max-w-5xl mx-auto">
         <div #revealEl class="reveal text-center mb-14">
@@ -395,7 +396,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ FEATURE GRID ═══════════════ -->
+<!-- FEATURE GRID -->
 <section class="px-6 py-24">
     <div class="max-w-5xl mx-auto">
         <div #revealEl class="reveal text-center mb-14">
@@ -418,7 +419,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ SIMULADOR SPOTLIGHT ═══════════════ -->
+<!-- SIMULADOR SPOTLIGHT -->
 <section class="px-6 py-24 bg-card/40 border-y border-default/40">
     <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
         <div #revealEl class="reveal">
@@ -466,7 +467,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ PROGRESIÓN ═══════════════ -->
+<!-- PROGRESIÓN -->
 <section id="progresion" class="px-6 py-24">
     <div class="max-w-5xl mx-auto">
         <div #revealEl class="reveal text-center mb-14">
@@ -490,7 +491,7 @@
                     [class.border-default/60]="!rank.current">
                     @if (rank.current) {
                     <span
-                        class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gold text-app text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">TÚ
+                        class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gold text-app text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">Tú
                         AQUÍ</span>
                     }
                     <div class="h-28 flex items-center justify-center mx-auto mb-2">
@@ -507,7 +508,7 @@
     </div>
 </section>
 
-<!-- ═══════════════ CTA FINAL ═══════════════ -->
+<!-- CTA FINAL -->
 <section class="relative px-6 py-28 overflow-hidden">
     <video #videoEl class="absolute inset-0 w-full h-full object-cover scale-105" src="/video.mp4" autoplay loop muted
         playsinline oncanplay="this.play()" onloadedmetadata="this.muted=true"></video>
@@ -537,8 +538,8 @@
     </div>
 </section>
 
-<!-- ═══════════════ FAQ ═══════════════ -->
-<section class="px-6 py-24 bg-card/40 border-y border-default/40">
+<!-- FAQ -->
+<section id="faq" class="px-6 py-24 bg-card/40 border-y border-default/40">
     <div class="max-w-2xl mx-auto">
         <div #revealEl class="reveal text-center mb-12">
             <h2 class="font-display text-3xl md:text-4xl font-semibold text-primary">Preguntas frecuentes</h2>
@@ -565,13 +566,13 @@
     </div>
 </section>
 
-<!-- ═══════════════ FOOTER ═══════════════ -->
+<!-- FOOTER -->
 <footer class="px-6 py-10 border-t border-default/40">
     <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2">
             <img ngSrc="/logo-oficial.png" width="48" height="48" alt="" class="w-6 h-6 object-contain">
             <span class="text-sm text-muted">FinanzaViva</span>
         </div>
-        <p class="text-xs text-subtle">© 2026 FinanzaViva · Hecho para jóvenes ecuatorianos</p>
+        <p class="text-xs text-subtle">© 2026 FinanzaViva — Hecho para jóvenes ecuatorianos</p>
     </div>
 </footer>

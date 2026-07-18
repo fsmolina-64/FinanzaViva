@@ -13,7 +13,7 @@ export type IconName =
 @Component({
     selector: 'app-icon',
     standalone: true,
-    host: { 'aria-hidden': 'true' },
+    host: { 'aria-hidden': 'true', 'style': 'pointer-events: none;' },
     templateUrl: './icon.html',
     styleUrl: './icon.css'
 })
