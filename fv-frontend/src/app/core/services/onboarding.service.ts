@@ -18,7 +18,7 @@ export interface OnboardingGoal {
 
 export interface OnboardingBudget {
   id: string;
-  categoryId: string;
+  categoryId: string | null;
   categoryName: string;
   amount: number;
   period: string;

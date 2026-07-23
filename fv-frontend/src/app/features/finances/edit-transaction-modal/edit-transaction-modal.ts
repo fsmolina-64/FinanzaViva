@@ -6,9 +6,10 @@ import { FormsModule } from '@angular/forms';
 import { FinanceService } from '../../../core/services/finance.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { EditTransactionModalService } from '../../../core/services/edit-transaction-modal.service';
-import { Account, Category, Transaction, TransferDisplay } from '../../../core/models/finance.model';
+import { Account, Category, Transaction, TransferDisplay, Goal } from '../../../core/models/finance.model';
 import { NumpadComponent } from '../../../shared/components/numpad/numpad.component';
 import { formatCurrency } from '../../../shared/utils/amount.utils';
+import { isSavingsTx } from '../finances.utils';
 
 type EditMode = 'INCOME' | 'EXPENSE' | 'TRANSFER' | 'BALANCE';
 
@@ -30,15 +31,19 @@ export class EditTransactionModal implements OnInit {
 
   accounts = signal<Account[]>([]);
   categories = signal<Category[]>([]);
+  goals = signal<Goal[]>([]);
 
   isBalanceTx = false;
   showExtras = false;
+  isSavingsTx = false;
+  savingsGoalName = '';
 
   selectedAccountId = '';
   toAccountId = '';
   selectedCategoryId = '';
   description = '';
   selectedDate = '';
+  selectedGoalId = '';
 
   private txId = '';
   private transferGroupId = '';
@@ -73,7 +78,7 @@ export class EditTransactionModal implements OnInit {
   ngOnInit(): void {
     let loaded = 0;
     const done = () => {
-      if (++loaded >= 2) {
+      if (++loaded >= 3) {
         this.loading.set(false);
         this.initFromTransaction();
       }
@@ -86,6 +91,11 @@ export class EditTransactionModal implements OnInit {
 
     this.financeService.getCategories().subscribe({
       next: cats => { this.categories.set(cats); done(); },
+      error: () => done()
+    });
+
+    this.financeService.getGoals().subscribe({
+      next: g => { this.goals.set(g.filter(goal => goal.status === 'ACTIVE')); done(); },
       error: () => done()
     });
   }
@@ -118,6 +128,17 @@ export class EditTransactionModal implements OnInit {
         this.editTxService.close();
         return;
       }
+
+      // Check if it's a savings transaction
+      this.isSavingsTx = isSavingsTx(t);
+      if (this.isSavingsTx && t.description) {
+        this.savingsGoalName = t.description.replace('Ahorro para meta: ', '');
+        const goal = this.goals().find(g => g.name === this.savingsGoalName);
+        if (goal) {
+          this.selectedGoalId = goal.id;
+        }
+      }
+
       this.txId = t.id;
       this.isBalanceTx = !!t.isInitialBalance;
       this.originalType = t.type as 'INCOME' | 'EXPENSE';
@@ -131,7 +152,7 @@ export class EditTransactionModal implements OnInit {
   }
 
   setType(mode: 'INCOME' | 'EXPENSE'): void {
-    if (this.isBalanceTx || this.editMode() === 'TRANSFER') return;
+    if (this.isBalanceTx || this.editMode() === 'TRANSFER' || this.isSavingsTx) return;
     this.editMode.set(mode);
     this.selectedCategoryId = '';
   }
@@ -144,7 +165,15 @@ export class EditTransactionModal implements OnInit {
       this.showBalanceModeModal.set(true);
       return;
     }
-    this.submitTransaction();
+    if (this.isSavingsTx) {
+      if (!this.selectedGoalId) { this.toast.warning('Selecciona una meta'); return; }
+    } else if (!this.selectedCategoryId) {
+      this.toast.warning('Selecciona una categoria'); return;
+    }
+    if (this.editMode() === 'EXPENSE' && this.currentAmount() > this.selectedAccountBalance()) {
+      this.showDebtConfirm.set(true); return;
+    }
+    this.executeUpdate(false);
   }
 
   private submitTransaction(): void {
@@ -181,12 +210,25 @@ export class EditTransactionModal implements OnInit {
       ? this.originalType
       : (this.editMode() as 'INCOME' | 'EXPENSE');
 
+    let description = this.description.trim() || undefined;
+    let categoryId = this.selectedCategoryId || undefined;
+
+    if (this.isSavingsTx) {
+      const goal = this.goals().find(g => g.id === this.selectedGoalId);
+      if (goal) {
+        description = `Ahorro para meta: ${goal.name}`;
+        // Keep the original savings category
+        const savingsCategory = this.categories().find(c => c.name === 'Ahorros' && c.type === 'EXPENSE');
+        if (savingsCategory) categoryId = savingsCategory.id;
+      }
+    }
+
     const payload: any = {
       accountId: this.selectedAccountId,
-      categoryId: this.selectedCategoryId || undefined,
+      categoryId,
       amount: this.currentAmount(),
       type,
-      description: this.description.trim() || undefined,
+      description,
       date: this.selectedDate,
       allowNegative
     };

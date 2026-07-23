@@ -70,7 +70,7 @@ export interface TransactionResponse {
 export interface Budget {
   id: string;
   userId: string;
-  categoryId: string;
+  categoryId: string | null;
   amount: string;
   period: BudgetPeriod;
   startDate: string;

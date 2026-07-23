@@ -114,6 +114,12 @@ export class Finances implements OnInit {
   confirmDeleteGoalId = signal<string | null>(null);
   confirmDeleteCategoryId = signal<string | null>(null);
 
+  showBudgetCategoryConflict = signal(false);
+  budgetConflictInfo = signal<{ categoryId: string; categoryName: string; existingBudgetId: string } | null>(null);
+  private pendingBudgetPayload: CreateBudgetPayload | null = null;
+
+  pendingTargetReduction = signal<{ goalId: string; newTarget: number; current: number } | null>(null);
+
   submittingAccount = signal(false);
   submittingCategory = signal(false);
   editingAccountId = signal<string | null>(null);
@@ -912,6 +918,51 @@ export class Finances implements OnInit {
   submitBudget(): void {
     const err = this.validateAmount(this.newBudget.amount);
     if (err) { this.toast.warning(err); return; }
+
+    // Check if there's already a budget for this category
+    if (this.newBudget.categoryId) {
+      const existingBudget = this.budgets().find(b => b.categoryId === this.newBudget.categoryId);
+      if (existingBudget) {
+        const category = this.categories().find(c => c.id === this.newBudget.categoryId);
+        this.showBudgetCategoryConflict.set(true);
+        this.budgetConflictInfo.set({
+          categoryId: this.newBudget.categoryId,
+          categoryName: category?.name ?? 'Categoría',
+          existingBudgetId: existingBudget.id,
+        });
+        return;
+      }
+    }
+
+    this.executeBudgetCreation();
+  }
+
+  confirmBudgetCategoryConflict(): void {
+    const info = this.budgetConflictInfo();
+    if (!info) return;
+
+    // Delete the existing budget first
+    this.financeService.deleteBudget(info.existingBudgetId).subscribe({
+      next: () => {
+        this.budgets.update(l => l.filter(b => b.id !== info.existingBudgetId));
+        this.showBudgetCategoryConflict.set(false);
+        this.budgetConflictInfo.set(null);
+        this.executeBudgetCreation();
+      },
+      error: err => {
+        this.toast.error(this.extractError(err, 'Error al eliminar el presupuesto anterior'));
+        this.showBudgetCategoryConflict.set(false);
+        this.budgetConflictInfo.set(null);
+      }
+    });
+  }
+
+  cancelBudgetCategoryConflict(): void {
+    this.showBudgetCategoryConflict.set(false);
+    this.budgetConflictInfo.set(null);
+  }
+
+  private executeBudgetCreation(): void {
     const now = new Date();
     let endDate: string | null = null;
     if (!this.newBudget.indefinido) {
@@ -945,7 +996,7 @@ export class Finances implements OnInit {
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
       period: 'MONTHLY',
-      categoryId: b.categoryId,
+      categoryId: b.categoryId ?? '',
       startDate: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       indefinido: !b.endDate,
       months: 1
@@ -1162,10 +1213,37 @@ export class Finances implements OnInit {
     if (!this.editGoal.name.trim()) { this.toast.warning('Ingresa un nombre'); return; }
     const err = this.validateAmount(this.editGoal.targetAmount);
     if (err) { this.toast.warning(err); return; }
-    this.financeService.updateGoal(id, { name: this.editGoal.name.trim(), targetAmount: Number(this.editGoal.targetAmount), deadline: this.editGoal.deadline || undefined }).subscribe({
+
+    const goal = this.goals().find(g => g.id === id);
+    if (!goal) return;
+
+    const newTarget = Number(this.editGoal.targetAmount);
+    const current = Number(goal.currentAmount);
+
+    if (newTarget < current) {
+      this.pendingTargetReduction.set({ goalId: id, newTarget, current });
+      return;
+    }
+
+    this.executeGoalUpdate(id, newTarget);
+  }
+
+  private executeGoalUpdate(id: string, targetAmount: number): void {
+    this.financeService.updateGoal(id, { name: this.editGoal.name.trim(), targetAmount, deadline: this.editGoal.deadline || undefined }).subscribe({
       next: updated => { this.goals.update(l => l.map(g => g.id === id ? { ...g, ...updated } : g)); this.editingGoalId.set(null); this.toast.success('Meta actualizada'); },
       error: err => this.toast.error(this.extractError(err, 'Error al actualizar la meta'))
     });
+  }
+
+  confirmGoalTargetReduction(): void {
+    const info = this.pendingTargetReduction();
+    if (!info) return;
+    this.executeGoalUpdate(info.goalId, info.newTarget);
+    this.pendingTargetReduction.set(null);
+  }
+
+  cancelGoalTargetReduction(): void {
+    this.pendingTargetReduction.set(null);
   }
 
   confirmDeleteGoal(id: string): void { this.confirmDeleteGoalId.set(id); this.editingGoalId.set(null); }

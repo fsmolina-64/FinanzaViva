@@ -10,6 +10,8 @@ interface Category { id: string; name: string; color: string; type: string; isGl
 
 const GENERAL_ID = '__general__';
 
+const GENERAL_CATEGORY_ID = null as string | null;
+
 @Component({
   selector:    'app-step-budgets',
   standalone:  true,

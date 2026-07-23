@@ -9,7 +9,7 @@ import { UpdateGoalDto } from './dto/update-goal.dto';
 
 @Injectable()
 export class FinancesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getCategories(userId: string) {
     const hidden = await this.prisma.userHiddenCategory.findMany({
@@ -31,6 +31,23 @@ export class FinancesService {
   }
 
   async createCategory(userId: string, dto: CreateCategoryDto) {
+    // Check if user already has a category with the same name AND type
+    // OR if there's a global category with the same name AND type
+    const existingCategory = await this.prisma.category.findFirst({
+      where: {
+        OR: [
+          { userId, name: dto.name, type: dto.type },
+          { isGlobal: true, name: dto.name, type: dto.type },
+        ],
+      },
+    });
+    if (existingCategory) {
+      const scope = existingCategory.isGlobal ? 'predefinida' : 'tuya';
+      throw new BadRequestException(
+        `Ya existe una categoría de ${dto.type === 'INCOME' ? 'ingreso' : 'gasto'} ${scope} con el nombre "${dto.name}".`
+      );
+    }
+
     return this.prisma.category.create({
       data: {
         userId,
@@ -47,6 +64,25 @@ export class FinancesService {
     const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
     if (!category) throw new NotFoundException('Categoría no encontrada');
     if (category.userId && category.userId !== userId) throw new ForbiddenException();
+
+    // Check if renaming would create a duplicate (check user categories AND global categories)
+    if (dto.name && dto.name !== category.name) {
+      const existingCategory = await this.prisma.category.findFirst({
+        where: {
+          OR: [
+            { userId, name: dto.name, type: category.type },
+            { isGlobal: true, name: dto.name, type: category.type },
+          ],
+          NOT: { id: categoryId },
+        },
+      });
+      if (existingCategory) {
+        const scope = existingCategory.isGlobal ? 'predefinida' : 'tuya';
+        throw new BadRequestException(
+          `Ya existe una categoría de ${category.type === 'INCOME' ? 'ingreso' : 'gasto'} ${scope} con el nombre "${dto.name}".`
+        );
+      }
+    }
 
     if (!category.userId) {
       return this.prisma.category.create({
@@ -112,6 +148,18 @@ export class FinancesService {
   }
 
   async createBudget(userId: string, dto: CreateBudgetDto) {
+    // Check if user already has a budget for this category
+    if (dto.categoryId) {
+      const existingBudget = await this.prisma.budget.findFirst({
+        where: { userId, categoryId: dto.categoryId },
+      });
+      if (existingBudget) {
+        throw new BadRequestException(
+          `Ya existe un presupuesto para esta categoría`
+        );
+      }
+    }
+
     return this.prisma.budget.create({
       data: {
         userId,
@@ -121,6 +169,7 @@ export class FinancesService {
         startDate: new Date(dto.startDate),
         endDate: dto.endDate ? new Date(dto.endDate) : null,
       },
+      include: { category: true },
     });
   }
 
@@ -191,21 +240,70 @@ export class FinancesService {
       const account = await this.prisma.financialAccount.findUnique({ where: { id: dto.fromAccountId } });
       if (!account || account.userId !== userId) throw new ForbiddenException();
 
-      const deposit = dto.currentAmount - Number(goal.currentAmount);
+      const targetAmount = Number(goal.targetAmount);
+      const currentAmount = Number(goal.currentAmount);
+      const newCurrentAmount = dto.currentAmount;
+      
+      // Cap at target amount - don't allow saving more than the goal target
+      const cappedAmount = Math.min(newCurrentAmount, targetAmount);
+      const deposit = cappedAmount - currentAmount;
+
+      if (deposit <= 0) {
+        return goal; // No actual change needed
+      }
+
+      // Check account has enough balance
+      if (deposit > Number(account.balance)) {
+        throw new BadRequestException('Saldo insuficiente en la cuenta');
+      }
+
+      // Find or create a "Savings" category for tracking
+      let savingsCategory = await this.prisma.category.findFirst({
+        where: { userId, name: 'Ahorros', type: 'EXPENSE' },
+      });
+      if (!savingsCategory) {
+        savingsCategory = await this.prisma.category.create({
+          data: {
+            userId,
+            name: 'Ahorros',
+            type: 'EXPENSE',
+            icon: 'piggy-bank',
+            color: '#10b981',
+            isGlobal: false,
+          },
+        });
+      }
+
       const results = await this.prisma.$transaction([
         this.prisma.financialGoal.update({
           where: { id: goalId },
           data: {
-            currentAmount: dto.currentAmount,
-            ...(dto.currentAmount >= Number(goal.targetAmount) && { status: 'COMPLETED' }),
+            currentAmount: cappedAmount,
+            ...(cappedAmount >= targetAmount && { status: 'COMPLETED' }),
           },
         }),
         this.prisma.financialAccount.update({
           where: { id: dto.fromAccountId },
-          data: { balance: { decrement: deposit > 0 ? deposit : 0 } },
+          data: { balance: { decrement: deposit } },
+        }),
+        this.prisma.transaction.create({
+          data: {
+            userId,
+            accountId: dto.fromAccountId,
+            categoryId: savingsCategory.id,
+            amount: deposit,
+            type: 'EXPENSE',
+            description: `Ahorro para meta: ${goal.name}`,
+            date: new Date(),
+          },
         }),
       ]);
       return results[0];
+    }
+
+    // Handle targetAmount reduction below currentAmount
+    if (dto.targetAmount !== undefined && dto.targetAmount < Number(goal.currentAmount)) {
+      return this.handleTargetReduction(userId, goalId, goal, dto.targetAmount);
     }
 
     return this.prisma.financialGoal.update({
@@ -220,13 +318,102 @@ export class FinancesService {
     });
   }
 
+  // Helper: handle targetAmount reduction below currentAmount
+  private async handleTargetReduction(
+    userId: string,
+    goalId: string,
+    goal: any,
+    newTargetAmount: number,
+  ) {
+    const currentAmount = Number(goal.currentAmount);
+    const excess = currentAmount - newTargetAmount;
+
+    // Find savings transactions to determine which account to refund
+    const savingsTransactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        description: { startsWith: `Ahorro para meta: ${goal.name}` },
+        type: 'EXPENSE',
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    if (savingsTransactions.length === 0) {
+      throw new BadRequestException(
+        'No se puede reducir la meta por debajo del ahorro actual sin transacciones de ahorro',
+      );
+    }
+
+    // Refund excess to the most recent account used for savings
+    const latestTx = savingsTransactions[0];
+
+    await this.prisma.$transaction([
+      this.prisma.financialAccount.update({
+        where: { id: latestTx.accountId },
+        data: { balance: { increment: excess } },
+      }),
+      this.prisma.financialGoal.update({
+        where: { id: goalId },
+        data: {
+          targetAmount: newTargetAmount,
+          currentAmount: newTargetAmount, // Cap current amount to new target
+          status: 'COMPLETED',
+        },
+      }),
+      this.prisma.transaction.create({
+        data: {
+          userId,
+          accountId: latestTx.accountId,
+          categoryId: latestTx.categoryId,
+          amount: excess,
+          type: 'INCOME',
+          description: `Devolución por reducción de meta: ${goal.name}`,
+          date: new Date(),
+        },
+      }),
+    ]);
+
+    return { message: `Meta actualizada. Se devolvieron $${excess.toFixed(2)} a la cuenta` };
+  }
+
   async deleteGoal(userId: string, goalId: string) {
-    const goal = await this.prisma.financialGoal.findUnique({ where: { id: goalId } });
+    const goal = await this.prisma.financialGoal.findUnique({ 
+      where: { id: goalId }
+    });
     if (!goal) throw new NotFoundException('Meta no encontrada');
     if (goal.userId !== userId) throw new ForbiddenException();
 
-    await this.prisma.financialGoal.delete({ where: { id: goalId } });
-    return { message: 'Meta eliminada' };
+    // Find savings transactions for this goal and return money to accounts
+    const savingsTransactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        description: { startsWith: `Ahorro para meta: ${goal.name}` },
+        type: 'EXPENSE',
+      },
+    });
+
+    if (savingsTransactions.length > 0) {
+      await this.prisma.$transaction([
+        ...savingsTransactions.map(tx => 
+          this.prisma.financialAccount.update({
+            where: { id: tx.accountId },
+            data: { balance: { increment: Number(tx.amount) } },
+          })
+        ),
+        this.prisma.transaction.deleteMany({
+          where: {
+            userId,
+            description: { startsWith: `Ahorro para meta: ${goal.name}` },
+            type: 'EXPENSE',
+          },
+        }),
+        this.prisma.financialGoal.delete({ where: { id: goalId } }),
+      ]);
+    } else {
+      await this.prisma.financialGoal.delete({ where: { id: goalId } });
+    }
+
+    return { message: 'Meta eliminada y ahorros devueltos a las cuentas' };
   }
 
   async getSummary(userId: string) {

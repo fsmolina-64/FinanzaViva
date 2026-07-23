@@ -719,6 +719,48 @@
     </div>
     }
 
+    @if (showBudgetCategoryConflict()) {
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+      <div class="bg-card rounded-2xl border border-orange-500/30 p-6 max-w-sm w-full space-y-4">
+        <h4 class="text-primary font-semibold">Presupuesto ya existe para esta categoría</h4>
+        <p class="text-muted text-sm">
+          Ya existe un presupuesto para "<strong>{{ budgetConflictInfo()?.categoryName }}</strong>".
+          ¿Deseas eliminar el anterior y crear uno nuevo?
+        </p>
+        <div class="flex gap-3">
+          <button (click)="confirmBudgetCategoryConflict()"
+            class="flex-1 bg-orange-600 hover:bg-orange-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">
+            Reemplazar
+          </button>
+          <button (click)="cancelBudgetCategoryConflict()"
+            class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (pendingTargetReduction()) {
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+      <div class="bg-card rounded-2xl border border-rose-500/30 p-6 max-w-sm w-full space-y-4">
+        <h4 class="text-primary font-semibold">Reducir objetivo por debajo del ahorro actual</h4>
+        <p class="text-muted text-sm">
+          La meta tiene <strong>${{ formatCurrency(pendingTargetReduction()!.current) }}</strong> ahorrados.
+          Si reduces el objetivo a <strong>${{ formatCurrency(pendingTargetReduction()!.newTarget) }}</strong>,
+          se devolverá <strong>${{ formatCurrency(pendingTargetReduction()!.current - pendingTargetReduction()!.newTarget) }}</strong>
+          a la cuenta de origen.
+        </p>
+        <div class="flex gap-3">
+          <button (click)="confirmGoalTargetReduction()"
+            class="flex-1 bg-rose-600 hover:bg-rose-500 text-primary text-sm font-semibold py-2 rounded-lg transition-all">
+            Confirmar y devolver
+          </button>
+          <button (click)="cancelGoalTargetReduction()"
+            class="flex-1 bg-elevated hover:bg-elevated text-muted text-sm py-2 rounded-lg transition-colors">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    }
+
     <div class="space-y-4">
 
       <div class="bg-card rounded-2xl p-4 border border-default/60 shadow-sm card-hover">
@@ -776,7 +818,7 @@
                   </div>
                   <div class="flex items-center gap-3">
                     <p class="text-primary text-sm font-bold">
-                      ${{ formatCurrency(computeSpent(b.categoryId)) }}
+                      ${{ formatCurrency(computeSpent(b.categoryId ?? '')) }}
                       <span class="text-subtle font-normal">/ ${{ formatCurrency(b.amount) }}</span>
                     </p>
                     <div class="flex gap-1">
@@ -946,7 +988,7 @@
               </div>
               <div class="flex items-center gap-3">
                 <p class="text-primary text-sm font-bold">
-                  ${{ formatCurrency(computeSpent(b.categoryId)) }}
+                  ${{ formatCurrency(computeSpent(b.categoryId ?? '')) }}
                   <span class="text-subtle font-normal">/ ${{ formatCurrency(b.amount) }}</span>
                 </p>
                 <div class="flex gap-1">

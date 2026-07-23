@@ -13,6 +13,10 @@ export function isInitBalanceTx(tx: any): boolean {
   return tx?.isInitialBalance === true;
 }
 
+export function isSavingsTx(tx: any): boolean {
+  return tx?.type === 'EXPENSE' && tx?.description?.startsWith('Ahorro para meta: ');
+}
+
 export function getCategoryName(categories: { id: string; name: string }[], categoryId: string): string {
   return categories.find(c => c.id === categoryId)?.name ?? 'Sin categoría';
 }
@@ -30,6 +34,7 @@ export function isBalanceAdjustmentTx(tx: any): boolean {
 
 export function getTransactionBg(tx: Transaction | TransferDisplay): string {
   if (isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
+  if (isSavingsTx(tx)) return 'bg-rose-500/20 text-rose-400';
   if (isBalanceAdjustmentTx(tx)) return 'bg-orange-500/20 text-orange-400';
   if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
   if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
@@ -38,6 +43,7 @@ export function getTransactionBg(tx: Transaction | TransferDisplay): string {
 
 export function getTransactionColor(tx: Transaction | TransferDisplay): string {
   if (isInitBalanceTx(tx)) return 'text-purple-400';
+  if (isSavingsTx(tx)) return 'text-rose-400';
   if (isBalanceAdjustmentTx(tx)) return 'text-orange-400';
   if (tx.type === 'INCOME') return 'text-emerald-400';
   if (tx.type === 'TRANSFER') return 'text-blue-400';
@@ -80,7 +86,7 @@ export function getGoalProgress(g: Goal): number {
   return target ? Math.min(100, Math.round((current / target) * 100)) : 0;
 }
 
-export function computeSpent(transactions: Transaction[], categoryId: string): number {
+export function computeSpent(transactions: Transaction[], categoryId: string | null): number {
   const now = new Date();
   return transactions
     .filter(t => t.type === 'EXPENSE'
