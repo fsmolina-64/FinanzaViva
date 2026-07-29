@@ -22,6 +22,22 @@
   }
 }
 
+/* CSS Variables for transaction colors - single source of truth */
+:root {
+  --tx-init-bg: rgba(168, 85, 247, 0.2);
+  --tx-init-text: #a855f7;
+  --tx-savings-bg: rgba(244, 114, 182, 0.2);
+  --tx-savings-text: #f472b6;
+  --tx-adjustment-bg: rgba(255, 99, 71, 0.2);
+  --tx-adjustment-text: #ed813a;
+  --tx-income-bg: rgba(16, 185, 129, 0.2);
+  --tx-income-text: #10b981;
+  --tx-transfer-bg: rgba(59, 130, 246, 0.2);
+  --tx-transfer-text: #3b82f6;
+  --tx-expense-bg: rgba(239, 68, 68, 0.2);
+  --tx-expense-text: #e92f2f;
+}
+
 .alert-banner {
   animation: alertSlide 0.35s ease both;
 }

@@ -37,6 +37,13 @@ export class TransactionsService {
     });
     if (!account || account.userId !== userId) throw new ForbiddenException();
 
+    // Validate category belongs to user or is global
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!category) throw new BadRequestException('Categoría no encontrada');
+      if (category.userId && category.userId !== userId) throw new ForbiddenException('La categoría no te pertenece');
+    }
+
     if (dto.type === 'EXPENSE' && !dto.allowNegative && !dto.isInitialBalance) {
       if (Number(account.balance) < dto.amount) {
         throw new BadRequestException(
@@ -131,6 +138,13 @@ async updateTransaction(userId: string, transactionId: string, dto: UpdateTransa
       throw new BadRequestException('No puedes editar un ajuste de balance');
     }
 
+    // Validate categoryId ownership if provided
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!category) throw new NotFoundException('Categoría no encontrada');
+      if (category.userId && category.userId !== userId) throw new ForbiddenException('La categoría no te pertenece');
+    }
+
     const newAccountId = dto.accountId ?? tx.accountId;
     const newType = dto.type ?? tx.type;
     const newAmount = dto.amount ?? Number(tx.amount);
@@ -144,60 +158,43 @@ async updateTransaction(userId: string, transactionId: string, dto: UpdateTransa
     const revertDelta = tx.type === 'INCOME' ? -Number(tx.amount) : Number(tx.amount);
     const applyDelta = newType === 'INCOME' ? newAmount : -newAmount;
 
-    const balanceOps = sameAccount
-      ? [this.prisma.financialAccount.update({
-          where: { id: tx.accountId },
-          data: { balance: { increment: revertDelta + applyDelta } },
-        })]
-      : [
-          this.prisma.financialAccount.update({
+const results = await this.prisma.$transaction(async (prisma) => {
+      // Build balance operations using the transaction client
+      const balanceOps = sameAccount
+        ? [prisma.financialAccount.update({
             where: { id: tx.accountId },
-            data: { balance: { increment: revertDelta } },
-          }),
-          this.prisma.financialAccount.update({
-            where: { id: newAccountId },
-            data: { balance: { increment: applyDelta } },
-          }),
-        ];
+            data: { balance: { increment: revertDelta + applyDelta } },
+          })]
+        : [
+            prisma.financialAccount.update({
+              where: { id: tx.accountId },
+              data: { balance: { increment: revertDelta } },
+            }),
+            prisma.financialAccount.update({
+              where: { id: newAccountId },
+              data: { balance: { increment: applyDelta } },
+            }),
+          ];
 
-    let goalUpdateOp = null;
-    if (isSavingsTx && dto.amount !== undefined && dto.amount !== Number(tx.amount) && tx.description) {
-      // Update goal currentAmount based on the amount difference
-      const goalName = tx.description.replace('Ahorro para meta: ', '');
-      const goal = await this.prisma.financialGoal.findFirst({
-        where: { userId, name: goalName },
-      });
-      if (goal) {
-        const amountDiff = dto.amount - Number(tx.amount);
-        goalUpdateOp = this.prisma.financialGoal.update({
-          where: { id: goal.id },
-          data: { 
-            currentAmount: { increment: amountDiff },
-            // Reset to ACTIVE if it was completed and amount decreased
-            ...(amountDiff < 0 && goal.status === 'COMPLETED' && { status: 'ACTIVE' }),
-          },
+      // Build goal update operation if needed
+      let goalUpdateOp = null;
+      if (isSavingsTx && dto.amount !== undefined && dto.amount !== Number(tx.amount) && tx.description) {
+        const goalName = tx.description.replace('Ahorro para meta: ', '');
+        const goal = await prisma.financialGoal.findFirst({
+          where: { userId, name: goalName },
         });
+        if (goal) {
+          const amountDiff = dto.amount - Number(tx.amount);
+          goalUpdateOp = prisma.financialGoal.update({
+            where: { id: goal.id },
+            data: { 
+              currentAmount: { increment: amountDiff },
+              ...(amountDiff < 0 && goal.status === 'COMPLETED' && { status: 'ACTIVE' }),
+            },
+          });
+        }
       }
-    }
 
-    const ops = [
-      this.prisma.transaction.update({
-        where: { id: transactionId },
-        data: {
-          ...(dto.accountId && { accountId: dto.accountId }),
-          categoryId: dto.categoryId ?? null,
-          ...(dto.amount !== undefined && { amount: dto.amount }),
-          ...(dto.type && { type: dto.type }),
-          ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.date && { date: new Date(dto.date) }),
-          ...(dto.isInitialBalance !== undefined && { isInitialBalance: dto.isInitialBalance }),
-        },
-        include: { category: true, account: true },
-      }),
-      ...balanceOps,
-    ];
-
-    const results = await this.prisma.$transaction(async (prisma) => {
       const txResult = await prisma.transaction.update({
         where: { id: transactionId },
         data: {
@@ -212,6 +209,7 @@ async updateTransaction(userId: string, transactionId: string, dto: UpdateTransa
         include: { category: true, account: true },
       });
 
+      // Execute balance operations within the same transaction
       for (const op of balanceOps) {
         await op;
       }

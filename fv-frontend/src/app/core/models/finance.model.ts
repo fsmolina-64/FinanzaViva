@@ -37,6 +37,7 @@ export interface Transaction {
   date: string;
   transferGroupId?: string | null;
   isInitialBalance?: boolean;
+  goalId?: string | null;
   createdAt: string;
   category?: Category;
   account?: Account;
@@ -99,6 +100,15 @@ export interface BudgetHealth {
   status: BudgetHealthStatus;
   message: string;
   breakdown: Record<string, number>;
+  budgetDetails?: Array<{
+    categoryId: string | null;
+    categoryName: string;
+    budgeted: number;
+    spent: number;
+    percentage: number;
+  }>;
+  totalBudgeted?: number;
+  totalSpent?: number;
 }
 
 export interface UpdateGoalPayload {
@@ -191,10 +201,72 @@ export interface UpdateCategoryPayload {
   name?: string;
   icon?: string;
   color?: string;
-  endDate?: string;
 }
 
 export interface UpdateAccountPayload {
   name?: string;
   balance?: number;
+}
+
+export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type RecurringStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type ExecutionStatus = 'SUCCESS' | 'FAILED' | 'SKIPPED';
+
+export interface RecurringRule {
+  id: string;
+  userId: string;
+  accountId: string;
+  categoryId?: string | null;
+  amount: number;
+  type: TransactionType;
+  description?: string | null;
+  frequency: RecurringFrequency;
+  status: RecurringStatus;
+  startDate: string;
+  endDate?: string | null;
+  nextRunDate: string;
+  maxOccurrences?: number | null;
+  occurrenceCount: number;
+  interval?: number;
+  createdAt: string;
+  updatedAt: string;
+  account?: Account;
+  category?: Category;
+  executions?: RecurringExecution[];
+}
+
+export interface RecurringExecution {
+  id: string;
+  ruleId: string;
+  transactionId?: string | null;
+  executedAt: string;
+  amount: number;
+  status: ExecutionStatus;
+  errorMessage?: string | null;
+}
+
+export interface CreateRecurringRulePayload {
+  accountId: string;
+  categoryId?: string;
+  amount: number;
+  type: TransactionType;
+  description?: string;
+  frequency: RecurringFrequency;
+  startDate: string;
+  endDate?: string;
+  maxOccurrences?: number;
+  interval?: number;
+}
+
+export interface UpdateRecurringRulePayload {
+  accountId?: string;
+  categoryId?: string | null;
+  amount?: number;
+  description?: string | null;
+  frequency?: RecurringFrequency;
+  startDate?: string;
+  endDate?: string | null;
+  maxOccurrences?: number | null;
+  interval?: number;
+  status?: RecurringStatus;
 }

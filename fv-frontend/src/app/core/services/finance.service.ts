@@ -7,9 +7,11 @@ import {
   CreateAccountPayload, CreateTransactionPayload,
   CreateBudgetPayload, CreateGoalPayload,
   UpdateTransactionPayload, UpdateBudgetPayload, UpdateGoalPayload,
-   CreateTransferPayload, TransferResponse,
-   CreateCategoryPayload, UpdateCategoryPayload,
-   UpdateAccountPayload
+  CreateTransferPayload, TransferResponse,
+  CreateCategoryPayload, UpdateCategoryPayload,
+  UpdateAccountPayload,
+  RecurringRule, RecurringExecution,
+  CreateRecurringRulePayload, UpdateRecurringRulePayload
 } from '../models/finance.model';
 
 @Injectable({ providedIn: 'root' })
@@ -115,6 +117,39 @@ export class FinanceService {
 
   deleteTransfer(groupId: string): Observable<void> {
     return this.api.delete<void>(`/finances/transfers/${groupId}`);
+  }
+
+  // Recurring Rules
+  getRecurringRules(): Observable<RecurringRule[]> {
+    return this.api.get<RecurringRule[]>('/finances/recurring');
+  }
+
+  getRecurringRule(id: string): Observable<RecurringRule> {
+    return this.api.get<RecurringRule>(`/finances/recurring/${id}`);
+  }
+
+  getRecurringExecutions(ruleId: string): Observable<RecurringExecution[]> {
+    return this.api.get<RecurringExecution[]>(`/finances/recurring/${ruleId}/executions`);
+  }
+
+  createRecurringRule(data: CreateRecurringRulePayload): Observable<RecurringRule> {
+    return this.api.post<RecurringRule>('/finances/recurring', data);
+  }
+
+  updateRecurringRule(id: string, data: UpdateRecurringRulePayload): Observable<RecurringRule> {
+    return this.api.patch<RecurringRule>(`/finances/recurring/${id}`, data);
+  }
+
+  updateRecurringStatus(id: string, status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED'): Observable<RecurringRule> {
+    return this.api.patch<RecurringRule>(`/finances/recurring/${id}/status`, { status });
+  }
+
+  executeRecurringNow(id: string): Observable<any> {
+    return this.api.post<any>(`/finances/recurring/${id}/execute`, {});
+  }
+
+  deleteRecurringRule(id: string): Observable<void> {
+    return this.api.delete<void>(`/finances/recurring/${id}`);
   }
 
   exportPdfServerSide(from: string, to: string): Observable<Blob> {

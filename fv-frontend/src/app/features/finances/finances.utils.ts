@@ -33,21 +33,21 @@ export function isBalanceAdjustmentTx(tx: any): boolean {
 }
 
 export function getTransactionBg(tx: Transaction | TransferDisplay): string {
-  if (isInitBalanceTx(tx)) return 'bg-purple-500/20 text-purple-400';
-  if (isSavingsTx(tx)) return 'bg-rose-500/20 text-rose-400';
-  if (isBalanceAdjustmentTx(tx)) return 'bg-orange-500/20 text-orange-400';
-  if (tx.type === 'INCOME') return 'bg-emerald-500/20 text-emerald-400';
-  if (tx.type === 'TRANSFER') return 'bg-blue-500/20 text-blue-400';
-  return 'bg-red-500/20 text-red-400';
+  if (isInitBalanceTx(tx)) return 'rgba(168, 85, 247, 0.2)';
+  if (isSavingsTx(tx)) return 'rgba(244, 114, 182, 0.2)';
+  if (isBalanceAdjustmentTx(tx)) return 'rgba(255, 99, 71, 0.2)';
+  if (tx.type === 'INCOME') return 'rgba(16, 185, 129, 0.2)';
+  if (tx.type === 'TRANSFER') return 'rgba(59, 130, 246, 0.2)';
+  return 'rgba(239, 68, 68, 0.2)';
 }
 
 export function getTransactionColor(tx: Transaction | TransferDisplay): string {
-  if (isInitBalanceTx(tx)) return 'text-purple-400';
-  if (isSavingsTx(tx)) return 'text-rose-400';
-  if (isBalanceAdjustmentTx(tx)) return 'text-orange-400';
-  if (tx.type === 'INCOME') return 'text-emerald-400';
-  if (tx.type === 'TRANSFER') return 'text-blue-400';
-  return 'text-red-400';
+  if (isInitBalanceTx(tx)) return '#a855f7';
+  if (isSavingsTx(tx)) return '#f472b6';
+  if (isBalanceAdjustmentTx(tx)) return '#ff6347';
+  if (tx.type === 'INCOME') return '#10b981';
+  if (tx.type === 'TRANSFER') return '#3b82f6';
+  return '#ef4444';
 }
 
 export function getTransactionSign(tx: Transaction | TransferDisplay): string {
@@ -88,11 +88,13 @@ export function getGoalProgress(g: Goal): number {
 
 export function computeSpent(transactions: Transaction[], categoryId: string | null): number {
   const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
   return transactions
     .filter(t => t.type === 'EXPENSE'
       && (!categoryId || t.categoryId === categoryId)
-      && new Date(t.date).getMonth() === now.getMonth()
-      && new Date(t.date).getFullYear() === now.getFullYear())
+      && new Date(t.date).getMonth() === currentMonth
+      && new Date(t.date).getFullYear() === currentYear)
     .reduce((s, t) => s + parseFloat(String(t.amount)), 0);
 }
 

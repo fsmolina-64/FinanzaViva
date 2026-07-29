@@ -95,7 +95,18 @@ export class EditTransactionModal implements OnInit {
     });
 
     this.financeService.getGoals().subscribe({
-      next: g => { this.goals.set(g.filter(goal => goal.status === 'ACTIVE')); done(); },
+      next: g => { 
+        // If editing a savings transaction, include its goal even if COMPLETED
+        const tx = this.editTxService.transaction();
+        let savingsGoalId: string | null = null;
+        if (tx && tx.type === 'EXPENSE' && tx.description?.startsWith('Ahorro para meta: ')) {
+          const goalName = tx.description.replace('Ahorro para meta: ', '');
+          const goal = g.find(gg => gg.name === goalName);
+          if (goal) savingsGoalId = goal.id;
+        }
+        this.goals.set(g.filter(goal => goal.status === 'ACTIVE' || goal.id === savingsGoalId)); 
+        done(); 
+      },
       error: () => done()
     });
   }

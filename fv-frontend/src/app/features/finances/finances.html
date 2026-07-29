@@ -189,7 +189,8 @@
             class="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-card/60 transition-colors group">
             <div class="flex items-center gap-3 min-w-0">
               <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                [ngClass]="getTransactionBg(tx)">
+                [style.background-color]="getTransactionBg(tx)"
+                [style.color]="getTransactionColor(tx)">
                 {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
               </div>
               <div class="min-w-0">
@@ -200,7 +201,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-              <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+              <span class="text-sm font-semibold" [style.color]="getTransactionColor(tx)">
                 {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
               </span>
               <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -525,7 +526,8 @@
             <div class="flex items-center justify-between px-4 py-3 hover:bg-card/60 transition-all duration-200 group">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  [ngClass]="getTransactionBg(tx)">
+                  [style.background-color]="getTransactionBg(tx)"
+                  [style.color]="getTransactionColor(tx)">
                   {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
                 </div>
                 <div class="min-w-0">
@@ -536,7 +538,7 @@
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                <span class="text-sm font-semibold" [style.color]="getTransactionColor(tx)">
                   {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
                 </span>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -655,7 +657,8 @@
             <div class="flex items-center justify-between bg-card rounded-xl px-3 py-2.5 group">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                  [ngClass]="getTransactionBg(tx)">
+                  [style.background-color]="getTransactionBgVar(tx)"
+                  [style.color]="getTransactionColorVar(tx)">
                   {{ isInitBalanceTx(tx) ? '*' : tx.type === 'INCOME' ? '+' : tx.type === 'TRANSFER' ? '~' : '-' }}
                 </div>
                 <div class="min-w-0">
@@ -665,7 +668,7 @@
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="text-sm font-semibold" [ngClass]="getTransactionColor(tx)">
+                <span class="text-sm font-semibold" [style.color]="getTransactionColorVar(tx)">
                   {{ getTransactionSign(tx) }}{{ formatCurrency(tx.amount) }}
                 </span>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -875,6 +878,32 @@
             {{ showBudgetForm() ? 'Cancelar' : '+ Nuevo' }}
           </button>
         </div>
+        @if (health() && health()!.budgetDetails && health()!.budgetDetails!.length > 0) {
+        <div class="space-y-2 mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+          <p class="text-emerald-400 text-xs font-medium mb-2">Detalle de salud por presupuesto</p>
+          <div class="space-y-1">
+            @for (bd of health()!.budgetDetails!; track bd.categoryId) {
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-muted">{{ bd.categoryName }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-primary font-medium">{{ formatCurrency(bd.spent) }} / {{ formatCurrency(bd.budgeted) }}</span>
+                <div class="w-24 bg-elevated rounded-full h-1.5 overflow-hidden">
+                  <div class="h-1.5 rounded-full transition-all" [style.width]="bd.percentage + '%'" 
+                    [ngClass]="bd.percentage >= 100 ? 'bg-red-500' : bd.percentage >= 80 ? 'bg-yellow-500' : 'bg-indigo-500'"></div>
+                </div>
+                <span class="text-xs" [ngClass]="bd.percentage >= 100 ? 'text-red-400' : bd.percentage >= 80 ? 'text-yellow-400' : 'text-emerald-400'">{{ bd.percentage }}%</span>
+              </div>
+            </div>
+            }
+            @if (health()!.totalBudgeted !== undefined) {
+            <div class="border-t border-emerald-500/30 pt-2 flex items-center justify-between text-xs">
+              <span class="text-muted">Total presupuestado</span>
+              <span class="text-primary font-medium">{{ formatCurrency(health()!.totalSpent ?? 0) }} / {{ formatCurrency(health()!.totalBudgeted ?? 0) }}</span>
+            </div>
+            }
+          </div>
+        </div>
+        }
         @if (showBudgetForm()) {
         <div class="form-slide mb-4 bg-card rounded-xl p-4 border border-strong space-y-3">
           <div class="grid grid-cols-2 gap-3">

@@ -18,16 +18,25 @@ export class FinancesService {
     });
     const hiddenIds = new Set(hidden.map(h => h.categoryId));
 
+    // Single query with all needed data
     const all = await this.prisma.category.findMany({
       where: { OR: [{ isGlobal: true }, { userId }] },
       orderBy: { name: 'asc' },
     });
 
-    const userCatIds = new Set(all.filter(c => c.userId === userId).map(c => c.originalCategoryId).filter(Boolean));
-    return all.filter(c =>
-      !c.isGlobal ||
-      (!hiddenIds.has(c.id) && !userCatIds.has(c.id))
+    // Build set of originalCategoryIds that user has customized
+    const userCustomizedGlobalIds = new Set(
+      all
+        .filter(c => c.userId === userId && c.originalCategoryId)
+        .map(c => c.originalCategoryId!)
     );
+
+    return all.filter(c => {
+      // If user category, always show
+      if (!c.isGlobal) return true;
+      // If global, hide if user has hidden it OR customized it
+      return !hiddenIds.has(c.id) && !userCustomizedGlobalIds.has(c.id);
+    });
   }
 
   async createCategory(userId: string, dto: CreateCategoryDto) {
@@ -148,7 +157,7 @@ export class FinancesService {
   }
 
   async createBudget(userId: string, dto: CreateBudgetDto) {
-    // Check if user already has a budget for this category
+    // Check if user already has a budget for this category (or general budget)
     if (dto.categoryId) {
       const existingBudget = await this.prisma.budget.findFirst({
         where: { userId, categoryId: dto.categoryId },
@@ -156,6 +165,16 @@ export class FinancesService {
       if (existingBudget) {
         throw new BadRequestException(
           `Ya existe un presupuesto para esta categoría`
+        );
+      }
+    } else {
+      // Check for existing general budget (no categoryId)
+      const existingGeneralBudget = await this.prisma.budget.findFirst({
+        where: { userId, categoryId: null },
+      });
+      if (existingGeneralBudget) {
+        throw new BadRequestException(
+          `Ya existe un presupuesto general`
         );
       }
     }
@@ -185,10 +204,26 @@ export class FinancesService {
     if (!budget) throw new NotFoundException('Presupuesto no encontrado');
     if (budget.userId !== userId) throw new ForbiddenException();
 
-    if (dto.categoryId) {
+    // Check if changing to general budget (categoryId = null/undefined)
+    if (dto.categoryId === undefined || dto.categoryId === null) {
+      const existingGeneralBudget = await this.prisma.budget.findFirst({
+        where: { userId, categoryId: null, NOT: { id: budgetId } },
+      });
+      if (existingGeneralBudget) {
+        throw new BadRequestException(`Ya existe un presupuesto general`);
+      }
+    } else if (dto.categoryId) {
       const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
       if (!category) throw new NotFoundException('Categoría no encontrada');
       if (category.userId && category.userId !== userId) throw new ForbiddenException('La categoría no te pertenece');
+      
+      // Check for duplicate category budget
+      const existingCategoryBudget = await this.prisma.budget.findFirst({
+        where: { userId, categoryId: dto.categoryId, NOT: { id: budgetId } },
+      });
+      if (existingCategoryBudget) {
+        throw new BadRequestException(`Ya existe un presupuesto para esta categoría`);
+      }
     }
 
     return this.prisma.budget.update({
@@ -318,7 +353,7 @@ export class FinancesService {
     });
   }
 
-  // Helper: handle targetAmount reduction below currentAmount
+// Helper: handle targetAmount reduction below currentAmount
   private async handleTargetReduction(
     userId: string,
     goalId: string,
@@ -328,39 +363,39 @@ export class FinancesService {
     const currentAmount = Number(goal.currentAmount);
     const excess = currentAmount - newTargetAmount;
 
-    // Find savings transactions to determine which account to refund
-    const savingsTransactions = await this.prisma.transaction.findMany({
-      where: {
-        userId,
-        description: { startsWith: `Ahorro para meta: ${goal.name}` },
-        type: 'EXPENSE',
-      },
-      orderBy: { date: 'desc' },
-    });
+    await this.prisma.$transaction(async (prisma) => {
+      // Find savings transactions to determine which account to refund
+      const savingsTransactions = await prisma.transaction.findMany({
+        where: {
+          userId,
+          description: { startsWith: `Ahorro para meta: ${goal.name}` },
+          type: 'EXPENSE',
+        },
+        orderBy: { date: 'desc' },
+      });
 
-    if (savingsTransactions.length === 0) {
-      throw new BadRequestException(
-        'No se puede reducir la meta por debajo del ahorro actual sin transacciones de ahorro',
-      );
-    }
+      if (savingsTransactions.length === 0) {
+        throw new BadRequestException(
+          'No se puede reducir la meta por debajo del ahorro actual sin transacciones de ahorro',
+        );
+      }
 
-    // Refund excess to the most recent account used for savings
-    const latestTx = savingsTransactions[0];
+      // Refund excess to the most recent account used for savings
+      const latestTx = savingsTransactions[0];
 
-    await this.prisma.$transaction([
-      this.prisma.financialAccount.update({
+      await prisma.financialAccount.update({
         where: { id: latestTx.accountId },
         data: { balance: { increment: excess } },
-      }),
-      this.prisma.financialGoal.update({
+      });
+      await prisma.financialGoal.update({
         where: { id: goalId },
         data: {
           targetAmount: newTargetAmount,
           currentAmount: newTargetAmount, // Cap current amount to new target
           status: 'COMPLETED',
         },
-      }),
-      this.prisma.transaction.create({
+      });
+      await prisma.transaction.create({
         data: {
           userId,
           accountId: latestTx.accountId,
@@ -370,8 +405,8 @@ export class FinancesService {
           description: `Devolución por reducción de meta: ${goal.name}`,
           date: new Date(),
         },
-      }),
-    ]);
+      });
+    });
 
     return { message: `Meta actualizada. Se devolvieron $${excess.toFixed(2)} a la cuenta` };
   }
@@ -393,27 +428,27 @@ export class FinancesService {
     });
 
     if (savingsTransactions.length > 0) {
-      await this.prisma.$transaction([
-        ...savingsTransactions.map(tx => 
-          this.prisma.financialAccount.update({
+      await this.prisma.$transaction(async (prisma) => {
+        for (const tx of savingsTransactions) {
+          await prisma.financialAccount.update({
             where: { id: tx.accountId },
             data: { balance: { increment: Number(tx.amount) } },
-          })
-        ),
-        this.prisma.transaction.deleteMany({
+          });
+        }
+        await prisma.transaction.deleteMany({
           where: {
             userId,
             description: { startsWith: `Ahorro para meta: ${goal.name}` },
             type: 'EXPENSE',
           },
-        }),
-        this.prisma.financialGoal.delete({ where: { id: goalId } }),
-      ]);
+        });
+        await prisma.financialGoal.delete({ where: { id: goalId } });
+      });
     } else {
       await this.prisma.financialGoal.delete({ where: { id: goalId } });
     }
 
-    return { message: 'Meta eliminada y ahorros devueltos a las cuentas' };
+return { message: 'Meta eliminada y ahorros devueltos a las cuentas' };
   }
 
   async getSummary(userId: string) {
@@ -433,33 +468,93 @@ export class FinancesService {
 
   async getBudgetHealth(userId: string) {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    // Get user's budgets with categories
+    const budgets = await this.prisma.budget.findMany({
+      where: { userId },
+      include: { category: true },
+    });
+
+    // Get transactions for the current month
     const transactions = await this.prisma.transaction.findMany({
       where: { userId, date: { gte: startOfMonth } },
       include: { category: true },
     });
 
-    const income = transactions.filter(t => t.type === 'INCOME' && !t.isInitialBalance).reduce((s, t) => s + Number(t.amount), 0);
-    const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + Number(t.amount), 0);
+    const income = transactions
+      .filter(t => t.type === 'INCOME' && !t.isInitialBalance)
+      .reduce((s, t) => s + Number(t.amount), 0);
+    
+    const expenses = transactions
+      .filter(t => t.type === 'EXPENSE')
+      .reduce((s, t) => s + Number(t.amount), 0);
+
     const available = income - expenses;
-    const percentage = income > 0 ? Math.round((expenses / income) * 100) : 0;
+
+    // Calculate budget-based health
+    let totalBudgeted = 0;
+    let totalSpent = 0;
+    const budgetDetails: Array<{ 
+      categoryId: string | null; 
+      categoryName: string; 
+      budgeted: number; 
+      spent: number; 
+      percentage: number 
+    }> = [];
+
+    for (const budget of budgets) {
+      const budgetAmount = Number(budget.amount);
+      totalBudgeted += budgetAmount;
+
+      // Calculate spent for this budget's category in current period
+      const periodStart = budget.startDate ? new Date(budget.startDate) : startOfMonth;
+      const periodEnd = budget.endDate ? new Date(budget.endDate) : new Date();
+      
+      const spent = transactions
+        .filter(t => 
+          t.type === 'EXPENSE' &&
+          t.categoryId === budget.categoryId &&
+          new Date(t.date) >= periodStart &&
+          new Date(t.date) <= periodEnd
+        )
+        .reduce((s, t) => s + Number(t.amount), 0);
+
+      totalSpent += spent;
+      const percentage = budgetAmount > 0 ? Math.round((spent / budgetAmount) * 100) : 0;
+      
+      budgetDetails.push({
+        categoryId: budget.categoryId,
+        categoryName: budget.category?.name ?? 'Presupuesto general',
+        budgeted: budgetAmount,
+        spent,
+        percentage,
+      });
+    }
+
+    // Overall percentage based on budgets (not income)
+    const overallPercentage = totalBudgeted > 0 ? Math.round((totalSpent / totalBudgeted) * 100) : 0;
 
     let status: string;
     let message: string;
 
-    if (percentage >= 100) {
+    if (overallPercentage >= 100) {
       status = 'CRITICAL';
-      message = `Gastaste mas de lo que ganaste. Deficit de $${Math.abs(available).toFixed(2)}`;
-    } else if (percentage >= 90) {
+      message = `Superaste tus presupuestos. Gastaste $${totalSpent.toFixed(2)} de $${totalBudgeted.toFixed(2)}`;
+    } else if (overallPercentage >= 90) {
       status = 'DANGER';
-      message = `Cuidado. Usaste el ${percentage}% de tus ingresos. Solo te quedan $${available.toFixed(2)}`;
-    } else if (percentage >= 80) {
+      message = `Cuidado. Usaste el ${overallPercentage}% de tus presupuestos. Quedan $${(totalBudgeted - totalSpent).toFixed(2)}`;
+    } else if (overallPercentage >= 80) {
       status = 'WARNING';
-      message = `Vas al ${percentage}% de tu presupuesto. Modera tus gastos.`;
+      message = `Vas al ${overallPercentage}% de tus presupuestos. Modera tus gastos.`;
+    } else if (totalBudgeted === 0) {
+      status = 'HEALTHY';
+      message = 'Sin presupuestos configurados. Gasta con consciencia.';
     } else {
       status = 'HEALTHY';
-      message = `Vas bien. Llevas el ${percentage}% de tu presupuesto usado.`;
+      message = `Vas bien. Llevas el ${overallPercentage}% de tus presupuestos usados.`;
     }
 
+    // Breakdown by category (expenses this month)
     const breakdown = transactions
       .filter(t => t.type === 'EXPENSE')
       .reduce((acc: Record<string, number>, t) => {
@@ -469,6 +564,17 @@ export class FinancesService {
         return acc;
       }, {});
 
-    return { income, expenses, available, percentage, status, message, breakdown };
+    return { 
+      income, 
+      expenses, 
+      available, 
+      percentage: overallPercentage, 
+      status, 
+      message, 
+      breakdown,
+      budgetDetails,
+      totalBudgeted,
+      totalSpent,
+    };
   }
 }

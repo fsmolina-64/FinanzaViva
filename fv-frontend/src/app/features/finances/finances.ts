@@ -23,7 +23,7 @@ import {
   formatDateLabel, isInitBalanceTx, isBalanceAdjustmentTx, getCategoryName, getAccountName,
   getTransactionBg, getTransactionColor, getTransactionSign, getTransactionLabel,
   getAccountTypeLabel, getAccountTypeColor, getGoalProgress,
-  computeSpent, getBudgetPct, extractError,
+  computeSpent, getBudgetPct, extractError, isSavingsTx,
 } from './finances.utils';
 
 type Tab = 'resumen' | 'transacciónes' | 'presupuestos' | 'metas';
@@ -78,7 +78,7 @@ export class Finances implements OnInit {
     recurrence: 'NONE' as Recurrence
   };
 
-  newBudget = { categoryId: '', amount: 0, period: 'MONTHLY' as 'MONTHLY', months: 1, indefinido: false };
+  newBudget = { categoryId: null as string | null, amount: 0, period: 'MONTHLY' as 'MONTHLY', months: 1, indefinido: false };
   newGoal = { name: '', targetAmount: 0, deadline: '' };
 
   editingTxId = signal<string | null>(null);
@@ -92,7 +92,7 @@ export class Finances implements OnInit {
 
 
   editingBudgetId = signal<string | null>(null);
-  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY', categoryId: '', startDate: '', indefinido: false, months: 1 };
+  editBudget = { amount: 0, period: 'MONTHLY' as 'MONTHLY', categoryId: null as string | null, startDate: '', indefinido: false, months: 1 };
   get editBudgetAmount(): number { return this.editBudget.amount; }
   set editBudgetAmount(v: number) { this.editBudget.amount = v; }
 
@@ -428,14 +428,14 @@ export class Finances implements OnInit {
         }
         this.submittingAccount.set(false);
       },
-      error: err => { this.toast.error(this.extractError(err, 'Error al crear la cuenta')); this.submittingAccount.set(false); }
+      error: err => { this.toast.error(extractError(err, 'Error al crear la cuenta')); this.submittingAccount.set(false); }
     });
   }
 
   deleteAccount(id: string): void {
     this.financeService.deleteAccount(id).subscribe({
       next: () => { this.accounts.update(l => l.filter(a => a.id !== id)); this.refreshSummary(); this.toast.success('Cuenta eliminada'); },
-      error: err => this.toast.error(this.extractError(err, 'Error al eliminar la cuenta'))
+      error: err => this.toast.error(extractError(err, 'Error al eliminar la cuenta'))
     });
   }
 
@@ -472,7 +472,7 @@ export class Finances implements OnInit {
           this.cancelEditAccount();
           this.toast.success('Cuenta actualizada');
         },
-        error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+        error: err => this.toast.error(extractError(err, 'Error al actualizar la cuenta'))
       });
       return;
     }
@@ -526,7 +526,7 @@ export class Finances implements OnInit {
           error: err => {
             // Rollback on error
             if (diff !== 0) this.accounts.update(accs => accs.map(a => a.id === acc.id ? { ...a, balance: String(originalBalance) } : a));
-            this.toast.error(this.extractError(err, 'Error al registrar el ajuste directo'))
+            this.toast.error(extractError(err, 'Error al registrar el ajuste directo'))
           }
         });
       } else {
@@ -554,7 +554,7 @@ export class Finances implements OnInit {
           error: err => {
             // Rollback on error
             if (diff !== 0) this.accounts.update(accs => accs.map(a => a.id === acc.id ? { ...a, balance: String(originalBalance) } : a));
-            this.toast.error(this.extractError(err, 'Error al registrar el ajuste'))
+            this.toast.error(extractError(err, 'Error al registrar el ajuste'))
           }
         });
       }
@@ -566,7 +566,7 @@ export class Finances implements OnInit {
           this.accounts.update(l => l.map(a => a.id === acc.id ? { ...a, ...updated } : a));
           afterNameUpdate();
         },
-        error: err => this.toast.error(this.extractError(err, 'Error al actualizar la cuenta'))
+        error: err => this.toast.error(extractError(err, 'Error al actualizar la cuenta'))
       });
     } else {
       afterNameUpdate();
@@ -642,7 +642,7 @@ export class Finances implements OnInit {
       error: err => {
         // Rollback optimistic update on error
         this.updateAccountBalancesForTransaction(payload, -Number(payload.amount));
-        this.toast.error(this.extractError(err, 'Error al registrar'));
+        this.toast.error(extractError(err, 'Error al registrar'));
         this.submittingTx.set(false);
       }
     });
@@ -721,7 +721,7 @@ export class Finances implements OnInit {
             ? { ...a, balance: String(parseFloat(String(a.balance)) - oldAmount) } : a));
           if (oldToAccountId && oldToAccountId !== oldFromAccountId) this.accounts.update(accs => accs.map(a => a.id === oldToAccountId
             ? { ...a, balance: String(parseFloat(String(a.balance)) + oldAmount) } : a));
-          this.toast.error(this.extractError(err, 'Error al actualizar transferencia'))
+          this.toast.error(extractError(err, 'Error al actualizar transferencia'))
         }
       });
       return;
@@ -806,7 +806,44 @@ export class Finances implements OnInit {
 
         this.toast.success('Transacción actualizada');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al actualizar'))
+      error: err => {
+        // Rollback optimistic updates on error
+        if (oldAccountId && oldAccountId === this.editTx.accountId) {
+          const newAmount = Number(this.editTx.amount);
+          const newType = this.editTxType();
+          let delta = 0;
+          if (oldType === 'INCOME') delta -= oldAmount;
+          else if (oldType === 'EXPENSE') delta += oldAmount;
+          if (newType === 'INCOME') delta += newAmount;
+          else if (newType === 'EXPENSE') delta -= newAmount;
+          if (delta !== 0) {
+            // Reverse the delta
+            this.accounts.update(accs => accs.map(a => a.id === oldAccountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) - delta) } : a));
+          }
+        } else if (oldAccountId && oldAccountId !== this.editTx.accountId) {
+          // Account changed: reverse the changes
+          const oldAcc = this.accounts().find(a => a.id === oldAccountId);
+          const newAcc = this.accounts().find(a => a.id === this.editTx.accountId);
+          if (oldAcc) {
+            let delta = 0;
+            if (oldType === 'INCOME') delta -= oldAmount;
+            else if (oldType === 'EXPENSE') delta += oldAmount;
+            this.accounts.update(accs => accs.map(a => a.id === oldAccountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) - delta) } : a));
+          }
+          if (newAcc) {
+            const newAmount = Number(this.editTx.amount);
+            const newType = this.editTxType();
+            let delta = 0;
+            if (newType === 'INCOME') delta += newAmount;
+            else if (newType === 'EXPENSE') delta -= newAmount;
+            this.accounts.update(accs => accs.map(a => a.id === this.editTx.accountId
+              ? { ...a, balance: String(parseFloat(String(a.balance)) - delta) } : a));
+          }
+        }
+        this.toast.error(extractError(err, 'Error al actualizar'))
+      }
     });
   }
 
@@ -950,7 +987,7 @@ export class Finances implements OnInit {
         this.executeBudgetCreation();
       },
       error: err => {
-        this.toast.error(this.extractError(err, 'Error al eliminar el presupuesto anterior'));
+        this.toast.error(extractError(err, 'Error al eliminar el presupuesto anterior'));
         this.showBudgetCategoryConflict.set(false);
         this.budgetConflictInfo.set(null);
       }
@@ -985,7 +1022,7 @@ export class Finances implements OnInit {
         this.submittingBudget.set(false);
         this.toast.success('Presupuesto creado');
       },
-      error: err => { this.toast.error(this.extractError(err, 'Error al crear el presupuesto')); this.submittingBudget.set(false); }
+      error: err => { this.toast.error(extractError(err, 'Error al crear el presupuesto')); this.submittingBudget.set(false); }
     });
   }
 
@@ -996,7 +1033,7 @@ export class Finances implements OnInit {
     this.editBudget = {
       amount: parseFloat(String(b.amount)),
       period: 'MONTHLY',
-      categoryId: b.categoryId ?? '',
+      categoryId: b.categoryId ?? null,
       startDate: b.startDate ? new Date(b.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       indefinido: !b.endDate,
       months: 1
@@ -1027,7 +1064,7 @@ export class Finances implements OnInit {
         this.editingBudgetId.set(null);
         this.toast.success('Presupuesto actualizado');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al actualizar el presupuesto'))
+      error: err => this.toast.error(extractError(err, 'Error al actualizar el presupuesto'))
     });
   }
 
@@ -1068,7 +1105,7 @@ export class Finances implements OnInit {
         this.submittingCategory.set(false);
         this.toast.success('Categoría creada');
       },
-      error: err => { this.toast.error(this.extractError(err, 'Error al crear la categoría')); this.submittingCategory.set(false); }
+      error: err => { this.toast.error(extractError(err, 'Error al crear la categoría')); this.submittingCategory.set(false); }
     });
   }
 
@@ -1095,7 +1132,7 @@ export class Finances implements OnInit {
         this.editingCategoryId.set(null);
         this.submittingCategory.set(false);
       },
-      error: err => { this.toast.error(this.extractError(err, 'Error al actualizar')); this.submittingCategory.set(false); }
+      error: err => { this.toast.error(extractError(err, 'Error al actualizar')); this.submittingCategory.set(false); }
     });
   }
 
@@ -1132,7 +1169,7 @@ export class Finances implements OnInit {
         this.toast.success(msg);
       },
       error: err => {
-        this.toast.error(this.extractError(err, 'Error al eliminar la categoría'));
+        this.toast.error(extractError(err, 'Error al eliminar la categoría'));
         this.confirmDeleteCategoryId.set(null);
         this.showCategoryDeleteWarning.set(false);
         this.categoryDeleteInfo.set(null);
@@ -1164,7 +1201,7 @@ export class Finances implements OnInit {
     this.submittingGoal.set(true);
     this.financeService.createGoal({ name: this.newGoal.name.trim(), targetAmount: Number(this.newGoal.targetAmount), deadline: this.newGoal.deadline || undefined }).subscribe({
       next: g => { this.goals.update(l => [g, ...l]); this.showGoalForm.set(false); this.newGoal = { name: '', targetAmount: 0, deadline: '' }; this.submittingGoal.set(false); this.toast.success('Meta creada'); },
-      error: err => { this.toast.error(this.extractError(err, 'Error al crear la meta')); this.submittingGoal.set(false); }
+      error: err => { this.toast.error(extractError(err, 'Error al crear la meta')); this.submittingGoal.set(false); }
     });
   }
 
@@ -1187,6 +1224,11 @@ export class Finances implements OnInit {
       return;
     }
     const newCurrent = Number(g.currentAmount) + Number(this.progressAmount);
+    const target = Number(g.targetAmount);
+    if (newCurrent > target) {
+      this.toast.warning(`El ahorro superaría la meta (${target}). Máximo permitido: ${target - Number(g.currentAmount)}`);
+      return;
+    }
     this.financeService.updateGoal(g.id, { currentAmount: newCurrent, fromAccountId: this.progressAccountId }).subscribe({
       next: updated => {
         this.goals.update(l => l.map(x => x.id === g.id ? { ...x, ...updated } : x));
@@ -1197,7 +1239,7 @@ export class Finances implements OnInit {
         this.addingProgressGoalId.set(null);
         this.toast.success(newCurrent >= Number(g.targetAmount) ? 'Meta completada' : 'Ahorro registrado');
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al guardar el progreso'))
+      error: err => this.toast.error(extractError(err, 'Error al guardar el progreso'))
     });
   }
 
@@ -1231,7 +1273,7 @@ export class Finances implements OnInit {
   private executeGoalUpdate(id: string, targetAmount: number): void {
     this.financeService.updateGoal(id, { name: this.editGoal.name.trim(), targetAmount, deadline: this.editGoal.deadline || undefined }).subscribe({
       next: updated => { this.goals.update(l => l.map(g => g.id === id ? { ...g, ...updated } : g)); this.editingGoalId.set(null); this.toast.success('Meta actualizada'); },
-      error: err => this.toast.error(this.extractError(err, 'Error al actualizar la meta'))
+      error: err => this.toast.error(extractError(err, 'Error al actualizar la meta'))
     });
   }
 
@@ -1259,6 +1301,15 @@ export class Finances implements OnInit {
   isInitBalanceTx(tx: any): boolean { return isInitBalanceTx(tx); }
   isBalanceAdjustmentTx(tx: any): boolean { return isBalanceAdjustmentTx(tx); }
 
+  // Transaction color helpers
+  getTransactionBgVar(tx: Transaction | TransferDisplay): string {
+    return getTransactionBg(tx);
+  }
+
+  getTransactionColorVar(tx: Transaction | TransferDisplay): string {
+    return getTransactionColor(tx);
+  }
+
   editBudgetCategoryDeleted(): boolean {
     return !!this.editingBudgetId() && !!this.editBudget.categoryId && !this.categories().some(c => c.id === this.editBudget.categoryId);
   }
@@ -1284,23 +1335,22 @@ export class Finances implements OnInit {
   }
 
   applyRecurring(rule: RecurringRule): void {
-    const today = new Date().toISOString().split('T')[0];
     const payload: CreateTransactionPayload = {
       accountId: rule.accountId, categoryId: rule.categoryId,
       amount: rule.amount, type: rule.type,
-      description: rule.description, date: today
+      description: rule.description, date: rule.nextDate
     };
     this.financeService.createTransaction(payload).subscribe({
       next: res => {
         this.transactions.update(l => [res.transaction, ...l]);
         if (res.alert) this.lastAlert.set(res.alert);
-        const nextDate = this.calcNextDate(today, rule.recurrence);
+        const nextDate = this.calcNextDate(rule.nextDate, rule.recurrence);
         this.recurringRules.update(rules => rules.map(r => r.id === rule.id ? { ...r, nextDate } : r));
         this.saveRecurring(this.recurringRules());
         this.refreshSummary();
         this.toast.success(`Registrado. Proxima: ${nextDate}`);
       },
-      error: err => this.toast.error(this.extractError(err, 'Error al aplicar recurrente'))
+      error: err => this.toast.error(extractError(err, 'Error al aplicar recurrente'))
     });
   }
 
@@ -1350,10 +1400,6 @@ export class Finances implements OnInit {
 
   getBudgetPct(b: Budget): number {
     return getBudgetPct(b, this.transactions());
-  }
-
-  extractError(err: any, fallback: string): string {
-    return extractError(err, fallback);
   }
 
   sanitizeNumber(val: any): number { return parseAmount(val); }
