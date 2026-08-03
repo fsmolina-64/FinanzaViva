@@ -4,6 +4,11 @@ import { GamificationService } from '../../gamification/gamification.service';
 import { XpSource, RecurringFrequency, RecurringStatus, ExecutionStatus, TransactionType } from '@prisma/client';
 import { CreateRecurringRuleDto, UpdateRecurringRuleDto } from './dto/create-recurring-rule.dto';
 
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function addInterval(date: Date, frequency: RecurringFrequency, interval: number = 1): Date {
   const result = new Date(date);
   switch (frequency) {
@@ -57,7 +62,7 @@ export class RecurringService {
       }
     }
 
-    const startDate = new Date(dto.startDate);
+    const startDate = parseLocalDate(dto.startDate);
     const nextRunDate = new Date(startDate);
     nextRunDate.setHours(3, 0, 0, 0); // Run at 3 AM
 
@@ -71,7 +76,7 @@ export class RecurringService {
         description: dto.description,
         frequency: dto.frequency,
         startDate,
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        endDate: dto.endDate ? parseLocalDate(dto.endDate) : null,
         nextRunDate,
         maxOccurrences: dto.maxOccurrences,
       },
@@ -130,14 +135,14 @@ export class RecurringService {
     }
 
     const updateData: any = { ...dto };
-    if (dto.startDate) updateData.startDate = new Date(dto.startDate);
-    if (dto.endDate) updateData.endDate = new Date(dto.endDate);
+    if (dto.startDate) updateData.startDate = parseLocalDate(dto.startDate);
+    if (dto.endDate) updateData.endDate = parseLocalDate(dto.endDate);
 
     // Recalculate nextRunDate if frequency or interval changed
     if (dto.frequency || dto.interval || dto.startDate) {
       const freq = dto.frequency || rule.frequency;
       const interval = dto.interval || 1;
-      const start = dto.startDate ? new Date(dto.startDate) : rule.startDate;
+      const start = dto.startDate ? parseLocalDate(dto.startDate) : rule.startDate;
       updateData.nextRunDate = addInterval(start, freq, interval);
       updateData.nextRunDate.setHours(3, 0, 0, 0);
     }

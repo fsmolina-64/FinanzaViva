@@ -7,6 +7,11 @@ import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 @Injectable()
 export class FinancesService {
   constructor(private prisma: PrismaService) { }
@@ -185,8 +190,8 @@ export class FinancesService {
         ...(dto.categoryId && { categoryId: dto.categoryId }),
         amount: dto.amount,
         period: dto.period,
-        startDate: new Date(dto.startDate),
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        startDate: parseLocalDate(dto.startDate),
+        endDate: dto.endDate ? parseLocalDate(dto.endDate) : null,
       },
       include: { category: true },
     });
@@ -230,10 +235,10 @@ export class FinancesService {
       where: { id: budgetId },
       data: {
         ...(dto.categoryId && { categoryId: dto.categoryId }),
-        ...(dto.startDate !== undefined && { startDate: dto.startDate ? new Date(dto.startDate) : undefined }),
+        ...(dto.startDate !== undefined && { startDate: dto.startDate ? parseLocalDate(dto.startDate) : undefined }),
         ...(dto.amount !== undefined && { amount: dto.amount }),
         ...(dto.period && { period: dto.period }),
-        ...(dto.endDate !== undefined && { endDate: dto.endDate ? new Date(dto.endDate) : null }),
+        ...(dto.endDate !== undefined && { endDate: dto.endDate ? parseLocalDate(dto.endDate) : null }),
       },
       include: { category: true },
     });
@@ -254,7 +259,7 @@ export class FinancesService {
         userId,
         name: dto.name,
         targetAmount: dto.targetAmount,
-        deadline: dto.deadline ? new Date(dto.deadline) : null,
+        deadline: dto.deadline ? parseLocalDate(dto.deadline) : null,
       },
     });
   }
@@ -347,7 +352,7 @@ export class FinancesService {
         ...(dto.name && { name: dto.name }),
         ...(dto.targetAmount !== undefined && { targetAmount: dto.targetAmount }),
         ...(dto.currentAmount !== undefined && { currentAmount: dto.currentAmount }),
-        ...(dto.deadline !== undefined && { deadline: dto.deadline ? new Date(dto.deadline) : null }),
+        ...(dto.deadline !== undefined && { deadline: dto.deadline ? parseLocalDate(dto.deadline) : null }),
         ...(dto.status && { status: dto.status }),
       },
     });

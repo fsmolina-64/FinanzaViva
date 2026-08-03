@@ -13,6 +13,11 @@ export class TransactionsService {
     private gamification: GamificationService,
   ) {}
 
+  private parseLocalDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
   private getPeriodStart(period: BudgetPeriod, refDate?: Date): Date {
     const now = refDate ?? new Date();
     switch (period) {
@@ -63,7 +68,7 @@ export class TransactionsService {
           amount: dto.amount,
           type: dto.type,
           description: dto.description,
-          date: new Date(dto.date),
+          date: this.parseLocalDate(dto.date),
           isInitialBalance: dto.isInitialBalance ?? false,
         },
       }),
@@ -203,7 +208,7 @@ const results = await this.prisma.$transaction(async (prisma) => {
           ...(dto.amount !== undefined && { amount: dto.amount }),
           ...(dto.type && { type: dto.type }),
           ...(dto.description !== undefined && { description: dto.description }),
-          ...(dto.date && { date: new Date(dto.date) }),
+          ...(dto.date && { date: this.parseLocalDate(dto.date) }),
           ...(dto.isInitialBalance !== undefined && { isInitialBalance: dto.isInitialBalance }),
         },
         include: { category: true, account: true },
@@ -310,7 +315,7 @@ const results = await this.prisma.$transaction(async (prisma) => {
           amount: dto.amount,
           type: 'TRANSFER',
           description: dto.description ?? `Transferencia a ${toAccount.name}`,
-          date: new Date(dto.date),
+          date: this.parseLocalDate(dto.date),
           transferGroupId: groupId,
         },
       }),
@@ -322,7 +327,7 @@ const results = await this.prisma.$transaction(async (prisma) => {
           amount: dto.amount,
           type: 'TRANSFER',
           description: dto.description ?? `Transferencia desde ${fromAccount.name}`,
-          date: new Date(dto.date),
+          date: this.parseLocalDate(dto.date),
           transferGroupId: groupId,
         },
       }),
@@ -361,7 +366,7 @@ const results = await this.prisma.$transaction(async (prisma) => {
 
     const fromData: any = { accountId: newFromAcc, amount: newAmt, description: dto.description !== undefined ? dto.description : oldFromTx.description };
     const toData: any = { accountId: newToAcc, amount: newAmt, description: dto.description !== undefined ? dto.description : undefined };
-    if (dto.date) { fromData.date = new Date(dto.date); toData.date = new Date(dto.date); }
+    if (dto.date) { fromData.date = this.parseLocalDate(dto.date); toData.date = this.parseLocalDate(dto.date); }
 
     ops.push(this.prisma.transaction.update({ where: { id: oldFromTx.id }, data: fromData }));
     ops.push(this.prisma.transaction.update({ where: { id: oldToTx.id }, data: toData }));
