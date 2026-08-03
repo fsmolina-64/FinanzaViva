@@ -133,6 +133,10 @@
           [class]="getQuizApprovalRate() >= 70 ? 'bg-emerald-500' : 'bg-amber-500'"
           [style.width.%]="getQuizApprovalRate()"></div>
       </div>
+      <div class="flex items-center justify-between mt-2.5 text-xs">
+        <span class="text-subtle">Intentos totales</span>
+        <span class="font-semibold text-primary">{{ userStats()?.quizzesCompleted ?? 0 }}</span>
+      </div>
     </div>
 
     <a routerLink="/simulator"

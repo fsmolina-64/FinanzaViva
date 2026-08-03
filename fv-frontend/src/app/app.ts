@@ -8,6 +8,7 @@ import { EditTransactionModal } from './features/finances/edit-transaction-modal
 import { ToastComponent } from './shared/components/toast/toast';
 import { QuickTransactionService, QuickTransactionResult, QuickTransferResult } from './core/services/quick-transaction.service';
 import { EditTransactionModalService } from './core/services/edit-transaction-modal.service';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +21,7 @@ import { EditTransactionModalService } from './core/services/edit-transaction-mo
     </div>
     <app-toast />
 
-    @if (!isAuthRoute()) {
+    @if (authService.isLoggedIn() && !isAuthRoute()) {
 
       @if (quickTx.show()) {
       <app-quick-transaction-modal
@@ -69,6 +70,7 @@ import { EditTransactionModalService } from './core/services/edit-transaction-mo
 export class App {
   readonly quickTx    = inject(QuickTransactionService);
   readonly editTx     = inject(EditTransactionModalService);
+  readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   isAuthRoute = signal(true);
@@ -79,7 +81,8 @@ export class App {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
       const url: string = e.urlAfterRedirects;
       this.currentRoute.set(url);
-      this.isAuthRoute.set(url === '/' || url.startsWith('/auth/') || url.startsWith('/onboarding'));
+      const cleanUrl = url.split(/[?#]/)[0];
+      this.isAuthRoute.set(cleanUrl === '/' || cleanUrl.startsWith('/auth/') || cleanUrl.startsWith('/onboarding'));
       this.fabMenuOpen.set(false);
     });
   }
